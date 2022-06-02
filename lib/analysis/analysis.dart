@@ -44,8 +44,8 @@ class Analysis {
   List<AnalysisResult> _findMatches(Gene gene, Motif motif) {
     List<AnalysisResult> result = [];
     final definitions = {
-      ...motif.toRegExp(),
-      ...motif.toReverseComplementRegExp(),
+      ...motif.regExp,
+      ...motif.reverseComplementRegExp,
     };
     for (final definition in definitions.keys) {
       final regexp = definitions[definition]!;
@@ -86,4 +86,48 @@ class Analysis {
     assert(includedResults.length + excludedResults.length == list.length);
     return includedResults;
   }
+
+  List<DrillDownResult> drillDown(String? pattern) {
+    final filteredResult = pattern == null
+        ? result!
+        : result!.where((e) => Motif.toRegExp(pattern, true).hasMatch(e.matchedSequence)).toList();
+    List<String> testPatterns;
+    if (pattern != null) {
+      testPatterns = [
+        for (int i = 0; i < pattern.length; i++)
+          for (final code in Motif.drillDownCodes(pattern[i]))
+            '${pattern.substring(0, i)}$code${pattern.substring(i + 1)}',
+      ];
+    } else {
+      testPatterns = [
+        ...motif.definitions,
+        ...motif.reverseDefinitions,
+      ];
+    }
+    Map<String, int> counts = {};
+    for (final testPattern in testPatterns) {
+      counts[testPattern] =
+          filteredResult.where((e) => Motif.toRegExp(testPattern, true).hasMatch(e.matchedSequence)).length;
+    }
+    final List<DrillDownResult> drillDownResults = [
+      for (final testPattern in counts.keys)
+        DrillDownResult(
+          testPattern,
+          counts[testPattern]!,
+          counts[testPattern]! / filteredResult.length,
+          counts[testPattern]! / result!.length,
+        ),
+    ];
+    drillDownResults.sort((a, b) => b.count.compareTo(a.count));
+    return drillDownResults;
+  }
+}
+
+class DrillDownResult {
+  final String pattern;
+  final int count;
+  final double share;
+  final double shareOfAll;
+
+  DrillDownResult(this.pattern, this.count, this.share, this.shareOfAll);
 }

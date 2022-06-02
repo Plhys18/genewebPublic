@@ -5,6 +5,25 @@ class Motif {
   final String name;
   final List<String> definitions;
 
+  static const supportedNucleotides = {
+    'A',
+    'G',
+    'C',
+    'T',
+    'U',
+    'R',
+    'Y',
+    'N',
+    'W',
+    'S',
+    'M',
+    'K',
+    'B',
+    'H',
+    'D',
+    'V',
+  };
+
   static const reverseComplements = {
     'A': 'T',
     'G': 'C',
@@ -36,22 +55,24 @@ class Motif {
     return null;
   }
 
-  Map<String, RegExp> toRegExp() {
+  Map<String, RegExp> get regExp {
     return {
-      for (final definition in definitions) definition: _toRegExp(definition),
+      for (final definition in definitions) definition: toRegExp(definition),
     };
   }
 
-  RegExp _toRegExp(String def) {
+  static RegExp toRegExp(String def, [bool strict = false]) {
     final List<String> result = [
+      if (strict) '^',
       for (int i = 0; i < def.length; i++) _nucleotideCodeToRegExpPart(def[i]),
+      if (strict) '\$',
     ];
     return RegExp(result.join());
   }
 
-  Map<String, RegExp> toReverseComplementRegExp() {
+  Map<String, RegExp> get reverseComplementRegExp {
     return {
-      for (final definition in reverseDefinitions) definition: _toRegExp(definition),
+      for (final definition in reverseDefinitions) definition: toRegExp(definition),
     };
   }
 
@@ -71,7 +92,7 @@ class Motif {
     return complements;
   }
 
-  String _nucleotideCodeToRegExpPart(String code) {
+  static String _nucleotideCodeToRegExpPart(String code) {
     switch (code) {
       case 'A':
       case 'G':
@@ -80,27 +101,62 @@ class Motif {
       case 'U':
         return code;
       case 'R':
-        return '[AG]';
+        return '[RAG]';
       case 'Y':
-        return '[CT]';
+        return '[YCT]';
       case 'N':
         return '.';
       case 'W':
-        return '[AT]';
+        return '[WAT]';
       case 'S':
-        return '[GC]';
+        return '[SGC]';
       case 'M':
-        return '[AC]';
+        return '[MAC]';
       case 'K':
-        return '[GT]';
+        return '[KGT]';
       case 'B':
-        return '[GCT]';
+        return '[BSYKGCT]';
       case 'H':
-        return '[ACT]';
+        return '[HMYWACT]';
       case 'D':
-        return '[AGT]';
+        return '[DRKWAGT]';
       case 'V':
-        return '[AGC]';
+        return '[VRSMAGC]';
+      default:
+        throw ArgumentError('Unsupported code `$code`');
+    }
+  }
+
+  static Set<String> drillDownCodes(String code) {
+    switch (code) {
+      case 'A':
+      case 'G':
+      case 'C':
+      case 'T':
+      case 'U':
+        return {};
+      case 'R':
+        return {'A', 'G'};
+      case 'Y':
+        return {'C', 'T'};
+      case 'N':
+        return supportedNucleotides;
+      case 'W':
+        return {'A', 'T'};
+      case 'S':
+        return {'G', 'C'};
+      case 'M':
+        return {'A', 'C'};
+      case 'K':
+        return {'G', 'T'};
+      case 'B':
+        return {'S', 'Y', 'K', 'G', 'C', 'T'};
+      case 'H':
+        return {'M', 'Y', 'W', 'A', 'C', 'T'};
+      case 'D':
+        return {'R', 'K', 'W', 'A', 'G', 'T'};
+      case 'V':
+        return {'R', 'S', 'M', 'A', 'G', 'C'};
       default:
         throw ArgumentError('Unsupported code `$code`');
     }

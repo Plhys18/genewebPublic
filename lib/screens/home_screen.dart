@@ -10,6 +10,7 @@ import 'package:geneweb/output/distributions_output.dart';
 import 'package:geneweb/widgets/analysis_distribution.dart';
 import 'package:geneweb/widgets/analysis_form.dart';
 import 'package:geneweb/widgets/distribution_view.dart';
+import 'package:geneweb/widgets/drill_down_view.dart';
 import 'package:geneweb/widgets/filter_form.dart';
 import 'package:geneweb/widgets/transcription_rate_table.dart';
 import 'package:provider/provider.dart';
@@ -201,15 +202,31 @@ class _Analysis extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-        SizedBox(height: 300, child: AnalysisDistribution(analysis: analysis)),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 8.0,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ElevatedButton(onPressed: () => _handleAdd(context), child: const Text('Add to results')),
-            ElevatedButton(onPressed: () => _handleClear(context), child: const Text('Clear')),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 300, child: AnalysisDistribution(analysis: analysis)),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8.0,
+                    children: [
+                      ElevatedButton(onPressed: () => _handleAdd(context), child: const Text('Add to results')),
+                      ElevatedButton(onPressed: () => _handleClear(context), child: const Text('Clear')),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 400, height: 300, child: DrillDownView()),
           ],
-        )
+        ),
+        const SizedBox(height: 16),
+        Text('R = AG, Y = CT, W = AT, S = GC, M = AC, K = GT, B = CGT, D = AGT, H = ACT, V = ACG, N = ACGT',
+            style: Theme.of(context).textTheme.caption!),
       ],
     );
   }
