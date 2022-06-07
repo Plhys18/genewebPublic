@@ -50,7 +50,7 @@ class _DrillDownViewState extends State<DrillDownView> {
       Expanded(
           child: (_results?.length ?? 0) > 0
               ? ListView.builder(itemBuilder: _itemBuilder, shrinkWrap: true, itemCount: _results?.length ?? 0)
-              : const Center(child: Text('Selected pattern cannot be drilled down further'))),
+              : const Center(child: Text('Selected pattern cannot be drilled down any further'))),
     ]);
   }
 

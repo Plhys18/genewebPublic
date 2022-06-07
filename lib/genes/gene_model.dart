@@ -2,9 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geneweb/analysis/analysis.dart';
+import 'package:geneweb/analysis/analysis_options.dart';
 import 'package:geneweb/analysis/distribution.dart';
 import 'package:geneweb/analysis/motif.dart';
-import 'package:geneweb/genes/filter_definition.dart';
 import 'package:geneweb/genes/gene_list.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
@@ -13,28 +13,42 @@ import 'package:universal_file/universal_file.dart';
 class GeneModel extends ChangeNotifier {
   String? filename;
   GeneList? sourceGenes;
-  FilterDefinition filter = FilterDefinition();
   Analysis? analysis;
   List<Distribution> distributions = [];
   bool isAnalysisRunning = false;
-  GeneList? filteredGenes;
+  AnalysisOptions analysisOptions = AnalysisOptions();
 
   GeneModel();
 
   static GeneModel of(BuildContext context) => Provider.of<GeneModel>(context, listen: false);
 
-  void setFilter(FilterDefinition filter) {
-    this.filter = filter;
-    filteredGenes = sourceGenes!.filter(filter);
+  void _reset() {
+    distributions = [];
+    analysis = null;
+    isAnalysisRunning = false;
+    final keys = sourceGenes?.genes.first.markers.keys;
+    if (keys != null && keys.isNotEmpty) {
+      analysisOptions = AnalysisOptions(alignMarker: keys.first, min: -1000, max: 1000, interval: 10);
+    } else {
+      analysisOptions = AnalysisOptions();
+    }
+  }
+
+  void resetAnalysis() {
+    analysis = null;
+    isAnalysisRunning = false;
     notifyListeners();
   }
 
-  void _reset() {
-    analysis = null;
-    distributions = [];
-    isAnalysisRunning = false;
-    filter = FilterDefinition();
-    filteredGenes = sourceGenes;
+  void setOptions(AnalysisOptions options) {
+    _reset();
+    analysisOptions = options;
+    notifyListeners();
+  }
+
+  void removeDistribution(Distribution distribution) {
+    distributions = distributions.where((d) => d != distribution).toList();
+    notifyListeners();
   }
 
   Future<void> loadFromString(String data, {String? filename}) async {
@@ -69,18 +83,22 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> analyze(Motif motif, {int min = 0, int max = 3000, int interval = 100, String? alignMarker}) async {
+  Future<void> analyze(
+    GeneList genes,
+    Motif motif,
+    String name,
+  ) async {
     analysis = null;
     isAnalysisRunning = true;
     notifyListeners();
     analysis = await compute(runAnalysis, {
-      'genes': filteredGenes,
+      'genes': genes,
       'motif': motif,
-      'filter': filter,
-      'min': min,
-      'max': max,
-      'interval': interval,
-      'alignMarker': alignMarker,
+      'name': name,
+      'min': analysisOptions.min,
+      'max': analysisOptions.max,
+      'interval': analysisOptions.interval,
+      'alignMarker': analysisOptions.alignMarker,
     });
     isAnalysisRunning = false;
     notifyListeners();
@@ -100,7 +118,7 @@ class GeneModel extends ChangeNotifier {
 Future<Analysis> runAnalysis(Map<String, dynamic> params) async {
   final list = params['genes'] as GeneList;
   final motif = params['motif'] as Motif;
-  final filter = params['filter'] as FilterDefinition;
+  final name = params['name'] as String;
   final min = params['min'] as int;
   final max = params['max'] as int;
   final interval = params['interval'] as int;
@@ -113,7 +131,7 @@ Future<Analysis> runAnalysis(Map<String, dynamic> params) async {
       interval: interval,
       alignMarker: alignMarker,
       motif: motif,
-      filter: filter);
+      name: name);
   analysis.run(motif);
   return analysis;
 }

@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/analysis.dart';
 import 'package:geneweb/analysis/distribution.dart';
 
-class AnalysisDistribution extends StatefulWidget {
+class AnalysisView extends StatefulWidget {
   final Analysis analysis;
 
-  const AnalysisDistribution({Key? key, required this.analysis}) : super(key: key);
+  const AnalysisView({Key? key, required this.analysis}) : super(key: key);
 
   @override
-  State<AnalysisDistribution> createState() => _AnalysisDistributionState();
+  State<AnalysisView> createState() => _AnalysisViewState();
 }
 
-class _AnalysisDistributionState extends State<AnalysisDistribution> {
+class _AnalysisViewState extends State<AnalysisView> {
   String? label;
 
   @override
@@ -22,13 +22,13 @@ class _AnalysisDistributionState extends State<AnalysisDistribution> {
         Expanded(
           child: LineChart(
             [
-              Series<DataPoint, int>(
+              Series<DistributionDataPoint, int>(
                 id: 'Distribution',
                 data: widget.analysis.distribution!.dataPoints!,
-                domainFn: (DataPoint point, i) => point.min,
-                measureFn: (DataPoint point, _) => point.value,
+                domainFn: (DistributionDataPoint point, i) => point.min,
+                measureFn: (DistributionDataPoint point, _) => point.value,
                 colorFn: (_, __) => MaterialPalette.blue.shadeDefault,
-                labelAccessorFn: (DataPoint point, _) => '<${point.min}; ${point.max})',
+                labelAccessorFn: (DistributionDataPoint point, _) => '<${point.min}; ${point.max})',
               ),
             ],
             primaryMeasureAxis:
@@ -38,8 +38,10 @@ class _AnalysisDistributionState extends State<AnalysisDistribution> {
                   selectionModelType: SelectionModelType.info,
                   showHorizontalFollowLine: LinePointHighlighterFollowLineType.nearest,
                   showVerticalFollowLine: LinePointHighlighterFollowLineType.nearest),
-              RangeAnnotation(
-                  [LineAnnotationSegment(0, RangeAnnotationAxisType.domain, startLabel: widget.analysis.alignMarker)]),
+              if (widget.analysis.alignMarker != null)
+                RangeAnnotation([
+                  LineAnnotationSegment(0, RangeAnnotationAxisType.domain, startLabel: widget.analysis.alignMarker)
+                ]),
             ],
             selectionModels: [
               SelectionModelConfig(

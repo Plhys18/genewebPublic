@@ -3,9 +3,9 @@ import 'package:geneweb/analysis/motif.dart';
 import 'package:geneweb/analysis/presets.dart';
 
 class AnalysisForm extends StatefulWidget {
-  final Function(Motif motif) onSubmit;
+  final Function(Motif motif) onChanged;
 
-  const AnalysisForm({Key? key, required this.onSubmit}) : super(key: key);
+  const AnalysisForm({Key? key, required this.onChanged}) : super(key: key);
 
   @override
   State<AnalysisForm> createState() => _AnalysisFormState();
@@ -37,35 +37,40 @@ class _AnalysisFormState extends State<AnalysisForm> {
     }
     return Form(
       key: _formKey,
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<Motif?>(
-                    items: [
-                      for (final motif in Presets.analyzedMotifs)
-                        DropdownMenuItem(value: motif, child: Text(motif.name)),
-                    ],
-                    onChanged: _handlePresetSelected,
-                    value: null,
-                    decoration: const InputDecoration(labelText: 'Presets')),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: nameController,
-                  validator: (value) => value != null && value.isNotEmpty ? null : 'Please enter the motif name',
-                  onSaved: (value) => _motifName = value,
-                  decoration: const InputDecoration(
-                    labelText: "Motif name",
-                  ),
-                ),
-                TextFormField(
+          DropdownButtonFormField<Motif?>(
+              items: [
+                for (final motif in Presets.analyzedMotifs) DropdownMenuItem(value: motif, child: Text(motif.name)),
+              ],
+              onChanged: _handlePresetSelected,
+              value: null,
+              decoration: const InputDecoration(labelText: 'Motif presets')),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: nameController,
+            validator: (value) => value != null && value.isNotEmpty ? null : 'Please enter the motif name',
+            onChanged: (value) {
+              setState(() => _motifName = value);
+              _handleChanged();
+            },
+            onSaved: (value) => _motifName = value,
+            decoration: const InputDecoration(
+              labelText: "Motif name",
+            ),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
                   controller: definitionController,
                   validator: _validateMotifDefinition,
-                  onChanged: (value) => setState(() => _motifDefinition = value),
+                  onChanged: (value) {
+                    setState(() => _motifDefinition = value);
+                    _handleChanged();
+                  },
                   onSaved: (value) => _motifDefinition = value,
                   textCapitalization: TextCapitalization.characters,
                   autocorrect: false,
@@ -74,50 +79,30 @@ class _AnalysisFormState extends State<AnalysisForm> {
                     labelText: "Motif definition. Separate multiple by new line",
                   ),
                 ),
-                const SizedBox(
-                  height: 16,
-                ),
-                ElevatedButton(onPressed: _handleSubmit, child: const Text('Analyze')),
-              ],
-            ),
-          ),
-          const VerticalDivider(),
-          if (motif != null)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Will search for:', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(
-                  height: 8.0,
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+              ),
+              const VerticalDivider(),
+              if (motif != null)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: motif.definitions.map((s) => Text(s)).toList(),
+                    const Text('Reverse definitions:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(
+                      height: 8.0,
                     ),
-                    const VerticalDivider(),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: motif.reverseDefinitions.map((s) => Text(s)).toList(),
-                    ),
+                    ...motif.reverseDefinitions.map((s) => Text(s)).toList(),
                   ],
                 )
-              ],
-            )
+            ],
+          ),
         ],
       ),
     );
   }
 
-  void _handleSubmit() {
+  void _handleChanged() {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Running analysis…')),
-      );
       _formKey.currentState!.save();
-      widget.onSubmit(Motif(name: _motifName!, definitions: _getDefinitions(_motifDefinition!)));
+      widget.onChanged(Motif(name: _motifName!, definitions: _getDefinitions(_motifDefinition!)));
     }
   }
 
@@ -146,5 +131,6 @@ class _AnalysisFormState extends State<AnalysisForm> {
       _motifName = motif.name;
       _motifDefinition = motif.definitions.join('\n');
     });
+    _handleChanged();
   }
 }

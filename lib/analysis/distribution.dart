@@ -8,6 +8,7 @@ class Distribution {
   final String name;
 
   Map<int, int>? _counts;
+  late int _totalCount;
 
   Distribution({
     required this.min,
@@ -17,11 +18,15 @@ class Distribution {
     required this.name,
   });
 
-  List<DataPoint>? get dataPoints {
+  List<DistributionDataPoint>? get dataPoints {
     if (_counts == null) return null;
     return [
       for (var i = 0; i < (max - min) ~/ interval; i++)
-        DataPoint(min: min + i * interval, max: min + (i + 1) * interval, value: _counts![i] ?? 0),
+        DistributionDataPoint(
+            min: min + i * interval,
+            max: min + (i + 1) * interval,
+            value: _counts![i] ?? 0,
+            percent: (_counts![i] ?? 0) / _totalCount),
     ];
   }
 
@@ -36,14 +41,16 @@ class Distribution {
       counts[intervalIndex] = (counts[intervalIndex] ?? 0) + 1;
     }
     _counts = counts;
+    _totalCount = analysis.result!.length;
   }
 }
 
-class DataPoint {
+class DistributionDataPoint {
   final int min;
   final int max;
   final int value;
-  DataPoint({required this.min, required this.max, required this.value});
+  final double percent;
+  DistributionDataPoint({required this.min, required this.max, required this.value, required this.percent});
 
   String get label {
     return '<$min; $max)';

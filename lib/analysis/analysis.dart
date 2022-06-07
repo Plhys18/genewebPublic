@@ -1,7 +1,6 @@
 import 'package:geneweb/analysis/analysis_result.dart';
 import 'package:geneweb/analysis/distribution.dart';
 import 'package:geneweb/analysis/motif.dart';
-import 'package:geneweb/genes/filter_definition.dart';
 import 'package:geneweb/genes/gene.dart';
 import 'package:geneweb/genes/gene_list.dart';
 
@@ -11,7 +10,7 @@ class Analysis {
   final int max;
   final int interval;
   final String? alignMarker;
-  final FilterDefinition filter;
+  final String name;
   final Motif motif;
 
   /// When `true`, analysis will filter overlapping matches
@@ -27,7 +26,7 @@ class Analysis {
       required this.max,
       required this.interval,
       required this.motif,
-      required this.filter,
+      required this.name,
       this.alignMarker});
 
   void run(Motif motif) {
@@ -36,8 +35,7 @@ class Analysis {
       results.addAll(_findMatches(gene, motif));
     }
     result = results;
-    distribution = Distribution(
-        min: min, max: max, interval: interval, alignMarker: alignMarker, name: '${filter.label} - ${motif.name}')
+    distribution = Distribution(min: min, max: max, interval: interval, alignMarker: alignMarker, name: name)
       ..run(this);
   }
 

@@ -1,18 +1,24 @@
 class FilterDefinition {
-  final String? transcriptionKey;
-  final FilterStrategy? strategy;
+  final String key;
+  final FilterStrategy strategy;
+  final FilterSelection selection;
+  final double? percentile;
+  final int? count;
 
   FilterDefinition({
-    this.transcriptionKey,
-    this.strategy,
+    required this.key,
+    required this.strategy,
+    required this.selection,
+    this.percentile,
+    this.count,
   });
 
-  String get label {
-    if (transcriptionKey == null || strategy == null) {
-      return 'All';
-    }
-    return '$transcriptionKey.${strategy!.name}';
+  @override
+  String toString() {
+    return '$key.${strategy.name}${selection == FilterSelection.fixed ? count! : '${(percentile! * 100).round()}th'}';
   }
 }
 
-enum FilterStrategy { top3200, bottom3200, top95th, bottom5th }
+enum FilterStrategy { top, bottom }
+
+enum FilterSelection { fixed, percentile }

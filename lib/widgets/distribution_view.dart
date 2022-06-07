@@ -1,11 +1,13 @@
-import 'package:charts_flutter/flutter.dart';
+import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/distribution.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:provider/provider.dart';
 
 class DistributionView extends StatefulWidget {
-  const DistributionView({Key? key}) : super(key: key);
+  final Map<String, Color> colors;
+  final bool usePercentages;
+  const DistributionView({Key? key, required this.colors, required this.usePercentages}) : super(key: key);
 
   @override
   State<DistributionView> createState() => _DistributionViewState();
@@ -20,29 +22,40 @@ class _DistributionViewState extends State<DistributionView> {
     return Column(
       children: [
         Expanded(
-          child: LineChart(
+          child: charts.LineChart(
             [
               for (final distribution in distributions)
-                Series<DataPoint, int>(
+                charts.Series<DistributionDataPoint, int>(
                   id: distribution.name,
                   data: distribution.dataPoints!,
-                  domainFn: (DataPoint point, i) => point.min,
-                  measureFn: (DataPoint point, _) => point.value,
-                  labelAccessorFn: (DataPoint point, _) => '<${point.min}; ${point.max})',
+                  domainFn: (DistributionDataPoint point, i) => point.min,
+                  measureFn: (DistributionDataPoint point, _) =>
+                      widget.usePercentages ? (point.percent * 100) : point.value,
+                  labelAccessorFn: (DistributionDataPoint point, _) => '<${point.min}; ${point.max})',
+                  colorFn: (DistributionDataPoint point, _) =>
+                      charts.ColorUtil.fromDartColor(widget.colors[distribution.name] ?? Colors.grey),
                 ),
             ],
-            primaryMeasureAxis:
-                const NumericAxisSpec(tickProviderSpec: BasicNumericTickProviderSpec(desiredTickCount: 10)),
+            primaryMeasureAxis: charts.NumericAxisSpec(
+              tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                desiredMinTickCount: 10,
+                zeroBound: false,
+                dataIsInWholeNumbers: !widget.usePercentages,
+              ),
+              tickFormatterSpec: charts.BasicNumericTickFormatterSpec(
+                  (value) => widget.usePercentages ? '$value%' : '${value?.floor()}'),
+            ),
             behaviors: [
-              LinePointHighlighter(
-                  selectionModelType: SelectionModelType.info,
-                  showHorizontalFollowLine: LinePointHighlighterFollowLineType.nearest,
-                  showVerticalFollowLine: LinePointHighlighterFollowLineType.nearest),
+              charts.LinePointHighlighter(
+                  selectionModelType: charts.SelectionModelType.info,
+                  showHorizontalFollowLine: charts.LinePointHighlighterFollowLineType.nearest,
+                  showVerticalFollowLine: charts.LinePointHighlighterFollowLineType.nearest),
               if (distributions.first.alignMarker != null)
-                RangeAnnotation([
-                  LineAnnotationSegment(0, RangeAnnotationAxisType.domain, startLabel: distributions.first.alignMarker)
+                charts.RangeAnnotation([
+                  charts.LineAnnotationSegment(0, charts.RangeAnnotationAxisType.domain,
+                      startLabel: distributions.first.alignMarker)
                 ]),
-              SeriesLegend(position: BehaviorPosition.end),
+//              charts.SeriesLegend(position: charts.BehaviorPosition.end),
             ],
           ),
         ),
@@ -55,7 +68,7 @@ class _DistributionViewState extends State<DistributionView> {
     );
   }
 
-  void _onSelectionChanged(SelectionModel<num> model) {
+  void _onSelectionChanged(charts.SelectionModel<num> model) {
     final key = model.selectedSeries[0].labelAccessorFn!.call(model.selectedDatum[0].index);
     final value = model.selectedSeries[0].measureFn(model.selectedDatum[0].index);
     setState(() => label = '$key: $value');

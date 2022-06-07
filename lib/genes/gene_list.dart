@@ -51,20 +51,19 @@ class GeneList extends Equatable {
   }
 
   GeneList filter(FilterDefinition filter) {
-    if (filter.transcriptionKey == null) return this;
-    genes.sort((a, b) =>
-        a.transcriptionRates[filter.transcriptionKey]!.compareTo(b.transcriptionRates[filter.transcriptionKey]!));
-    switch (filter.strategy) {
-      case null:
-        return this;
-      case FilterStrategy.top3200:
-        return GeneList.fromList(_top(3200));
-      case FilterStrategy.bottom3200:
-        return GeneList.fromList(_bottom(3200));
-      case FilterStrategy.top95th:
-        return GeneList.fromList(_topPercentile(0.95, filter.transcriptionKey!));
-      case FilterStrategy.bottom5th:
-        return GeneList.fromList(_bottomPercentile(0.05, filter.transcriptionKey!));
+    genes.sort((a, b) => a.transcriptionRates[filter.key]!.compareTo(b.transcriptionRates[filter.key]!));
+    if (filter.selection == FilterSelection.percentile) {
+      if (filter.strategy == FilterStrategy.top) {
+        return GeneList.fromList(_topPercentile(filter.percentile!, filter.key));
+      } else {
+        return GeneList.fromList(_bottomPercentile(filter.percentile!, filter.key));
+      }
+    } else {
+      if (filter.strategy == FilterStrategy.top) {
+        return GeneList.fromList(_top(filter.count!));
+      } else {
+        return GeneList.fromList(_bottom(filter.count!));
+      }
     }
   }
 
