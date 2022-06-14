@@ -78,7 +78,8 @@ class GeneList extends Equatable {
   }
 
   List<Gene> _topPercentile(double percentile, String transcriptionKey) {
-    final totalRate = transcriptionRates[transcriptionKey]!.sum;
+    final totalRate =
+        transcriptionRates[transcriptionKey]!.sum + 0.0001; // correction fo floating point operations error
     final list = genes.reversed.toList();
     var rate = 0.0;
     var i = 0;
@@ -88,11 +89,19 @@ class GeneList extends Equatable {
       rate += list[i].transcriptionRates[transcriptionKey]!;
       i++;
     }
+    /*
+    print('$rate <= $totalRate, $i th gene');
+    final sequence = list.getRange(i - 10.clamp(0, list.length), (i + 10).clamp(0, list.length));
+    for (final gene in sequence) {
+      print('${gene.geneId} ${gene.transcriptionRates[transcriptionKey]!}');
+    }
+    */
     return result.toList();
   }
 
   List<Gene> _bottomPercentile(double percentile, String transcriptionKey) {
-    final totalRate = transcriptionRates[transcriptionKey]!.sum;
+    final totalRate =
+        transcriptionRates[transcriptionKey]!.sum + 0.0001; // correction fo floating point operations error;
     final list = genes;
     var rate = 0.0;
     var i = 0;
