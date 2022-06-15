@@ -9,30 +9,64 @@ class DistributionsOutput {
   List<int>? toExcel() {
     assert(distributions.isNotEmpty);
     var excel = Excel.createExcel();
-    Sheet sheet = excel['distributions'];
     final headerCellStyle = CellStyle(backgroundColorHex: 'FFDDFFDD', bold: true);
-    sheet.appendRow([
+    final dataPoints = distributions.map((distribution) => distribution.dataPoints!).toList();
+    final first = dataPoints.first;
+
+    // Motif counts
+    Sheet motifSheet = excel['motifs'];
+    motifSheet.appendRow([
       'Interval',
       'Min',
       ...distributions.map((distribution) => distribution.name),
+      '',
+      ...distributions.map((distribution) => '${distribution.name} [%]'),
     ]);
-    final dataPoints = distributions.map((distribution) => distribution.dataPoints!).toList();
-    final first = dataPoints.first;
     for (var i = 0; i < first.length; i++) {
       final dataPoint = first[i];
-      sheet.appendRow([
+      motifSheet.appendRow([
         dataPoint.label,
         dataPoint.min,
-        ...dataPoints.map((dp) => dp[i].value),
+        ...dataPoints.map((dp) => dp[i].count),
+        '',
+        ...dataPoints.map((dp) => dp[i].percent),
       ]);
     }
-    for (int i = 0; i < sheet.maxCols; i++) {
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0)).cellStyle = headerCellStyle;
+    for (int i = 0; i < motifSheet.maxCols; i++) {
+      motifSheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0)).cellStyle = headerCellStyle;
     }
-    for (int i = 0; i < sheet.maxRows; i++) {
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: i)).cellStyle = headerCellStyle;
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: i)).cellStyle = headerCellStyle;
+    for (int i = 0; i < motifSheet.maxRows; i++) {
+      motifSheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: i)).cellStyle = headerCellStyle;
+      motifSheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: i)).cellStyle = headerCellStyle;
     }
+
+    // Gene counts
+    Sheet genesSheet = excel['genes'];
+    genesSheet.appendRow([
+      'Interval',
+      'Min',
+      ...distributions.map((distribution) => distribution.name),
+      '',
+      ...distributions.map((distribution) => '${distribution.name} [%]'),
+    ]);
+    for (var i = 0; i < first.length; i++) {
+      final dataPoint = first[i];
+      genesSheet.appendRow([
+        dataPoint.label,
+        dataPoint.min,
+        ...dataPoints.map((dp) => dp[i].genesCount),
+        '',
+        ...dataPoints.map((dp) => dp[i].genesPercent),
+      ]);
+    }
+    for (int i = 0; i < genesSheet.maxCols; i++) {
+      genesSheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0)).cellStyle = headerCellStyle;
+    }
+    for (int i = 0; i < genesSheet.maxRows; i++) {
+      genesSheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: i)).cellStyle = headerCellStyle;
+      genesSheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: i)).cellStyle = headerCellStyle;
+    }
+
     return excel.save(fileName: 'distributions.xlsx');
   }
 }

@@ -51,6 +51,11 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateDistributions(List<Distribution> distributions) {
+    this.distributions = distributions;
+    notifyListeners();
+  }
+
   Future<void> loadFromString(String data, {String? filename}) async {
     filename = filename;
     sourceGenes = GeneList.fromFasta(data);

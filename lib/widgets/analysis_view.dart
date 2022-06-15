@@ -26,7 +26,7 @@ class _AnalysisViewState extends State<AnalysisView> {
                 id: 'Distribution',
                 data: widget.analysis.distribution!.dataPoints!,
                 domainFn: (DistributionDataPoint point, i) => point.min,
-                measureFn: (DistributionDataPoint point, _) => point.value,
+                measureFn: (DistributionDataPoint point, _) => point.count,
                 colorFn: (_, __) => MaterialPalette.blue.shadeDefault,
                 labelAccessorFn: (DistributionDataPoint point, _) => '<${point.min}; ${point.max})',
               ),

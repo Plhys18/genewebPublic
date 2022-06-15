@@ -30,14 +30,16 @@ class _Results extends StatefulWidget {
 
 class _ResultsState extends State<_Results> with AutomaticKeepAliveClientMixin {
   final Map<String, Color> _colors = {};
+  final Map<String, int> _stroke = {};
   bool _usePercentages = false;
+  bool _groupByGenes = false;
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
     final distributions = context.select<GeneModel, List<Distribution>>((model) => model.distributions);
     if (distributions.isEmpty) {
-      return const Center(child: Text('There are no distributions'));
+      return const Center(child: Text('There are no results'));
     }
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,19 +49,38 @@ class _ResultsState extends State<_Results> with AutomaticKeepAliveClientMixin {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Align(
-                alignment: Alignment.center,
-                child: CupertinoSlidingSegmentedControl<bool>(
-                  children: const {
-                    false: Text('Counts'),
-                    true: Text('Percentages'),
-                  },
-                  onValueChanged: (value) => setState(() => _usePercentages = value!),
-                  groupValue: _usePercentages,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CupertinoSlidingSegmentedControl<bool>(
+                    children: const {
+                      false: Text('Motifs'),
+                      true: Text('Genes'),
+                    },
+                    onValueChanged: (value) => setState(() => _groupByGenes = value!),
+                    groupValue: _groupByGenes,
+                  ),
+                  const SizedBox(width: 16),
+                  CupertinoSlidingSegmentedControl<bool>(
+                    children: const {
+                      false: Text('Counts'),
+                      true: Text('Percentages'),
+                    },
+                    onValueChanged: (value) => setState(() => _usePercentages = value!),
+                    groupValue: _usePercentages,
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
-              SizedBox(height: 300, child: DistributionView(colors: _colors, usePercentages: _usePercentages)),
+              SizedBox(
+                  height: 300,
+                  child: DistributionView(
+                    colors: _colors,
+                    stroke: _stroke,
+                    usePercentages: _usePercentages,
+                    groupByGenes: _groupByGenes,
+                  )),
               const SizedBox(height: 16),
               Wrap(
                 spacing: 8.0,
@@ -76,24 +97,46 @@ class _ResultsState extends State<_Results> with AutomaticKeepAliveClientMixin {
   }
 
   Widget _buildListView(BuildContext context, List<Distribution> distributions) {
-    return ListView(
+    return ReorderableListView(
       shrinkWrap: true,
+      onReorder: _handleReorder,
       children: [
         for (final distribution in distributions)
           ListTile(
+            key: Key(distribution.name),
             dense: true,
-            leading: ColorIndicator(
-              color: _colors[distribution.name] ??= Colors.grey,
-              width: 16,
-              height: 16,
-              borderRadius: 4,
+            leading: IconButton(
+              constraints: const BoxConstraints(),
+              padding: EdgeInsets.zero,
+              onPressed: () => _handleColorChange(context, distribution),
+              icon: ColorIndicator(
+                color: _colors[distribution.name] ??= Colors.grey,
+                borderRadius: 4,
+              ),
             ),
-            onTap: () => _handleColorChange(context, distribution),
             title: Text(distribution.name),
-            trailing: IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: () => _handleDelete(context, distribution),
-              tooltip: 'Delete',
+            subtitle: Text(
+              '${distribution.totalGenesCount} genes (${distribution.totalGenesWithMotifCount} with motif), ${distribution.totalCount} motifs',
+            ),
+            trailing: Wrap(
+              children: [
+                IconButton(
+                  constraints: const BoxConstraints(),
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _handleStrokeChange(context, distribution),
+                  icon: Text(_stroke[distribution.name]?.toString() ?? '2'),
+                ),
+                IconButton(
+                  constraints: const BoxConstraints(),
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.clear),
+                  onPressed: () => _handleDelete(context, distribution),
+                  tooltip: 'Delete',
+                ),
+                const SizedBox(width: 16)
+              ],
             ),
           ),
       ],
@@ -110,10 +153,38 @@ class _ResultsState extends State<_Results> with AutomaticKeepAliveClientMixin {
     setState(() => _colors[distribution.name] = color);
   }
 
+  Future<void> _handleStrokeChange(BuildContext context, Distribution distribution) async {
+    final stroke = _stroke[distribution.name] ?? 2;
+    switch (stroke) {
+      case 1:
+        setState(() => _stroke[distribution.name] = 2);
+        break;
+      case 2:
+        setState(() => _stroke[distribution.name] = 4);
+        break;
+      case 4:
+        setState(() => _stroke[distribution.name] = 1);
+        break;
+      default:
+        setState(() => _stroke[distribution.name] = 2);
+        break;
+    }
+  }
+
   void _handleDelete(BuildContext context, Distribution distribution) {
     GeneModel.of(context).removeDistribution(distribution);
   }
 
   @override
   bool get wantKeepAlive => true;
+
+  void _handleReorder(int oldIndex, int newIndex) {
+    final distributions = List<Distribution>.from(GeneModel.of(context).distributions);
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    final item = distributions.removeAt(oldIndex);
+    distributions.insert(newIndex, item);
+    GeneModel.of(context).updateDistributions(distributions);
+  }
 }

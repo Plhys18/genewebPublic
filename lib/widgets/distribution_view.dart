@@ -6,8 +6,12 @@ import 'package:provider/provider.dart';
 
 class DistributionView extends StatefulWidget {
   final Map<String, Color> colors;
+  final Map<String, int> stroke;
   final bool usePercentages;
-  const DistributionView({Key? key, required this.colors, required this.usePercentages}) : super(key: key);
+  final bool groupByGenes;
+  const DistributionView(
+      {Key? key, required this.colors, required this.stroke, required this.usePercentages, required this.groupByGenes})
+      : super(key: key);
 
   @override
   State<DistributionView> createState() => _DistributionViewState();
@@ -16,11 +20,32 @@ class DistributionView extends StatefulWidget {
 class _DistributionViewState extends State<DistributionView> {
   String? label;
 
+  String get leftAxisTitle {
+    if (widget.groupByGenes) {
+      return widget.usePercentages ? 'Genes [%]' : 'Genes';
+    } else {
+      return widget.usePercentages ? 'Occurrences [%]' : 'Occurrences';
+    }
+  }
+
+  String get subtitle {
+    if (widget.groupByGenes) {
+      return widget.usePercentages
+          ? 'Count of genes with motif in given interval as a percentage of total genes selected for the analysis.'
+          : 'Count of genes with motif in given interval.';
+    } else {
+      return widget.usePercentages
+          ? 'Count of motif occurrences in given interval as a percentage of total count of motifs found in genes selected for the analysis.'
+          : 'Count of motif occurrences in given interval.';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final distributions = context.select<GeneModel, List<Distribution>>((model) => model.distributions);
     return Column(
       children: [
+        Text(subtitle),
         Expanded(
           child: charts.LineChart(
             [
@@ -29,9 +54,9 @@ class _DistributionViewState extends State<DistributionView> {
                   id: distribution.name,
                   data: distribution.dataPoints!,
                   domainFn: (DistributionDataPoint point, i) => point.min,
-                  measureFn: (DistributionDataPoint point, _) =>
-                      widget.usePercentages ? (point.percent * 100) : point.value,
+                  measureFn: _measureFn,
                   labelAccessorFn: (DistributionDataPoint point, _) => '<${point.min}; ${point.max})',
+                  strokeWidthPxFn: (_, __) => widget.stroke[distribution.name] ?? 2,
                   colorFn: (DistributionDataPoint point, _) =>
                       charts.ColorUtil.fromDartColor(widget.colors[distribution.name] ?? Colors.grey),
                 ),
@@ -46,6 +71,7 @@ class _DistributionViewState extends State<DistributionView> {
                   (value) => widget.usePercentages ? '$value%' : '${value?.floor()}'),
             ),
             behaviors: [
+              charts.ChartTitle(leftAxisTitle, behaviorPosition: charts.BehaviorPosition.start),
               charts.LinePointHighlighter(
                   selectionModelType: charts.SelectionModelType.info,
                   showHorizontalFollowLine: charts.LinePointHighlighterFollowLineType.nearest,
@@ -72,5 +98,13 @@ class _DistributionViewState extends State<DistributionView> {
     final key = model.selectedSeries[0].labelAccessorFn!.call(model.selectedDatum[0].index);
     final value = model.selectedSeries[0].measureFn(model.selectedDatum[0].index);
     setState(() => label = '$key: $value');
+  }
+
+  num? _measureFn(DistributionDataPoint point, int? index) {
+    if (widget.groupByGenes) {
+      return widget.usePercentages ? (point.genesPercent * 100) : point.genesCount;
+    } else {
+      return widget.usePercentages ? (point.percent * 100) : point.count;
+    }
   }
 }
