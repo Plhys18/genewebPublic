@@ -33,6 +33,25 @@ class _ResultsState extends State<_Results> with AutomaticKeepAliveClientMixin {
   final Map<String, int> _stroke = {};
   bool _usePercentages = false;
   bool _groupByGenes = false;
+  bool _customAxis = false;
+  double? _verticalAxisMin;
+  double? _verticalAxisMax;
+  double? _horizontalAxisMin;
+  double? _horizontalAxisMax;
+
+  late final _verticalAxisMinController = TextEditingController()..addListener(_axisListener);
+  late final _verticalAxisMaxController = TextEditingController()..addListener(_axisListener);
+  late final _horizontalAxisMinController = TextEditingController()..addListener(_axisListener);
+  late final _horizontalAxisMaxController = TextEditingController()..addListener(_axisListener);
+
+  @override
+  void dispose() {
+    _verticalAxisMinController.dispose();
+    _verticalAxisMaxController.dispose();
+    _horizontalAxisMinController.dispose();
+    _horizontalAxisMaxController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +72,7 @@ class _ResultsState extends State<_Results> with AutomaticKeepAliveClientMixin {
                 mainAxisSize: MainAxisSize.max,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  const Text('Show '),
                   CupertinoSlidingSegmentedControl<bool>(
                     children: const {
                       false: Text('Motifs'),
@@ -62,6 +82,7 @@ class _ResultsState extends State<_Results> with AutomaticKeepAliveClientMixin {
                     groupValue: _groupByGenes,
                   ),
                   const SizedBox(width: 16),
+                  const Text('as '),
                   CupertinoSlidingSegmentedControl<bool>(
                     children: const {
                       false: Text('Counts'),
@@ -70,7 +91,67 @@ class _ResultsState extends State<_Results> with AutomaticKeepAliveClientMixin {
                     onValueChanged: (value) => setState(() => _usePercentages = value!),
                     groupValue: _usePercentages,
                   ),
+                  const SizedBox(width: 16),
+                  const Text('Axis: '),
+                  CupertinoSlidingSegmentedControl<bool>(
+                    children: const {
+                      false: Text('Auto'),
+                      true: Text('Custom'),
+                    },
+                    onValueChanged: _setAxis,
+                    groupValue: _customAxis,
+                  ),
                 ],
+              ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                child: _customAxis
+                    ? Row(
+                        children: [
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: TextField(
+                                decoration: const InputDecoration(labelText: 'Vertical axis min'),
+                                controller: _verticalAxisMinController,
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: TextField(
+                                decoration: const InputDecoration(labelText: 'Vertical axis max'),
+                                controller: _verticalAxisMaxController,
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: TextField(
+                                decoration: const InputDecoration(labelText: 'Horizontal axis min'),
+                                controller: _horizontalAxisMinController,
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: TextField(
+                                decoration: const InputDecoration(labelText: 'Horizontal axis max'),
+                                controller: _horizontalAxisMaxController,
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : const SizedBox.shrink(),
               ),
               const SizedBox(height: 16),
               SizedBox(
@@ -80,6 +161,10 @@ class _ResultsState extends State<_Results> with AutomaticKeepAliveClientMixin {
                     stroke: _stroke,
                     usePercentages: _usePercentages,
                     groupByGenes: _groupByGenes,
+                    verticalAxisMin: _customAxis ? _verticalAxisMin : null,
+                    verticalAxisMax: _customAxis ? _verticalAxisMax : null,
+                    horizontalAxisMin: _customAxis ? _horizontalAxisMin : null,
+                    horizontalAxisMax: _customAxis ? _horizontalAxisMax : null,
                   )),
               const SizedBox(height: 16),
               Wrap(
@@ -87,7 +172,7 @@ class _ResultsState extends State<_Results> with AutomaticKeepAliveClientMixin {
                 children: [
                   ElevatedButton(onPressed: () => _handleExport(context), child: const Text('Save XLSX')),
                 ],
-              )
+              ),
             ],
           ),
         ),
@@ -186,5 +271,22 @@ class _ResultsState extends State<_Results> with AutomaticKeepAliveClientMixin {
     final item = distributions.removeAt(oldIndex);
     distributions.insert(newIndex, item);
     GeneModel.of(context).updateDistributions(distributions);
+  }
+
+  void _setAxis(bool? value) {
+    setState(() => _customAxis = value!);
+  }
+
+  void _axisListener() {
+    setState(() {
+      _verticalAxisMin =
+          _verticalAxisMinController.text.isEmpty ? null : double.tryParse(_verticalAxisMinController.text);
+      _verticalAxisMax =
+          _verticalAxisMaxController.text.isEmpty ? null : double.tryParse(_verticalAxisMaxController.text);
+      _horizontalAxisMin =
+          _horizontalAxisMinController.text.isEmpty ? null : double.tryParse(_horizontalAxisMinController.text);
+      _horizontalAxisMax =
+          _horizontalAxisMaxController.text.isEmpty ? null : double.tryParse(_horizontalAxisMaxController.text);
+    });
   }
 }

@@ -9,8 +9,20 @@ class DistributionView extends StatefulWidget {
   final Map<String, int> stroke;
   final bool usePercentages;
   final bool groupByGenes;
+  final double? verticalAxisMin;
+  final double? verticalAxisMax;
+  final double? horizontalAxisMin;
+  final double? horizontalAxisMax;
   const DistributionView(
-      {Key? key, required this.colors, required this.stroke, required this.usePercentages, required this.groupByGenes})
+      {Key? key,
+      required this.colors,
+      required this.stroke,
+      required this.usePercentages,
+      required this.groupByGenes,
+      required this.verticalAxisMin,
+      required this.verticalAxisMax,
+      required this.horizontalAxisMin,
+      required this.horizontalAxisMax})
       : super(key: key);
 
   @override
@@ -43,6 +55,11 @@ class _DistributionViewState extends State<DistributionView> {
   @override
   Widget build(BuildContext context) {
     final distributions = context.select<GeneModel, List<Distribution>>((model) => model.distributions);
+    const defaultVerticalMin = 0;
+    final defaultVerticalMax = _verticalMaximum(distributions);
+    final defaultHorizontalMin = distributions.first.min;
+    final defaultHorizontalMax = distributions.first.max;
+
     return Column(
       children: [
         Text(subtitle),
@@ -69,7 +86,12 @@ class _DistributionViewState extends State<DistributionView> {
               ),
               tickFormatterSpec: charts.BasicNumericTickFormatterSpec(
                   (value) => widget.usePercentages ? '$value%' : '${value?.floor()}'),
+              viewport: charts.NumericExtents(
+                  widget.verticalAxisMin ?? defaultVerticalMin, widget.verticalAxisMax ?? defaultVerticalMax ?? 0),
             ),
+            domainAxis: charts.NumericAxisSpec(
+                viewport: charts.NumericExtents(widget.horizontalAxisMin ?? defaultHorizontalMin,
+                    widget.horizontalAxisMax ?? defaultHorizontalMax)),
             behaviors: [
               charts.ChartTitle(leftAxisTitle, behaviorPosition: charts.BehaviorPosition.start),
               charts.LinePointHighlighter(
@@ -106,5 +128,18 @@ class _DistributionViewState extends State<DistributionView> {
     } else {
       return widget.usePercentages ? (point.percent * 100) : point.count;
     }
+  }
+
+  num? _verticalMaximum(List<Distribution> distributions) {
+    num? max;
+    for (final distribution in distributions) {
+      for (final point in distribution.dataPoints!) {
+        final value = _measureFn(point, null);
+        if (max == null || value! > max) {
+          max = value;
+        }
+      }
+    }
+    return max;
   }
 }
