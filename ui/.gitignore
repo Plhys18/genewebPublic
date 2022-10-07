@@ -51,3 +51,5 @@ app.*.map.json
 
 # Firebase
 .firebase/**
+
+samples/**
