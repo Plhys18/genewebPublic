@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 class Gene {
-  static final geneIdRegExp = RegExp(r"(?<gene>[A-Z0-9+\.]+)");
+  static final geneIdRegExp = RegExp(r"(?<gene>[A-Za-z0-9+_\.]+)");
   static final markersRegExp = RegExp(r";MARKERS (?<json>\{.*\})$");
   static final transcriptionRatesRegExp = RegExp(r";TRANSCRIPTION_RATES (?<json>\{.*\})$");
 
@@ -73,7 +73,7 @@ class Gene {
       final codon = sequence.substring(atg - 1, atg - 1 + 3);
       if (codon != 'ATG' && codon != 'CAT') {
         print('Invalid ATG codon at position $atg: $codon ($sequence)');
-        throw StateError('oh shit');
+        throw StateError('ATG not found'); //TODO
       }
     } else {
       print('No ATG marker');
