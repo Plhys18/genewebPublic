@@ -61,22 +61,19 @@ class Gene {
         }
         notes.add(line);
       } else {
-        data.add(line.trim());
+        data.add(line.trim().toUpperCase());
       }
     }
     if (header == null || geneId == null) {
-      throw Exception('Invalid record: ${lines.join('\n')}');
+      throw Exception('Unable to parse: ${lines.join('\n')}');
     }
     final sequence = data.join();
     final atg = markers?['atg'];
     if (atg != null) {
       final codon = sequence.substring(atg - 1, atg - 1 + 3);
       if (codon != 'ATG' && codon != 'CAT') {
-        print('Invalid ATG codon at position $atg: $codon ($sequence)');
-        throw StateError('ATG not found'); //TODO
+        throw StateError('$geneId: Expected `ATG`/`CAT` at ATG position of $atg, got `$codon` instead.');
       }
-    } else {
-      print('No ATG marker');
     }
     return Gene(
       geneId: geneId,

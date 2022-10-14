@@ -1,17 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:geneweb/analysis/analysis.dart';
 import 'package:geneweb/analysis/analysis_options.dart';
 import 'package:geneweb/analysis/distribution.dart';
 import 'package:geneweb/analysis/motif.dart';
 import 'package:geneweb/genes/gene_list.dart';
 import 'package:provider/provider.dart';
-import 'package:http/http.dart' as http;
 import 'package:universal_file/universal_file.dart';
 
 class GeneModel extends ChangeNotifier {
-  String? filename;
+  String? name;
   GeneList? sourceGenes;
   Analysis? analysis;
   List<Distribution> distributions = [];
@@ -56,34 +54,24 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadFromString(String data, {String? filename}) async {
-    filename = filename;
+  Future<void> loadFromString(String data, {String? name}) async {
+    this.name = name;
     sourceGenes = GeneList.fromFasta(data);
     _reset();
     notifyListeners();
   }
 
   Future<void> loadFromFile(String path, {String? filename}) async {
-    filename = filename;
+    name = filename;
     final data = await File(path).readAsString();
     sourceGenes = GeneList.fromFasta(data);
     _reset();
     notifyListeners();
   }
 
-  Future<void> loadFromAssets(String filename) async {
-    filename = filename;
-    final data = await rootBundle.loadString('assets/$filename');
-    sourceGenes = GeneList.fromFasta(data);
-    _reset();
-    notifyListeners();
-  }
-
-  Future<void> loadFromUrl(String url) async {
-    filename = url;
-    var uri = Uri.parse(url);
-    var response = await http.get(uri);
-    sourceGenes = GeneList.fromFasta(response.body);
+  void reset() {
+    name = null;
+    sourceGenes = null;
     _reset();
     notifyListeners();
   }

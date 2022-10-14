@@ -7,17 +7,20 @@ class Gff {
 
   Gff({required this.genes});
 
-  static Future<Gff> fromFile(FileSystemEntity entity) async {
+  static Future<Gff> fromFile(FileSystemEntity entity,
+      {String? Function(Map<String, String> attributes)? nameTransformer}) async {
     final file = File(entity.path);
     final lines = await file.readAsLines();
     final List<GffFeature> genes = [];
     for (final line in lines) {
       if (line.startsWith('#')) continue;
-      final feature = GffFeature.fromLine(line);
+      final feature = GffFeature.fromLine(line, nameTransformer: nameTransformer);
+      if (feature.type == 'chromosome') continue;
       if (feature.type == 'gene') continue;
       if (feature.type == 'mRNA') {
         genes.add(feature);
       } else {
+        assert(genes.isNotEmpty);
         final parent = genes.last;
         if (parent.start > feature.start || parent.end < feature.end) {
           // print('Feature $feature does not fall into its parent bounds.');
@@ -39,6 +42,7 @@ class GffFeature {
   final int? score;
   final Strand? strand;
   final int? phase;
+  final String? name;
   final Map<String, String>? attributes;
   List<GffFeature> features;
   List<ValidationError>? errors;
@@ -52,11 +56,14 @@ class GffFeature {
       this.score,
       this.strand,
       this.phase,
+      this.name,
       this.attributes,
       required this.features});
 
-  factory GffFeature.fromLine(String line) {
+  factory GffFeature.fromLine(String line,
+      {required String? Function(Map<String, String> attributes)? nameTransformer}) {
     final parts = line.split('\t');
+    final attributes = _parseAttributes(parts[8]);
     return GffFeature(
       seqid: parts[0],
       source: parts[1],
@@ -70,7 +77,8 @@ class GffFeature {
               ? Strand.reverse
               : null,
       phase: int.tryParse(parts[7]),
-      attributes: _parseAttributes(parts[8]),
+      attributes: attributes,
+      name: nameTransformer != null ? nameTransformer(attributes) : attributes['Name'],
       features: [],
     );
   }
@@ -101,8 +109,6 @@ class GffFeature {
   GffFeature? threePrimeUtr() {
     return features.firstWhereOrNull((element) => element.type == 'three_prime_UTR');
   }
-
-  String? get name => attributes?['Name'];
 }
 
 enum Strand { forward, reverse }

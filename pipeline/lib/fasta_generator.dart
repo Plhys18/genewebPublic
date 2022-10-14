@@ -44,7 +44,7 @@ class FastaGenerator {
       };
       final start = gene.startCodon()!.start - 1;
       final end = gene.startCodon()!.end;
-      final wholeSequence = fasta.sequences[gene.seqid]!;
+      final wholeSequence = (await fasta.sequence(gene.seqid))!.sequence; // shall not pass validation
       final before = wholeSequence.substring(max(0, start - deltaBases), start);
       final codon = wholeSequence.substring(start, end);
       final after = wholeSequence.substring(end + 1, min(wholeSequence.length, end + deltaBases + 1));

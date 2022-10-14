@@ -11,11 +11,12 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final distributionsCount = context.select<GeneModel, int>((model) => model.distributions.length);
+    final name = context.select<GeneModel, String?>((model) => model.name);
     return DefaultTabController(
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Gene web'),
+          title: Text(name ?? 'Gene web'),
           bottom: TabBar(
             tabs: [
               const Tab(text: 'Source data'),

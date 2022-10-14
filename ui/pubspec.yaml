@@ -19,6 +19,7 @@ dependencies:
   excel: ^2.0.0-null-safety-3
   universal_file: ^1.0.0
   flex_color_picker: ^2.5.0
+  archive: ^3.3.1
 
 dev_dependencies:
   flutter_test:
@@ -28,4 +29,5 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-#  assets:
+  assets:
+    - assets/fasta/

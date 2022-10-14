@@ -1,12 +1,13 @@
 #!/bin/sh
-
+ulimit -n 10240
 rm -rf output
 mkdir output
-echo "Running Ambo..."
-dart run bin/pipeline.dart Ambo > output/ambo_info.txt
-echo "Running Mp..."
-dart run bin/pipeline.dart Mp > output/mp_info.txt
-echo "Running Physco..."
-dart run bin/pipeline.dart Physco > output/physco_info.txt
-echo "Running Sola..."
-dart run bin/pipeline.dart Sola > output/sola_info.txt
+for FILE in source_data/* ; do
+    if [ -d "$FILE" ]; then
+        DIRECTORY=$(basename ${FILE})
+        echo "Running $DIRECTORY"
+        dart run bin/pipeline.dart $DIRECTORY > output/${DIRECTORY}.info.txt
+        zip output/${DIRECTORY}.fasta.zip output/${DIRECTORY}.fasta
+    fi
+done
+

@@ -5,11 +5,35 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "pipeline",
+            "name": "pipeline Ambo",
             "cwd": "pipeline",
             "request": "launch",
             "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
-            "args": ["Mp"],
+            "args": ["Ambo"],
+            "type": "dart"
+        },
+        {
+            "name": "pipeline Sola",
+            "cwd": "pipeline",
+            "request": "launch",
+            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
+            "args": ["Sola"],
+            "type": "dart"
+        },
+        {
+            "name": "pipeline Zea",
+            "cwd": "pipeline",
+            "request": "launch",
+            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
+            "args": ["Zea"],
+            "type": "dart"
+        },
+        {
+            "name": "pipeline Ginkgo",
+            "cwd": "pipeline",
+            "request": "launch",
+            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
+            "args": ["Ginkgo"],
             "type": "dart"
         },
         {

@@ -6,15 +6,18 @@ import 'package:geneweb/statistics/series.dart';
 class GeneList extends Equatable {
   final List<Gene> genes;
   final Map<String, Series> transcriptionRates;
+  final List<dynamic> errors;
 
   const GeneList._(
     this.genes,
     this.transcriptionRates,
+    this.errors,
   );
 
   factory GeneList.fromFasta(String data) {
     final chunks = data.split('>');
     final genes = <Gene>[];
+    final errors = <dynamic>[];
     for (final chunk in chunks) {
       if (chunk.isEmpty) {
         continue;
@@ -24,10 +27,10 @@ class GeneList extends Equatable {
         final gene = Gene.fromFasta(lines);
         genes.add(gene);
       } catch (error) {
-        rethrow;
+        errors.add(error);
       }
     }
-    return GeneList._(genes, _transcriptionRates(genes));
+    return GeneList._(genes, _transcriptionRates(genes), errors);
   }
 
   static Map<String, Series> _transcriptionRates(List<Gene> genes) {
@@ -47,7 +50,7 @@ class GeneList extends Equatable {
   }
 
   factory GeneList.fromList(List<Gene> source) {
-    return GeneList._(source, _transcriptionRates(source));
+    return GeneList._(source, _transcriptionRates(source), const []);
   }
 
   GeneList filter(FilterDefinition filter) {

@@ -9,7 +9,7 @@ class FastaValidator {
 
   FastaValidator(this.gff, this.fasta, this.tpm);
 
-  void validate() {
+  Future<void> validate() async {
     for (final gene in gff.genes) {
       final startCodon = gene.startCodon();
       List<ValidationError> errors = [];
@@ -17,18 +17,17 @@ class FastaValidator {
         errors.add(ValidationError.noStartCodon('Start codon is missing'));
       }
       // check that there is a corresponding sequence
-      final sequence = fasta.sequences[gene.seqid];
+      final sequence = (await fasta.sequence(gene.seqid));
       if (sequence == null) {
-        errors.add(ValidationError.noSequenceFound(
-            'Sequence `${gene.seqid}` not found in fasta file. Got (${fasta.sequences.keys.join(', ')}).'));
+        errors.add(ValidationError.noSequenceFound('Sequence `${gene.seqid}` not found in fasta file.'));
       }
       if (startCodon != null && sequence != null) {
         // check that we get either ATG (forward) or CAT (reverse)
-        if (startCodon.start - 1 < 0 || startCodon.end > sequence.length) {
+        if (startCodon.start - 1 < 0 || startCodon.end > sequence.sequence.length) {
           errors.add(ValidationError.invalidStartCodon(
-              'Start codon is out of bounds. Start: ${startCodon.start}, end: ${startCodon.end}, sequence length: ${sequence.length}'));
+              'Start codon is out of bounds. Start: ${startCodon.start}, end: ${startCodon.end}, sequence ${sequence.seqId} length: ${sequence.sequence.length}'));
         } else {
-          final startCodonSequence = sequence.substring(startCodon.start - 1, startCodon.end);
+          final startCodonSequence = sequence.sequence.substring(startCodon.start - 1, startCodon.end);
           if (gene.strand == Strand.forward && startCodonSequence != 'ATG') {
             errors.add(ValidationError.invalidStartCodon('Expected start codon `ATG`, got `$startCodonSequence`'));
           } else if (gene.strand == Strand.reverse && startCodonSequence != 'CAT') {

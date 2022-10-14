@@ -5,7 +5,7 @@ class Tpm {
 
   Tpm({required this.genes});
 
-  static Future<Tpm> fromFile(FileSystemEntity entity) async {
+  static Future<Tpm> fromFile(FileSystemEntity entity, {String Function(List<String> line)? sequenceIdentifier}) async {
     final file = File(entity.path);
     final lines = await file.readAsLines();
     final Map<String, List<TpmFeature>> sequences = {};
@@ -16,7 +16,7 @@ class Tpm {
     }
 
     for (final line in lines.skip(1)) {
-      final feature = TpmFeature.fromLine(line);
+      final feature = TpmFeature.fromLine(line, sequenceIdentifier: sequenceIdentifier);
       if (sequences.containsKey(feature.sequence)) {
         sequences[feature.sequence]!.add(feature);
       } else {
@@ -44,10 +44,11 @@ class TpmFeature {
     required this.max,
   });
 
-  factory TpmFeature.fromLine(String line) {
+  factory TpmFeature.fromLine(String line, {required String Function(List<String> line)? sequenceIdentifier}) {
     final parts = line.split('\t');
+    final sequence = sequenceIdentifier != null ? sequenceIdentifier(parts) : parts[0];
     return TpmFeature(
-      sequence: parts[0],
+      sequence: sequence,
       aliases: parts[1],
       description: parts[2],
       avg: double.parse(parts[3]),
