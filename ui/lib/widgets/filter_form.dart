@@ -6,7 +6,7 @@ import 'package:geneweb/output/genes_output.dart';
 import 'package:provider/provider.dart';
 
 class FilterForm extends StatefulWidget {
-  final Function(FilterDefinition filter) onChanged;
+  final Function(FilterDefinition? filter) onChanged;
 
   const FilterForm({Key? key, required this.onChanged}) : super(key: key);
 
@@ -182,6 +182,8 @@ class _FilterFormState extends State<FilterForm> {
           percentile: _percentile,
           count: _count,
         ));
+      } else {
+        widget.onChanged(null);
       }
     }
   }

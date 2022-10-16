@@ -59,7 +59,7 @@ class _HomeAnalysisTabState extends State<HomeAnalysisTab> with AutomaticKeepAli
     );
   }
 
-  void _handleFilterChanged(FilterDefinition filter) {
+  void _handleFilterChanged(FilterDefinition? filter) {
     setState(() => _filter = filter);
     GeneModel.of(context).resetAnalysis();
   }
@@ -85,7 +85,7 @@ class _HomeAnalysisTabState extends State<HomeAnalysisTab> with AutomaticKeepAli
 }
 
 class _Filters extends StatelessWidget {
-  final Function(FilterDefinition filter) onFilterChanged;
+  final Function(FilterDefinition? filter) onFilterChanged;
   final Function(Motif motif) onMotifChanged;
   const _Filters({Key? key, required this.onFilterChanged, required this.onMotifChanged}) : super(key: key);
 
@@ -105,8 +105,7 @@ class _Filters extends StatelessWidget {
 }
 
 class _Analysis extends StatelessWidget {
-  final Function()? onAdd;
-  const _Analysis({Key? key, this.onAdd}) : super(key: key);
+  const _Analysis({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -159,6 +158,5 @@ class _Analysis extends StatelessWidget {
   void _handleAdd(BuildContext context) {
     GeneModel.of(context).analysisToDistribution();
     GeneModel.of(context).clearAnalysis();
-    onAdd?.call();
   }
 }
