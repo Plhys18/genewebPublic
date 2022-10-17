@@ -117,6 +117,7 @@ class _Analysis extends StatelessWidget {
     if (analysis == null) {
       return const Text('Analysis not available');
     }
+    final canAdd = _canAdd(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -137,10 +138,12 @@ class _Analysis extends StatelessWidget {
                   Wrap(
                     spacing: 8.0,
                     children: [
-                      ElevatedButton(onPressed: () => _handleAdd(context), child: const Text('Add to results')),
+                      ElevatedButton(
+                          onPressed: canAdd ? () => _handleAdd(context) : null, child: const Text('Add to results')),
                       ElevatedButton(onPressed: () => _handleClear(context), child: const Text('Clear')),
                     ],
                   ),
+                  if (!canAdd) const Text('This analysis is already among results'),
                 ],
               ),
             ),
@@ -149,6 +152,12 @@ class _Analysis extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  bool _canAdd(BuildContext context) {
+    final model = GeneModel.of(context);
+    final distribution = model.analysis!.distribution!;
+    return (GeneModel.of(context).distributions.where((d) => d.name == distribution.name).isEmpty);
   }
 
   void _handleClear(BuildContext context) {
