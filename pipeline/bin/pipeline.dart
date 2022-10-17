@@ -104,7 +104,8 @@ void main(List<String> arguments) async {
   await for (final gene in generator.toFasta(1000)) {
     fastaSink.writeln(gene.join("\n"));
   }
-  fastaSink.close();
+  await fastaSink.flush();
+  await fastaSink.close();
   print('Wrote fasta to `${fastaOutputFile.path}`');
   await fasta.cleanup();
   print('Cleaned up temporary files');
