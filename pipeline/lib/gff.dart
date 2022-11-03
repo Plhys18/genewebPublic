@@ -98,12 +98,22 @@ class GffFeature {
     return '$name $seqid $type $start $end ${strand?.name} ${attributes?.entries.map((e) => '${e.key}=${e.value}').join(';')}';
   }
 
+  List<GffFeature> startCodons() {
+    return features.where((element) => element.type == 'start_codon').toList();
+  }
+
   GffFeature? startCodon() {
     return features.firstWhereOrNull((element) => element.type == 'start_codon');
   }
 
+  List<GffFeature> fivePrimeUtrs() {
+    return features.where((element) => element.type == 'five_prime_UTR').toList();
+  }
+
   GffFeature? fivePrimeUtr() {
-    return features.firstWhereOrNull((element) => element.type == 'five_prime_UTR');
+    final candidates = fivePrimeUtrs();
+    if (candidates.isEmpty) return null;
+    return strand == Strand.forward ? candidates.first : candidates.last;
   }
 
   GffFeature? threePrimeUtr() {

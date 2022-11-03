@@ -29,8 +29,9 @@ class FastaGenerator {
   final Gff gff;
   final Map<String, Tpm> tpm;
   final Fasta fasta;
+  final bool useTss;
 
-  FastaGenerator(this.gff, this.fasta, this.tpm);
+  FastaGenerator(this.gff, this.fasta, this.tpm, {this.useTss = false});
 
   Stream<List<String>> toFasta(int deltaBases) async* {
     for (final gene in gff.genes) {
@@ -44,6 +45,11 @@ class FastaGenerator {
       };
       final start = gene.startCodon()!.start - 1;
       final end = gene.startCodon()!.end;
+      final tssDelta = !useTss
+          ? null
+          : gene.strand == Strand.forward
+              ? start - gene.fivePrimeUtr()!.start
+              : gene.fivePrimeUtr()!.end - end;
       final wholeSequence = (await fasta.sequence(gene.seqid))!.sequence; // shall not pass validation
       final before = wholeSequence.substring(max(0, start - deltaBases), start);
       final codon = wholeSequence.substring(start, end);
@@ -52,6 +58,8 @@ class FastaGenerator {
           ? '$before$codon$after'
           : '${_reverse(after)}${_reverse(codon)}${_reverse(before)}';
       final atgPosition = gene.strand == Strand.forward ? before.length + 1 : after.length + 1;
+      final tssPosition = useTss ? atgPosition - tssDelta! : null;
+      assert(!useTss || tssPosition != null, 'TSS not found for gene ${gene.name}');
       final validationCodon = sequence.substring(atgPosition - 1, atgPosition - 1 + 3);
       assert(validationCodon == 'ATG', 'Unexpected codon: $codon');
       final splitSequences = StringSplitter.chunk(sequence, 80);
@@ -61,7 +69,7 @@ class FastaGenerator {
         ';SOURCE $gene',
         ';DESCRIPTION ${geneTpm.values.first.description}',
         ';TRANSCRIPTION_RATES ${jsonEncode(geneTpmJson)}',
-        ';MARKERS {"atg":$atgPosition}',
+        ';MARKERS {"atg":$atgPosition${useTss ? ',"tss":$tssPosition' : ''}}',
         ...splitSequences
       ];
       yield result;

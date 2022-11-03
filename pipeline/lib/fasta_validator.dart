@@ -6,21 +6,28 @@ class FastaValidator {
   final Gff gff;
   final Map<String, Tpm> tpm;
   final Fasta fasta;
+  final bool useTss;
 
-  FastaValidator(this.gff, this.fasta, this.tpm);
+  FastaValidator(this.gff, this.fasta, this.tpm, {this.useTss = false});
 
   Future<void> validate() async {
     for (final gene in gff.genes) {
-      final startCodon = gene.startCodon();
       List<ValidationError> errors = [];
-      if (startCodon == null) {
-        errors.add(ValidationError.noStartCodon('Start codon is missing'));
-      }
+
       // check that there is a corresponding sequence
       final sequence = (await fasta.sequence(gene.seqid));
       if (sequence == null) {
         errors.add(ValidationError.noSequenceFound('Sequence `${gene.seqid}` not found in fasta file.'));
       }
+
+      // Start codon validation
+      final startCodons = gene.startCodons();
+      if (startCodons.isEmpty) {
+        errors.add(ValidationError.noStartCodonFound('Start codon is missing'));
+      } else if (startCodons.length > 1) {
+        errors.add(ValidationError.multipleStartCodonsFound('Multiple start codons found (${startCodons.length}).'));
+      }
+      final startCodon = startCodons.isEmpty ? null : startCodons.first;
       if (startCodon != null && sequence != null) {
         // check that we get either ATG (forward) or CAT (reverse)
         if (startCodon.start - 1 < 0 || startCodon.end > sequence.sequence.length) {
@@ -37,6 +44,25 @@ class FastaValidator {
           }
         }
       }
+
+      // Five-prime-UTR
+      final fivePrimeUtr = gene.fivePrimeUtr();
+      if (useTss && fivePrimeUtr == null) {
+        errors.add(ValidationError.noFivePrimeUtrFound('Five prime UTR is missing'));
+      }
+      if (fivePrimeUtr != null && sequence != null) {
+        // check that we get either ATG (forward) or CAT (reverse)
+        if (fivePrimeUtr.start - 1 < 0 || fivePrimeUtr.end > sequence.sequence.length) {
+          errors.add(ValidationError.invalidFivePrimeUtr(
+              'Five prime UTR is out of bounds. Start: ${fivePrimeUtr.start}, end: ${fivePrimeUtr.end}, sequence ${sequence.seqId} length: ${sequence.sequence.length}'));
+        } else {
+          final fivePrimeUtrLength = fivePrimeUtr.end - fivePrimeUtr.start + 1;
+          if (fivePrimeUtrLength < 1) {
+            errors.add(ValidationError.invalidFivePrimeUtr('Suspicious five prime UTR length: $fivePrimeUtrLength'));
+          }
+        }
+      }
+
       // check that we get data in TPM
       final id = gene.name;
       if (id == null) {
@@ -66,8 +92,20 @@ class ValidationError {
     return ValidationError(ValidationErrorType.noSequenceFound, message);
   }
 
-  factory ValidationError.noStartCodon(String? message) {
+  factory ValidationError.noStartCodonFound(String? message) {
     return ValidationError(ValidationErrorType.noStartCodonFound, message);
+  }
+
+  factory ValidationError.multipleStartCodonsFound(String? message) {
+    return ValidationError(ValidationErrorType.multipleStartCodonsFound, message);
+  }
+
+  factory ValidationError.noFivePrimeUtrFound(String? message) {
+    return ValidationError(ValidationErrorType.noFivePrimeUtrFound, message);
+  }
+
+  factory ValidationError.invalidFivePrimeUtr(String? message) {
+    return ValidationError(ValidationErrorType.invalidFivePrimeUtr, message);
   }
 
   factory ValidationError.noTpmDataFound(String? message) {
@@ -94,11 +132,12 @@ class ValidationError {
 enum ValidationErrorType {
   noSequenceFound,
   noIdFound,
+  invalidStrand,
   noStartCodonFound,
+  multipleStartCodonsFound,
+  invalidStartCodon,
   noFivePrimeUtrFound,
-  noThreePrimeUtrFound,
+  invalidFivePrimeUtr,
   noTpmDataFound,
   multipleTpmDataFound,
-  invalidStartCodon,
-  invalidStrand,
 }

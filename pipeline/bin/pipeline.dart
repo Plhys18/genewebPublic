@@ -8,11 +8,14 @@ import 'package:pipeline/gff.dart';
 import 'package:pipeline/tpm.dart';
 
 void main(List<String> arguments) async {
-  if (arguments.length != 1) throw ArgumentError('Expected exactly one argument - folder with input data');
+  if (arguments.isEmpty || arguments.length > 2) {
+    throw ArgumentError('Invalid number of arguments.\n\nUsage: dart pipeline.dart <directory> [--with-tss]');
+  }
   final organism = arguments[0];
+  final useTss = arguments.contains('--with-tss');
 
   // Find files
-  print('Searching input data for `$organism`');
+  print('Searching input data for `$organism`. TSS: $useTss');
   final configuration = await BatchConfiguration.fromPath('source_data/$organism');
   print(' - fasta file: `${configuration.fastaFile.path}`');
   print(' - gff file: `${configuration.gffFile.path}`');
@@ -75,7 +78,7 @@ void main(List<String> arguments) async {
   }
 
   // Validate data
-  final validator = FastaValidator(gff, fasta, tpm);
+  final validator = FastaValidator(gff, fasta, tpm, useTss: useTss);
   await validator.validate();
 
   // Print validation results
@@ -88,7 +91,7 @@ void main(List<String> arguments) async {
   }
 
   // Save validation results
-  final validationOutputFile = File('$outputPath/$organism.errors.csv');
+  final validationOutputFile = File('$outputPath/$organism${useTss ? '-with-tss' : ''}.errors.csv');
   final errors = [
     ['gene_id', 'errors'],
     for (final gene in gff.genes)
@@ -98,9 +101,9 @@ void main(List<String> arguments) async {
   print('Wrote errors to `${validationOutputFile.path}`');
 
   // Save resulting fasta file
-  final fastaOutputFile = File('$outputPath/$organism.fasta');
+  final fastaOutputFile = File('$outputPath/$organism${useTss ? '-with-tss' : ''}.fasta');
   final fastaSink = fastaOutputFile.openWrite(mode: FileMode.writeOnly);
-  final generator = FastaGenerator(gff, fasta, tpm);
+  final generator = FastaGenerator(gff, fasta, tpm, useTss: useTss);
   await for (final gene in generator.toFasta(1000)) {
     fastaSink.writeln(gene.join("\n"));
   }
