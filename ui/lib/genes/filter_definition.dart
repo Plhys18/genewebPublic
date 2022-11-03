@@ -1,11 +1,11 @@
-class FilterDefinition {
+class StageSelection {
   final String key;
   final FilterStrategy strategy;
   final FilterSelection selection;
   final double? percentile;
   final int? count;
 
-  FilterDefinition({
+  StageSelection({
     required this.key,
     required this.strategy,
     required this.selection,

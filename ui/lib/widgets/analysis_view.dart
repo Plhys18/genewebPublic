@@ -1,4 +1,4 @@
-import 'package:charts_flutter/flutter.dart';
+import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/analysis.dart';
 import 'package:geneweb/analysis/distribution.dart';
@@ -20,34 +20,36 @@ class _AnalysisViewState extends State<AnalysisView> {
     return Column(
       children: [
         Expanded(
-          child: LineChart(
+          child: charts.LineChart(
             [
-              Series<DistributionDataPoint, int>(
+              charts.Series<DistributionDataPoint, int>(
                 id: 'Distribution',
                 data: widget.analysis.distribution!.dataPoints!,
                 domainFn: (DistributionDataPoint point, i) => point.min,
                 measureFn: (DistributionDataPoint point, _) => point.count,
-                colorFn: (_, __) => MaterialPalette.blue.shadeDefault,
+                seriesColor: charts.ColorUtil.fromDartColor(widget.analysis.color),
+//                colorFn: (_, __) => MaterialPalette.blue.shadeDefault,
                 labelAccessorFn: (DistributionDataPoint point, _) => '<${point.min}; ${point.max})',
               ),
             ],
-            primaryMeasureAxis:
-                const NumericAxisSpec(tickProviderSpec: BasicNumericTickProviderSpec(desiredTickCount: 10)),
+            primaryMeasureAxis: const charts.NumericAxisSpec(
+                tickProviderSpec: charts.BasicNumericTickProviderSpec(desiredTickCount: 10)),
             behaviors: [
-              LinePointHighlighter(
-                  selectionModelType: SelectionModelType.info,
-                  showHorizontalFollowLine: LinePointHighlighterFollowLineType.nearest,
-                  showVerticalFollowLine: LinePointHighlighterFollowLineType.nearest),
+              charts.LinePointHighlighter(
+                  selectionModelType: charts.SelectionModelType.info,
+                  showHorizontalFollowLine: charts.LinePointHighlighterFollowLineType.nearest,
+                  showVerticalFollowLine: charts.LinePointHighlighterFollowLineType.nearest),
               if (widget.analysis.alignMarker != null)
-                RangeAnnotation([
-                  LineAnnotationSegment(0, RangeAnnotationAxisType.domain, startLabel: widget.analysis.alignMarker)
+                charts.RangeAnnotation([
+                  charts.LineAnnotationSegment(0, charts.RangeAnnotationAxisType.domain,
+                      startLabel: widget.analysis.alignMarker?.toUpperCase())
                 ]),
             ],
-            selectionModels: [
-              SelectionModelConfig(
-                changedListener: _onSelectionChanged,
-              )
-            ],
+            // selectionModels: [
+            //   SelectionModelConfig(
+            //     changedListener: _onSelectionChanged,
+            //   )
+            // ],
           ),
         ),
         if (label != null)
@@ -59,7 +61,7 @@ class _AnalysisViewState extends State<AnalysisView> {
     );
   }
 
-  void _onSelectionChanged(SelectionModel<num> model) {
+  void _onSelectionChanged(charts.SelectionModel<num> model) {
     final key = model.selectedSeries[0].labelAccessorFn!.call(model.selectedDatum[0].index);
     final value = model.selectedSeries[0].measureFn(model.selectedDatum[0].index);
     setState(() => label = '$key: $value');

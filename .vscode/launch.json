@@ -13,11 +13,11 @@
             "type": "dart"
         },
         {
-            "name": "pipeline Sola",
+            "name": "pipeline Sola TSS",
             "cwd": "pipeline",
             "request": "launch",
             "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
-            "args": ["Sola"],
+            "args": ["Sola", "--with-tss"],
             "type": "dart"
         },
         {

@@ -53,14 +53,40 @@ class _AnalysisOptionsFormState extends State<AnalysisOptionsForm> {
     return Form(
       key: _formKey,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          if (!widget.enabled) ...[
+            Text('To edit analysis options, please first remove all existing results from the Results tab.',
+                style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            const SizedBox(height: 16),
+          ],
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Expanded(
+              SizedBox(
+                width: 300,
+                child: DropdownButtonFormField<String?>(
+                    items: [
+                      const DropdownMenuItem(value: null, child: Text('Sequence start')),
+                      for (final marker in markers) DropdownMenuItem(value: marker, child: Text(marker.toUpperCase())),
+                    ],
+                    onChanged: widget.enabled
+                        ? (value) {
+                            setState(() => _alignMarker = value);
+                            _handleChanged();
+                          }
+                        : null,
+                    value: _alignMarker,
+                    decoration: const InputDecoration(labelText: 'Sequence alignment')),
+              ),
+              SizedBox(
+                width: 200,
                 child: TextFormField(
                   enabled: widget.enabled,
                   controller: _minController,
-                  decoration: const InputDecoration(labelText: 'Distribution min'),
+                  decoration: const InputDecoration(labelText: 'Min (bp)'),
                   keyboardType: TextInputType.number,
                   onChanged: (value) {
                     setState(() => _min = (int.tryParse(_minController.text) ?? 0));
@@ -73,12 +99,12 @@ class _AnalysisOptionsFormState extends State<AnalysisOptionsForm> {
                   },
                 ),
               ),
-              const VerticalDivider(),
-              Expanded(
+              SizedBox(
+                width: 200,
                 child: TextFormField(
                   enabled: widget.enabled,
                   controller: _maxController,
-                  decoration: const InputDecoration(labelText: 'Distribution max'),
+                  decoration: const InputDecoration(labelText: 'Max (bp)'),
                   keyboardType: TextInputType.number,
                   onChanged: (value) {
                     setState(() => _max = (int.tryParse(_maxController.text) ?? 0));
@@ -91,12 +117,12 @@ class _AnalysisOptionsFormState extends State<AnalysisOptionsForm> {
                   },
                 ),
               ),
-              const VerticalDivider(),
-              Expanded(
+              SizedBox(
+                width: 200,
                 child: TextFormField(
                   enabled: widget.enabled,
                   controller: _intervalController,
-                  decoration: const InputDecoration(labelText: 'Step'),
+                  decoration: const InputDecoration(labelText: 'Chunk size (bp)'),
                   keyboardType: TextInputType.number,
                   onChanged: (value) {
                     setState(() => _interval = (int.tryParse(_intervalController.text) ?? 1).clamp(1, 10000));
@@ -109,28 +135,8 @@ class _AnalysisOptionsFormState extends State<AnalysisOptionsForm> {
                   },
                 ),
               ),
-              Expanded(
-                child: DropdownButtonFormField<String?>(
-                    items: [
-                      const DropdownMenuItem(value: null, child: Text('Sequence start')),
-                      for (final marker in markers) DropdownMenuItem(value: marker, child: Text(marker)),
-                    ],
-                    onChanged: widget.enabled
-                        ? (value) {
-                            setState(() => _alignMarker = value);
-                            _handleChanged();
-                          }
-                        : null,
-                    value: _alignMarker,
-                    decoration: const InputDecoration(labelText: 'Alignment')),
-              ),
             ],
           ),
-          if (!widget.enabled) ...[
-            const SizedBox(height: 16),
-            Text('To edit analysis options, please first remove all existing results from the Results tab.',
-                style: Theme.of(context).textTheme.caption!)
-          ],
         ],
       ),
     );

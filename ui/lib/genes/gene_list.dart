@@ -53,7 +53,7 @@ class GeneList extends Equatable {
     return GeneList._(source, _transcriptionRates(source), const []);
   }
 
-  GeneList filter(FilterDefinition filter) {
+  GeneList filter(StageSelection filter) {
     genes.sort((a, b) => a.transcriptionRates[filter.key]!.compareTo(b.transcriptionRates[filter.key]!));
     if (filter.selection == FilterSelection.percentile) {
       if (filter.strategy == FilterStrategy.top) {

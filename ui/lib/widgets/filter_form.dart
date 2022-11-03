@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:geneweb/genes/filter_definition.dart';
 import 'package:geneweb/genes/gene_list.dart';
@@ -6,7 +7,7 @@ import 'package:geneweb/output/genes_output.dart';
 import 'package:provider/provider.dart';
 
 class FilterForm extends StatefulWidget {
-  final Function(FilterDefinition? filter) onChanged;
+  final Function(StageSelection? filter) onChanged;
 
   const FilterForm({Key? key, required this.onChanged}) : super(key: key);
 
@@ -40,8 +41,8 @@ class _FilterFormState extends State<FilterForm> {
     super.dispose();
   }
 
-  FilterDefinition? get _filter => _transcriptionKey != null && _formKey.currentState!.validate()
-      ? FilterDefinition(
+  StageSelection? get _filter => _transcriptionKey != null && _formKey.currentState!.validate()
+      ? StageSelection(
           key: _transcriptionKey!,
           strategy: _strategy,
           selection: _selection,
@@ -63,53 +64,46 @@ class _FilterFormState extends State<FilterForm> {
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
-          DropdownButtonFormField<String?>(
-              items: [
-                const DropdownMenuItem(
-                  value: null,
-                  child: Text('Any'),
-                ),
-                for (final key in keys) DropdownMenuItem(value: key, child: Text(key)),
-              ],
-              onChanged: (value) {
-                setState(() => _transcriptionKey = value);
-                _handleChanged();
-              },
-              value: _transcriptionKey,
-              decoration: const InputDecoration(labelText: 'Filter by stage')),
-          if (_transcriptionKey != null)
-            Row(
+          SizedBox(
+            width: 300,
+            child: DropdownButtonFormField<String?>(
+                items: [
+                  const DropdownMenuItem(
+                    value: null,
+                    child: Text('All stages'),
+                  ),
+                  for (final key in keys) DropdownMenuItem(value: key, child: Text(key)),
+                ],
+                onChanged: (value) {
+                  setState(() => _transcriptionKey = value);
+                  _handleChanged();
+                },
+                value: _transcriptionKey,
+                decoration: const InputDecoration(labelText: 'Development stage')),
+          ),
+          if (_transcriptionKey != null) ...[
+            const SizedBox(height: 16),
+            Text('Gene selection based on $_transcriptionKey TPM:'),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.end,
               children: [
-                Expanded(
-                  child: DropdownButtonFormField<FilterStrategy>(
-                      items: [
-                        for (final key in FilterStrategy.values) DropdownMenuItem(value: key, child: Text(key.name)),
-                      ],
-                      onChanged: (value) {
-                        setState(() => _strategy = value!);
-                        _handleChanged();
-                      },
-                      value: _strategy,
-                      decoration: const InputDecoration(labelText: 'Strategy')),
+                CupertinoSlidingSegmentedControl<FilterStrategy>(
+                  children: const {
+                    FilterStrategy.top: Text('Most transcribed'),
+                    FilterStrategy.bottom: Text('Least transcribed'),
+                  },
+                  onValueChanged: (value) {
+                    setState(() => _strategy = value!);
+                    _handleChanged();
+                  },
+                  groupValue: _strategy,
                 ),
-                const VerticalDivider(),
-                Expanded(
-                  child: DropdownButtonFormField<FilterSelection>(
-                      items: [
-                        for (final key in FilterSelection.values) DropdownMenuItem(value: key, child: Text(key.name)),
-                      ],
-                      onChanged: (value) {
-                        setState(() => _selection = value!);
-                        _handleChanged();
-                      },
-                      value: _selection,
-                      decoration: const InputDecoration(labelText: 'Type')),
-                ),
-                const VerticalDivider(),
                 if (_selection == FilterSelection.percentile)
-                  Expanded(
+                  SizedBox(
+                    width: 200,
                     child: TextFormField(
                       controller: _percentileController,
                       decoration: const InputDecoration(labelText: 'Percentile', suffix: Text('th')),
@@ -127,7 +121,8 @@ class _FilterFormState extends State<FilterForm> {
                     ),
                   ),
                 if (_selection == FilterSelection.fixed)
-                  Expanded(
+                  SizedBox(
+                    width: 200,
                     child: TextFormField(
                       controller: _countController,
                       decoration: const InputDecoration(labelText: 'Count'),
@@ -146,18 +141,30 @@ class _FilterFormState extends State<FilterForm> {
                       },
                     ),
                   ),
+                CupertinoSlidingSegmentedControl<FilterSelection>(
+                  children: const {
+                    FilterSelection.fixed: Text('Genes'),
+                    FilterSelection.percentile: Text('Percentile'),
+                  },
+                  onValueChanged: (value) {
+                    setState(() => _selection = value!);
+                    _handleChanged();
+                  },
+                  groupValue: _selection,
+                ),
               ],
             ),
-          if (filter != null) ...[
-            const SizedBox(height: 16),
-            Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
-              Text('Source file: ${sourceGenes?.genes.length ?? '?'} genes',
-                  style: Theme.of(context).textTheme.caption!),
-              const Icon(Icons.keyboard_arrow_right_sharp),
-              Text('Filtered $filter: ${filteredGenes?.genes.length ?? '?'} genes',
-                  style: Theme.of(context).textTheme.caption!),
-              TextButton(onPressed: _handleSave, child: const Text('Save filtered genes')),
-            ]),
+            if (filter != null) ...[
+              const SizedBox(height: 16),
+              Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
+                Text('Source file: ${sourceGenes?.genes.length ?? '?'} genes',
+                    style: Theme.of(context).textTheme.caption!),
+                const Icon(Icons.keyboard_arrow_right_sharp),
+                Text('Filtered $filter', style: Theme.of(context).textTheme.caption!),
+                TextButton(onPressed: _handleSave, child: const Text('Save filtered genes')),
+                Text('(${filteredGenes?.genes.length ?? '?'} genes)', style: Theme.of(context).textTheme.caption!),
+              ]),
+            ],
           ],
         ],
       ),
@@ -175,7 +182,7 @@ class _FilterFormState extends State<FilterForm> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
       if (_transcriptionKey != null) {
-        widget.onChanged(FilterDefinition(
+        widget.onChanged(StageSelection(
           key: _transcriptionKey!,
           strategy: _strategy,
           selection: _selection,

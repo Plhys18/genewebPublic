@@ -82,5 +82,5 @@ class Presets {
     Motif(name: 'M0769_1.01', definitions: ['YTGATTGA']),
     Motif(name: 'Gap-box_motif', definitions: ['CAAATGAA']),
     Motif(name: 'Bellringer/replumless/pennywise', definitions: ['AAATTAAA']),
-  ];
+  ]..sort(((a, b) => a.name.compareTo(b.name)));
 }

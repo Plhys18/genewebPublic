@@ -74,8 +74,8 @@ class _DistributionViewState extends State<DistributionView> {
                   measureFn: _measureFn,
                   labelAccessorFn: (DistributionDataPoint point, _) => '<${point.min}; ${point.max})',
                   strokeWidthPxFn: (_, __) => widget.stroke[distribution.name] ?? 2,
-                  colorFn: (DistributionDataPoint point, _) =>
-                      charts.ColorUtil.fromDartColor(widget.colors[distribution.name] ?? Colors.grey),
+                  seriesColor: charts.ColorUtil.fromDartColor(
+                      widget.colors[distribution.name] ?? distribution.color ?? Colors.grey),
                 ),
             ],
             primaryMeasureAxis: charts.NumericAxisSpec(
@@ -101,7 +101,7 @@ class _DistributionViewState extends State<DistributionView> {
               if (distributions.first.alignMarker != null)
                 charts.RangeAnnotation([
                   charts.LineAnnotationSegment(0, charts.RangeAnnotationAxisType.domain,
-                      startLabel: distributions.first.alignMarker)
+                      startLabel: distributions.first.alignMarker?.toUpperCase())
                 ]),
 //              charts.SeriesLegend(position: charts.BehaviorPosition.end),
             ],

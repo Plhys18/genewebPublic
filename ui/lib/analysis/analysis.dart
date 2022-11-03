@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/analysis_result.dart';
 import 'package:geneweb/analysis/distribution.dart';
 import 'package:geneweb/analysis/motif.dart';
@@ -12,6 +13,7 @@ class Analysis {
   final String? alignMarker;
   final String name;
   final Motif motif;
+  final Color color;
 
   /// When `true`, analysis will filter overlapping matches
   final bool noOverlaps;
@@ -27,6 +29,7 @@ class Analysis {
       required this.interval,
       required this.motif,
       required this.name,
+      required this.color,
       this.alignMarker});
 
   void run(Motif motif) {
@@ -35,8 +38,9 @@ class Analysis {
       results.addAll(_findMatches(gene, motif));
     }
     result = results;
-    distribution = Distribution(min: min, max: max, interval: interval, alignMarker: alignMarker, name: name)
-      ..run(this);
+    distribution =
+        Distribution(min: min, max: max, interval: interval, alignMarker: alignMarker, name: name, color: color)
+          ..run(this);
   }
 
   List<AnalysisResult> _findMatches(Gene gene, Motif motif) {

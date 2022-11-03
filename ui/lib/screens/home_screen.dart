@@ -16,7 +16,7 @@ class HomeScreen extends StatelessWidget {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(name ?? 'Gene web'),
+          title: Text(name ?? 'Pollen Motifs'),
           bottom: TabBar(
             tabs: [
               const Tab(text: 'Source data'),

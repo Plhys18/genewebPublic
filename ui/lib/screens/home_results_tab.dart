@@ -58,7 +58,11 @@ class _ResultsState extends State<_Results> with AutomaticKeepAliveClientMixin {
     super.build(context);
     final distributions = context.select<GeneModel, List<Distribution>>((model) => model.distributions);
     if (distributions.isEmpty) {
-      return const Center(child: Text('There are no results'));
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Text('There are no saved results to show. Run the analysis and save it to the results.',
+            style: TextStyle(color: Theme.of(context).colorScheme.error)),
+      );
     }
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,7 +199,7 @@ class _ResultsState extends State<_Results> with AutomaticKeepAliveClientMixin {
               padding: EdgeInsets.zero,
               onPressed: () => _handleColorChange(context, distribution),
               icon: ColorIndicator(
-                color: _colors[distribution.name] ??= Colors.grey,
+                color: _colors[distribution.name] ?? distribution.color ?? Colors.grey,
                 borderRadius: 4,
               ),
             ),
@@ -234,7 +238,7 @@ class _ResultsState extends State<_Results> with AutomaticKeepAliveClientMixin {
   }
 
   Future<void> _handleColorChange(BuildContext context, Distribution distribution) async {
-    final color = await showColorPickerDialog(context, _colors[distribution.name] ??= Colors.grey);
+    final color = await showColorPickerDialog(context, _colors[distribution.name] ?? distribution.color ?? Colors.grey);
     setState(() => _colors[distribution.name] = color);
   }
 

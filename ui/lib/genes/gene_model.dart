@@ -4,6 +4,7 @@ import 'package:geneweb/analysis/analysis.dart';
 import 'package:geneweb/analysis/analysis_options.dart';
 import 'package:geneweb/analysis/distribution.dart';
 import 'package:geneweb/analysis/motif.dart';
+import 'package:geneweb/genes/filter_definition.dart';
 import 'package:geneweb/genes/gene_list.dart';
 import 'package:provider/provider.dart';
 import 'package:universal_file/universal_file.dart';
@@ -15,21 +16,22 @@ class GeneModel extends ChangeNotifier {
   List<Distribution> distributions = [];
   bool isAnalysisRunning = false;
   AnalysisOptions analysisOptions = AnalysisOptions();
+  StageSelection? filter;
+  Motif? motif;
 
   GeneModel();
 
   static GeneModel of(BuildContext context) => Provider.of<GeneModel>(context, listen: false);
 
   void _reset() {
-    distributions = [];
+    name = null;
+    sourceGenes = null;
     analysis = null;
+    distributions = [];
     isAnalysisRunning = false;
-    final keys = sourceGenes?.genes.first.markers.keys;
-    if (keys != null && keys.isNotEmpty) {
-      analysisOptions = AnalysisOptions(alignMarker: keys.first, min: -1000, max: 1000, interval: 10);
-    } else {
-      analysisOptions = AnalysisOptions();
-    }
+    analysisOptions = AnalysisOptions();
+    filter = null;
+    motif = null;
   }
 
   void resetAnalysis() {
@@ -39,7 +41,9 @@ class GeneModel extends ChangeNotifier {
   }
 
   void setOptions(AnalysisOptions options) {
-    _reset();
+    analysis = null;
+    distributions = [];
+    isAnalysisRunning = false;
     analysisOptions = options;
     notifyListeners();
   }
@@ -54,24 +58,34 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void resetAnalysisOptions() {
+    final keys = sourceGenes?.genes.first.markers.keys;
+    if (keys != null && keys.isNotEmpty) {
+      analysisOptions = AnalysisOptions(alignMarker: keys.first, min: -1000, max: 1000, interval: 10);
+    } else {
+      analysisOptions = AnalysisOptions();
+    }
+    notifyListeners();
+  }
+
   Future<void> loadFromString(String data, {String? name}) async {
+    _reset();
     this.name = name;
     sourceGenes = GeneList.fromFasta(data);
-    _reset();
+    resetAnalysisOptions();
     notifyListeners();
   }
 
   Future<void> loadFromFile(String path, {String? filename}) async {
+    _reset();
     name = filename;
     final data = await File(path).readAsString();
     sourceGenes = GeneList.fromFasta(data);
-    _reset();
+    resetAnalysisOptions();
     notifyListeners();
   }
 
   void reset() {
-    name = null;
-    sourceGenes = null;
     _reset();
     notifyListeners();
   }
@@ -80,6 +94,7 @@ class GeneModel extends ChangeNotifier {
     GeneList genes,
     Motif motif,
     String name,
+    Color color,
   ) async {
     analysis = null;
     isAnalysisRunning = true;
@@ -92,6 +107,7 @@ class GeneModel extends ChangeNotifier {
       'max': analysisOptions.max,
       'interval': analysisOptions.interval,
       'alignMarker': analysisOptions.alignMarker,
+      'color': color.value,
     });
     isAnalysisRunning = false;
     notifyListeners();
@@ -116,6 +132,7 @@ Future<Analysis> runAnalysis(Map<String, dynamic> params) async {
   final max = params['max'] as int;
   final interval = params['interval'] as int;
   final alignMarker = params['alignMarker'] as String?;
+  final color = Color(params['color'] as int);
   final analysis = Analysis(
       geneList: list,
       noOverlaps: true,
@@ -124,7 +141,8 @@ Future<Analysis> runAnalysis(Map<String, dynamic> params) async {
       interval: interval,
       alignMarker: alignMarker,
       motif: motif,
-      name: name);
+      name: name,
+      color: color);
   analysis.run(motif);
   return analysis;
 }

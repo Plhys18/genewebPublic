@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/analysis.dart';
 
 class Distribution {
@@ -6,6 +7,7 @@ class Distribution {
   final int interval;
   final String? alignMarker;
   final String name;
+  final Color? color;
 
   Map<int, int>? _counts;
   late int _totalCount;
@@ -23,6 +25,7 @@ class Distribution {
     required this.interval,
     this.alignMarker,
     required this.name,
+    required this.color,
   });
 
   List<DistributionDataPoint>? get dataPoints {

@@ -10,11 +10,17 @@ import 'package:geneweb/genes/gene_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
-class HomeSourceTab extends StatelessWidget {
+class HomeSourceTab extends StatefulWidget {
   const HomeSourceTab({Key? key}) : super(key: key);
 
   @override
+  State<HomeSourceTab> createState() => _HomeSourceTabState();
+}
+
+class _HomeSourceTabState extends State<HomeSourceTab> with AutomaticKeepAliveClientMixin {
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     return const SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.all(8.0),
@@ -22,10 +28,32 @@ class HomeSourceTab extends StatelessWidget {
       ),
     );
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }
 
 class _Source extends StatefulWidget {
   const _Source({Key? key}) : super(key: key);
+
+  static const List<_Organism> kOrganisms = [
+    _Organism(
+        name: 'Arabidopsis thaliana', filename: 'Arabidopsis.fasta.zip', description: 'TSS, ATG, no splicing variants'),
+    _Organism(
+        name: 'Arabidopsis thaliana',
+        filename: 'Arabidopsis-variants.fasta.zip',
+        description: 'TSS, ATG, splicing variants'),
+    _Organism(name: 'Ambo', filename: 'Ambo.fasta.zip', description: 'ATG'),
+    _Organism(name: 'Ginkgo', filename: 'Ginkgo.fasta.zip', description: 'ATG'),
+    _Organism(name: 'Marchantia', filename: 'Mp.fasta.zip', description: 'ATG'),
+    _Organism(name: 'Marchantia', filename: 'Mp-with-tss.fasta.zip', description: 'ATG, TSS'),
+    _Organism(name: 'Physco', filename: 'Physco.fasta.zip', description: 'ATG'),
+    _Organism(name: 'Physco', filename: 'Physco-with-tss.fasta.zip', description: 'ATG, TSS'),
+    _Organism(name: 'Sola', filename: 'Sola.fasta.zip', description: 'ATG'),
+    _Organism(name: 'Sola', filename: 'Sola-with-tss.fasta.zip', description: 'ATG, TSS'),
+    _Organism(name: 'Zea', filename: 'Zea.fasta.zip', description: 'ATG'),
+    _Organism(name: 'Zea', filename: 'Zea-with-tss.fasta.zip', description: 'ATG, TSS'),
+  ];
 
   @override
   State<_Source> createState() => _SourceState();
@@ -64,26 +92,17 @@ class _SourceState extends State<_Source> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 16),
-        const Text('Choose organism to analyze'),
+        const Text('Start by choosing an organism to analyze:'),
         const SizedBox(height: 16),
         Wrap(
           spacing: 8.0,
           runSpacing: 8.0,
           children: [
-            ElevatedButton(
-                onPressed: () => _handleDownloadFasta('Arabidopsis.fasta.zip'), child: const Text('Arabidopsis')),
-            ElevatedButton(onPressed: () => _handleDownloadFasta('Ambo.fasta.zip'), child: const Text('Ambo')),
-            ElevatedButton(onPressed: () => _handleDownloadFasta('Ginkgo.fasta.zip'), child: const Text('Ginkgo')),
-            ElevatedButton(onPressed: () => _handleDownloadFasta('Mp.fasta.zip'), child: const Text('Mp')),
-            ElevatedButton(onPressed: () => _handleDownloadFasta('Physco.fasta.zip'), child: const Text('Physco')),
-            ElevatedButton(onPressed: () => _handleDownloadFasta('Sola.fasta.zip'), child: const Text('Sola')),
-            ElevatedButton(onPressed: () => _handleDownloadFasta('Zea.fasta.zip'), child: const Text('Zea')),
+            ..._Source.kOrganisms.map((organism) =>
+                _OrganismCard(organism: organism, onSelected: () => _handleDownloadFasta(organism.filename))),
+            _OrganismCard(organism: null, onSelected: () => _handlePickFile()),
           ],
         ),
-        const Divider(height: 32.0),
-        const Text('... or load your own FASTA file'),
-        const SizedBox(height: 16),
-        ElevatedButton(onPressed: _handlePickFile, child: const Text('Choose file')),
       ],
     );
   }
@@ -113,20 +132,20 @@ class _SourceState extends State<_Source> {
     final messenger = ScaffoldMessenger.of(context);
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles();
-      if (result != null) {
-        final filename = result.files.single.name;
-        setState(() => _loadingMessage = 'Loading $filename…');
-        await Future.delayed(const Duration(milliseconds: 100));
-        if (kIsWeb) {
-          final data = String.fromCharCodes(result.files.single.bytes!);
-          debugPrint('Loaded ${data.length} bytes');
-          await _model.loadFromString(data, name: filename);
-        } else {
-          final path = result.files.single.path!;
-          await _model.loadFromFile(path, filename: filename);
-        }
-      } else {
+      if (result == null) {
         debugPrint('Cancelled');
+        return;
+      }
+      final filename = result.files.single.name;
+      setState(() => _loadingMessage = 'Loading $filename…');
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (kIsWeb) {
+        final data = String.fromCharCodes(result.files.single.bytes!);
+        debugPrint('Loaded ${data.length} bytes');
+        await _model.loadFromString(data, name: filename);
+      } else {
+        final path = result.files.single.path!;
+        await _model.loadFromFile(path, filename: filename);
       }
       if (_model.sourceGenes!.errors.isEmpty) {
         messenger.showSnackBar(SnackBar(content: Text('Imported ${_model.sourceGenes?.genes.length} genes.')));
@@ -155,8 +174,8 @@ class _SourceState extends State<_Source> {
       debugPrint('Preparing download of $filename');
       final bytes = await _downloadFile(Uri.https('temp-geneweb.s3.eu-west-1.amazonaws.com', filename));
       debugPrint('Downloaded ${bytes.length ~/ (1024 * 1024)} kB');
-      setState(() => _loadingMessage = 'Decompressing ${bytes.length ~/ (1024 * 1024)} MB…');
-      setState(() => _progress = 0.8);
+      if (mounted) setState(() => _loadingMessage = 'Decompressing ${bytes.length ~/ (1024 * 1024)} MB…');
+      if (mounted) setState(() => _progress = 0.8);
       await Future.delayed(const Duration(milliseconds: 100));
       final archive = ZipDecoder().decodeBytes(bytes);
       debugPrint('Decoded $archive');
@@ -168,8 +187,8 @@ class _SourceState extends State<_Source> {
       debugPrint('Found $file');
       final content = const Utf8Decoder().convert(file.content);
       debugPrint('Decoded ${content.length ~/ (1024 * 1024)} MB of data');
-      setState(() => _loadingMessage = 'Analyzing $name (${content.length ~/ (1024 * 1024)} MB)…');
-      setState(() => _progress = 0.9);
+      if (mounted) setState(() => _loadingMessage = 'Analyzing $name (${content.length ~/ (1024 * 1024)} MB)…');
+      if (mounted) setState(() => _progress = 0.9);
       await Future.delayed(const Duration(milliseconds: 100));
       await _model.loadFromString(content, name: name);
       debugPrint('Finished loading');
@@ -187,8 +206,8 @@ class _SourceState extends State<_Source> {
         backgroundColor: Colors.red,
       ));
     } finally {
-      setState(() => _loadingMessage = null);
-      setState(() => _progress = null);
+      if (mounted) setState(() => _loadingMessage = null);
+      if (mounted) setState(() => _progress = null);
     }
   }
 
@@ -204,10 +223,9 @@ class _SourceState extends State<_Source> {
     List<int> bytes = [];
     await response.stream.listen(
       (List<int> newBytes) {
-        debugPrint('Got ${newBytes.length} bytes');
         bytes.addAll(newBytes);
         downloadedBytes += newBytes.length;
-        setState(() => _progress = contentLength == null ? null : (downloadedBytes / contentLength * 0.8));
+        if (mounted) setState(() => _progress = contentLength == null ? null : (downloadedBytes / contentLength * 0.8));
       },
       onDone: () async {
         debugPrint('Stream done');
@@ -222,5 +240,48 @@ class _SourceState extends State<_Source> {
 
   void _handleClear() {
     _model.reset();
+  }
+}
+
+class _Organism {
+  final String name;
+  final String filename;
+  final String? description;
+
+  const _Organism({required this.name, required this.filename, this.description});
+}
+
+class _OrganismCard extends StatelessWidget {
+  final _Organism? organism;
+  final VoidCallback onSelected;
+  const _OrganismCard({required this.organism, required this.onSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 260,
+      height: 80,
+      child: Card(
+        color: organism == null ? Theme.of(context).colorScheme.surfaceVariant : null,
+        child: InkWell(
+          onTap: onSelected,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: organism == null
+                ? const Center(
+                    child: Text('Load local fasta file…'),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(organism!.name, style: Theme.of(context).textTheme.titleSmall),
+                      const SizedBox(height: 8),
+                      Text(organism!.description ?? '', style: Theme.of(context).textTheme.caption),
+                    ],
+                  ),
+          ),
+        ),
+      ),
+    );
   }
 }

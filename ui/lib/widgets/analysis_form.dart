@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/motif.dart';
 import 'package:geneweb/analysis/presets.dart';
+import 'package:truncate/truncate.dart';
 
 class AnalysisForm extends StatefulWidget {
   final Function(Motif motif) onChanged;
@@ -16,13 +17,17 @@ class _AnalysisFormState extends State<AnalysisForm> {
 
   String? _motifName;
   String? _motifDefinition;
-  final nameController = TextEditingController();
-  final definitionController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _definitionController = TextEditingController();
+  final _reverseComplementsController = TextEditingController();
+  bool _showPresets = true;
+  bool _showEditor = false;
 
   @override
   void dispose() {
-    nameController.dispose();
-    definitionController.dispose();
+    _nameController.dispose();
+    _definitionController.dispose();
+    _reverseComplementsController.dispose();
     super.dispose();
   }
 
@@ -41,59 +46,95 @@ class _AnalysisFormState extends State<AnalysisForm> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          DropdownButtonFormField<Motif?>(
-              items: [
-                for (final motif in Presets.analyzedMotifs) DropdownMenuItem(value: motif, child: Text(motif.name)),
-              ],
-              onChanged: _handlePresetSelected,
-              value: null,
-              decoration: const InputDecoration(labelText: 'Motif presets')),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: nameController,
-            validator: (value) => value != null && value.isNotEmpty ? null : 'Please enter the motif name',
-            onChanged: (value) {
-              setState(() => _motifName = value);
-              _handleChanged();
-            },
-            onSaved: (value) => _motifName = value,
-            decoration: const InputDecoration(
-              labelText: "Motif name",
-            ),
-          ),
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              Expanded(
-                child: TextFormField(
-                  controller: definitionController,
-                  validator: _validateMotifDefinition,
-                  onChanged: (value) {
-                    setState(() => _motifDefinition = value);
-                    _handleChanged();
-                  },
-                  onSaved: (value) => _motifDefinition = value,
-                  textCapitalization: TextCapitalization.characters,
-                  autocorrect: false,
-                  maxLines: null,
-                  decoration: const InputDecoration(
-                    labelText: "Motif definition. Separate multiple by new line",
-                  ),
-                ),
-              ),
-              const VerticalDivider(),
-              if (motif != null)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Reverse definitions:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(
-                      height: 8.0,
-                    ),
-                    ...motif.reverseDefinitions.map((s) => Text(s)).toList(),
-                  ],
-                )
+              if (!_showPresets)
+                TextButton(
+                    child: const Text('Show presets'),
+                    onPressed: () => setState(() {
+                          _showPresets = true;
+                          _showEditor = false;
+                        })),
+              if (!_showEditor)
+                TextButton(
+                    child: Text(motif == null ? 'Enter custom motif' : 'Edit motif'),
+                    onPressed: () => setState(() {
+                          _showPresets = false;
+                          _showEditor = true;
+                        })),
             ],
           ),
+          if (_showPresets)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ...Presets.analyzedMotifs.map((m) => _MotifCard(motif: m, onSelected: () => _handlePresetSelected(m))),
+                _MotifCard(motif: null, onSelected: () => _handlePresetSelected(null)),
+              ],
+            ),
+          const SizedBox(height: 16),
+          if (_showEditor)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.start,
+              children: [
+                SizedBox(
+                  width: 200,
+                  child: TextFormField(
+                    controller: _nameController,
+                    validator: (value) => value != null && value.isNotEmpty ? null : 'Enter the motif name',
+                    onChanged: (value) {
+                      setState(() => _motifName = value);
+                      _handleChanged();
+                    },
+                    onSaved: (value) => _motifName = value,
+                    decoration: const InputDecoration(
+                      labelText: "Motif name",
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 400,
+                  child: TextFormField(
+                    controller: _definitionController,
+                    validator: _validateMotifDefinition,
+                    onChanged: (value) {
+                      setState(() => _motifDefinition = value);
+                      _handleChanged();
+                    },
+                    onSaved: (value) => _motifDefinition = value,
+                    textCapitalization: TextCapitalization.characters,
+                    autocorrect: false,
+                    maxLines: null,
+                    decoration: const InputDecoration(
+                      labelText: "Motif definition. Separate multiple by new line",
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 400,
+                  child: TextFormField(
+                    controller: _reverseComplementsController,
+                    textCapitalization: TextCapitalization.characters,
+                    autocorrect: false,
+                    maxLines: null,
+                    readOnly: true,
+                    enabled: false,
+                    decoration: const InputDecoration(
+                      labelText: "Reverse complements (read-only)",
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          const SizedBox(height: 8),
+          if (_showEditor)
+            Text('R = AG, Y = CT, W = AT, S = GC, M = AC, K = GT, B = CGT, D = AGT, H = ACT, V = ACG, N = ACGT',
+                style: Theme.of(context).textTheme.caption!),
         ],
       ),
     );
@@ -102,7 +143,9 @@ class _AnalysisFormState extends State<AnalysisForm> {
   void _handleChanged() {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      widget.onChanged(Motif(name: _motifName!, definitions: _getDefinitions(_motifDefinition!)));
+      final motif = Motif(name: _motifName!, definitions: _getDefinitions(_motifDefinition!));
+      _reverseComplementsController.text = motif.reverseDefinitions.join('\n');
+      widget.onChanged(motif);
     }
   }
 
@@ -124,13 +167,50 @@ class _AnalysisFormState extends State<AnalysisForm> {
   }
 
   void _handlePresetSelected(Motif? motif) {
-    if (motif == null) return;
-    nameController.text = motif.name;
-    definitionController.text = motif.definitions.join('\n');
+    _nameController.text = motif?.name ?? '';
+    _definitionController.text = motif?.definitions.join('\n') ?? '';
+    _reverseComplementsController.text = motif?.reverseDefinitions.join('\n') ?? '';
     setState(() {
-      _motifName = motif.name;
-      _motifDefinition = motif.definitions.join('\n');
+      _motifName = motif?.name;
+      _motifDefinition = motif?.definitions.join('\n');
+      _showPresets = false;
+      _showEditor = motif == null;
     });
     _handleChanged();
+  }
+}
+
+class _MotifCard extends StatelessWidget {
+  final Motif? motif;
+  final VoidCallback onSelected;
+  const _MotifCard({required this.motif, required this.onSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 260,
+      height: 80,
+      child: Card(
+        color: motif == null ? Theme.of(context).colorScheme.surfaceVariant : null,
+        child: InkWell(
+          onTap: onSelected,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: motif == null
+                ? const Center(
+                    child: Text('Custom motif…'),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(motif!.name, style: Theme.of(context).textTheme.titleSmall),
+                      const SizedBox(height: 8),
+                      Text(truncate(motif!.definitions.join(', '), 50), style: Theme.of(context).textTheme.caption),
+                    ],
+                  ),
+          ),
+        ),
+      ),
+    );
   }
 }

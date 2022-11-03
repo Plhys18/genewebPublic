@@ -20,6 +20,7 @@ dependencies:
   universal_file: ^1.0.0
   flex_color_picker: ^2.5.0
   archive: ^3.3.1
+  truncate: ^3.0.1
 
 dev_dependencies:
   flutter_test:
