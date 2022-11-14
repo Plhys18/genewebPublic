@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:geneweb/analysis/analysis.dart';
+import 'package:geneweb/analysis/analysis_result.dart';
 
 class Distribution {
   final int min;
@@ -13,7 +13,7 @@ class Distribution {
   late int _totalCount;
   int get totalCount => _totalCount;
 
-  Map<int, int>? _geneCounts;
+  Map<int, Set<String>>? _genes;
   late int _totalGenesCount;
   int get totalGenesCount => _totalGenesCount;
   late int _totalGenesWithMotifCount;
@@ -29,7 +29,7 @@ class Distribution {
   });
 
   List<DistributionDataPoint>? get dataPoints {
-    if (_counts == null || _geneCounts == null) return null;
+    if (_counts == null || _genes == null) return null;
     return [
       for (var i = 0; i < (max - min) ~/ interval; i++)
         DistributionDataPoint(
@@ -37,16 +37,16 @@ class Distribution {
           max: min + (i + 1) * interval,
           count: _counts![i] ?? 0,
           percent: (_counts![i] ?? 0) / _totalCount,
-          genesCount: _geneCounts![i] ?? 0,
-          genesPercent: (_geneCounts![i] ?? 0) / _totalGenesCount,
+          genes: _genes![i] ?? {},
+          genesPercent: (_genes![i]?.length ?? 0) / _totalGenesCount,
         ),
     ];
   }
 
-  void run(Analysis analysis) {
+  void run(List<AnalysisResult> results, int totalGenesCount) {
     Map<int, int> counts = {};
     Map<int, Set<String>> geneCounts = {};
-    for (final result in analysis.result!) {
+    for (final result in results) {
       final position = result.position - (alignMarker != null ? result.gene.markers[alignMarker]! : 0);
       if (position < min || position > max) {
         continue;
@@ -59,12 +59,12 @@ class Distribution {
       geneCounts[intervalIndex]!.add(result.gene.geneId);
     }
     _counts = counts;
-    _geneCounts = {
-      for (final key in geneCounts.keys) key: geneCounts[key]!.length,
+    _genes = {
+      for (final key in geneCounts.keys) key: geneCounts[key]!,
     };
-    _totalCount = analysis.result!.length;
-    _totalGenesCount = analysis.geneList.genes.length;
-    _totalGenesWithMotifCount = analysis.result!.map((result) => result.gene.geneId).toSet().length;
+    _totalCount = results.length;
+    _totalGenesCount = totalGenesCount;
+    _totalGenesWithMotifCount = results.map((result) => result.gene.geneId).toSet().length;
   }
 }
 
@@ -73,15 +73,17 @@ class DistributionDataPoint {
   final int max;
   final int count;
   final double percent;
-  final int genesCount;
+  final Set<String> genes;
   final double genesPercent;
   DistributionDataPoint(
       {required this.min,
       required this.max,
       required this.count,
       required this.percent,
-      required this.genesCount,
+      required this.genes,
       required this.genesPercent});
+
+  int get genesCount => genes.length;
 
   String get label {
     return '<$min; $max)';

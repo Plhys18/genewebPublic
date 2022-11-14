@@ -6,7 +6,7 @@ class DistributionsOutput {
 
   DistributionsOutput(this.distributions);
 
-  List<int>? toExcel() {
+  List<int>? toExcel(String fileName) {
     assert(distributions.isNotEmpty);
     var excel = Excel.createExcel();
     final headerCellStyle = CellStyle(backgroundColorHex: 'FFDDFFDD', bold: true);
@@ -67,6 +67,6 @@ class DistributionsOutput {
       genesSheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: i)).cellStyle = headerCellStyle;
     }
 
-    return excel.save(fileName: 'distributions.xlsx');
+    return excel.save(fileName: fileName);
   }
 }

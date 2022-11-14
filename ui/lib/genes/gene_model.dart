@@ -2,9 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/analysis.dart';
 import 'package:geneweb/analysis/analysis_options.dart';
-import 'package:geneweb/analysis/distribution.dart';
 import 'package:geneweb/analysis/motif.dart';
-import 'package:geneweb/genes/filter_definition.dart';
+import 'package:geneweb/genes/stage_selection.dart';
 import 'package:geneweb/genes/gene_list.dart';
 import 'package:provider/provider.dart';
 import 'package:universal_file/universal_file.dart';
@@ -12,12 +11,13 @@ import 'package:universal_file/universal_file.dart';
 class GeneModel extends ChangeNotifier {
   String? name;
   GeneList? sourceGenes;
-  Analysis? analysis;
-  List<Distribution> distributions = [];
-  bool isAnalysisRunning = false;
+  List<Analysis> analyses = [];
+  double? analysisProgress;
   AnalysisOptions analysisOptions = AnalysisOptions();
-  StageSelection? filter;
-  Motif? motif;
+  StageSelection? _filter;
+  StageSelection? get filter => _filter;
+  Motif? _motif;
+  Motif? get motif => _motif;
 
   GeneModel();
 
@@ -26,35 +26,42 @@ class GeneModel extends ChangeNotifier {
   void _reset() {
     name = null;
     sourceGenes = null;
-    analysis = null;
-    distributions = [];
-    isAnalysisRunning = false;
+    analyses = [];
+    analysisProgress = null;
     analysisOptions = AnalysisOptions();
-    filter = null;
-    motif = null;
+    _filter = null;
+    _motif = null;
   }
 
-  void resetAnalysis() {
-    analysis = null;
-    isAnalysisRunning = false;
+  void setAnalyses(List<Analysis> analyses) {
+    this.analyses = analyses;
+    notifyListeners();
+  }
+
+  void setMotif(Motif? motif) {
+    _motif = motif;
+    notifyListeners();
+  }
+
+  void setFilter(StageSelection? filter) {
+    _filter = filter;
     notifyListeners();
   }
 
   void setOptions(AnalysisOptions options) {
-    analysis = null;
-    distributions = [];
-    isAnalysisRunning = false;
+    analyses = [];
+    analysisProgress = null;
     analysisOptions = options;
     notifyListeners();
   }
 
-  void removeDistribution(Distribution distribution) {
-    distributions = distributions.where((d) => d != distribution).toList();
+  void removeAnalysis(String name) {
+    analyses = analyses.where((a) => a.name != name).toList();
     notifyListeners();
   }
 
-  void updateDistributions(List<Distribution> distributions) {
-    this.distributions = distributions;
+  void removeAnalyses() {
+    analyses = [];
     notifyListeners();
   }
 
@@ -91,36 +98,53 @@ class GeneModel extends ChangeNotifier {
   }
 
   Future<void> analyze(
-    GeneList genes,
+    StageSelection? filter,
     Motif motif,
-    String name,
-    Color color,
   ) async {
-    analysis = null;
-    isAnalysisRunning = true;
+    const kAll = '__ALL__';
+    final stages = filter?.stages ?? [kAll];
+    final totalIterations = stages.length;
+    assert(totalIterations > 0);
+    int iterations = 0;
+    analysisProgress = 0.0;
     notifyListeners();
-    analysis = await compute(runAnalysis, {
-      'genes': genes,
-      'motif': motif,
-      'name': name,
-      'min': analysisOptions.min,
-      'max': analysisOptions.max,
-      'interval': analysisOptions.interval,
-      'alignMarker': analysisOptions.alignMarker,
-      'color': color.value,
-    });
-    isAnalysisRunning = false;
+    for (final key in stages) {
+      await Future.delayed(const Duration(milliseconds: 50)); // Allow UI to refresh on web
+      final filteredGenes = key == kAll ? sourceGenes : sourceGenes!.filter(filter!, key);
+      final name = '${key == kAll ? 'all' : key} - ${motif.name}';
+      final color = _colorFor(name);
+      removeAnalysis(name);
+
+      final analysis = await compute(runAnalysis, {
+        'genes': filteredGenes,
+        'motif': motif,
+        'name': name,
+        'min': analysisOptions.min,
+        'max': analysisOptions.max,
+        'interval': analysisOptions.interval,
+        'alignMarker': analysisOptions.alignMarker,
+        'color': color.value,
+      });
+      analyses.add(analysis);
+      iterations++;
+      analysisProgress = iterations / totalIterations;
+      notifyListeners();
+    }
+    analysisProgress = null;
     notifyListeners();
   }
 
-  void clearAnalysis() {
-    analysis = null;
-    notifyListeners();
-  }
-
-  void analysisToDistribution() {
-    distributions = [...distributions, analysis!.distribution!];
-    notifyListeners();
+  Color _colorFor(String text) {
+    var hash = 0;
+    for (var i = 0; i < text.length; i++) {
+      hash = text.codeUnitAt(i) + ((hash << 5) - hash);
+    }
+    final finalHash = hash.abs() % (256 * 256 * 256);
+    final red = ((finalHash & 0xFF0000) >> 16);
+    final blue = ((finalHash & 0xFF00) >> 8);
+    final green = ((finalHash & 0xFF));
+    final color = Color.fromRGBO(red, green, blue, 1);
+    return color;
   }
 }
 
@@ -133,7 +157,7 @@ Future<Analysis> runAnalysis(Map<String, dynamic> params) async {
   final interval = params['interval'] as int;
   final alignMarker = params['alignMarker'] as String?;
   final color = Color(params['color'] as int);
-  final analysis = Analysis(
+  final analysis = Analysis.run(
       geneList: list,
       noOverlaps: true,
       min: min,
@@ -143,6 +167,5 @@ Future<Analysis> runAnalysis(Map<String, dynamic> params) async {
       motif: motif,
       name: name,
       color: color);
-  analysis.run(motif);
   return analysis;
 }

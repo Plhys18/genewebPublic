@@ -10,32 +10,20 @@ import 'package:geneweb/genes/gene_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
-class HomeSourceTab extends StatefulWidget {
-  const HomeSourceTab({Key? key}) : super(key: key);
+class SourceSubtitle extends StatelessWidget {
+  const SourceSubtitle({super.key});
 
-  @override
-  State<HomeSourceTab> createState() => _HomeSourceTabState();
-}
-
-class _HomeSourceTabState extends State<HomeSourceTab> with AutomaticKeepAliveClientMixin {
   @override
   Widget build(BuildContext context) {
-    super.build(context);
-    return const SingleChildScrollView(
-      child: Padding(
-        padding: EdgeInsets.all(8.0),
-        child: _Source(),
-      ),
-    );
+    final sourceGenes = context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
+    final name = context.select<GeneModel, String?>((model) => model.name);
+    return sourceGenes == null
+        ? const Text('Please choose an organism to analyze')
+        : Text('$name, ${sourceGenes.genes.length} genes');
   }
-
-  @override
-  bool get wantKeepAlive => true;
 }
 
-class _Source extends StatefulWidget {
-  const _Source({Key? key}) : super(key: key);
-
+class SourcePanel extends StatefulWidget {
   static const List<_Organism> kOrganisms = [
     _Organism(
         name: 'Arabidopsis thaliana', filename: 'Arabidopsis.fasta.zip', description: 'TSS, ATG, no splicing variants'),
@@ -55,52 +43,56 @@ class _Source extends StatefulWidget {
     _Organism(name: 'Zea', filename: 'Zea-with-tss.fasta.zip', description: 'ATG, TSS'),
   ];
 
+  const SourcePanel({super.key, required this.onShouldClose});
+
+  final VoidCallback onShouldClose;
+
   @override
-  State<_Source> createState() => _SourceState();
+  State<SourcePanel> createState() => _SourcePanelState();
 }
 
-class _SourceState extends State<_Source> {
-  late final _model = GeneModel.of(context);
+class _SourcePanelState extends State<SourcePanel> {
   String? _loadingMessage;
   double? _progress;
+
+  late final _model = GeneModel.of(context);
+  late final _scaffoldMessenger = ScaffoldMessenger.of(context);
 
   @override
   Widget build(BuildContext context) {
     final sourceGenes = context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
-    if (_loadingMessage != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.only(top: 32.0),
-          child: SizedBox(
-            width: 300.0,
-            child: Column(
-              children: [
-                Text(_loadingMessage!),
-                const SizedBox(height: 16),
-                LinearProgressIndicator(value: _progress),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-    return sourceGenes == null ? _buildLoad(context) : _buildLoadedState(context);
+    return Align(
+        alignment: Alignment.topLeft,
+        child: _loadingMessage != null
+            ? _buildLoadingState()
+            : sourceGenes == null
+                ? _buildLoad(context)
+                : _buildLoadedState(context));
+  }
+
+  Widget _buildLoadingState() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(_loadingMessage!),
+        const SizedBox(height: 16),
+        LinearProgressIndicator(value: _progress),
+      ],
+    );
   }
 
   Widget _buildLoad(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 16),
-        const Text('Start by choosing an organism to analyze:'),
-        const SizedBox(height: 16),
         Wrap(
           spacing: 8.0,
           runSpacing: 8.0,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            ..._Source.kOrganisms.map((organism) =>
+            ...SourcePanel.kOrganisms.map((organism) =>
                 _OrganismCard(organism: organism, onSelected: () => _handleDownloadFasta(organism.filename))),
-            _OrganismCard(organism: null, onSelected: () => _handlePickFile()),
+            TextButton(onPressed: _handlePickFile, child: const Text('Open .fasta file…')),
           ],
         ),
       ],
@@ -109,15 +101,11 @@ class _SourceState extends State<_Source> {
 
   Widget _buildLoadedState(BuildContext context) {
     final sourceGenes = context.select<GeneModel, GeneList>((model) => model.sourceGenes!);
-    final filename = context.select<GeneModel, String?>((model) => model.name);
     final sampleErrors = sourceGenes.errors.take(100);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 16),
-        Text('Loaded $filename with ${sourceGenes.genes.length} genes'),
-        const SizedBox(height: 16),
-        ElevatedButton(onPressed: _handleClear, child: const Text('Clear')),
+        TextButton(onPressed: _handleClear, child: const Text('Choose another organism')),
         if (sourceGenes.errors.isNotEmpty) ...[
           const SizedBox(height: 16),
           Text('Found ${sourceGenes.errors.length} errors during the import, listing first ${sampleErrors.length}:'),
@@ -129,8 +117,8 @@ class _SourceState extends State<_Source> {
   }
 
   Future<void> _handlePickFile() async {
-    final messenger = ScaffoldMessenger.of(context);
     try {
+      setState(() => _loadingMessage = 'Picking file…');
       FilePickerResult? result = await FilePicker.platform.pickFiles();
       if (result == null) {
         debugPrint('Cancelled');
@@ -148,15 +136,16 @@ class _SourceState extends State<_Source> {
         await _model.loadFromFile(path, filename: filename);
       }
       if (_model.sourceGenes!.errors.isEmpty) {
-        messenger.showSnackBar(SnackBar(content: Text('Imported ${_model.sourceGenes?.genes.length} genes.')));
+        _scaffoldMessenger.showSnackBar(SnackBar(content: Text('Imported ${_model.sourceGenes?.genes.length} genes.')));
       } else {
-        messenger.showSnackBar(SnackBar(
+        _scaffoldMessenger.showSnackBar(SnackBar(
             backgroundColor: Colors.red,
             content: Text(
                 'Imported ${_model.sourceGenes?.genes.length} genes, ${_model.sourceGenes?.errors.length} errors.')));
       }
+      widget.onShouldClose();
     } catch (error) {
-      messenger.showSnackBar(SnackBar(
+      _scaffoldMessenger.showSnackBar(SnackBar(
         content: Text('Error loading data: $error'),
         backgroundColor: Colors.red,
       ));
@@ -166,14 +155,13 @@ class _SourceState extends State<_Source> {
   }
 
   Future<void> _handleDownloadFasta(String filename) async {
-    final messenger = ScaffoldMessenger.of(context);
     setState(() => _loadingMessage = 'Downloading $filename…');
     setState(() => _progress = null);
     await Future.delayed(const Duration(milliseconds: 100));
     try {
       debugPrint('Preparing download of $filename');
       final bytes = await _downloadFile(Uri.https('temp-geneweb.s3.eu-west-1.amazonaws.com', filename));
-      debugPrint('Downloaded ${bytes.length ~/ (1024 * 1024)} kB');
+      debugPrint('Downloaded ${bytes.length ~/ (1024 * 1024)} MB');
       if (mounted) setState(() => _loadingMessage = 'Decompressing ${bytes.length ~/ (1024 * 1024)} MB…');
       if (mounted) setState(() => _progress = 0.8);
       await Future.delayed(const Duration(milliseconds: 100));
@@ -193,15 +181,16 @@ class _SourceState extends State<_Source> {
       await _model.loadFromString(content, name: name);
       debugPrint('Finished loading');
       if (_model.sourceGenes!.errors.isEmpty) {
-        messenger.showSnackBar(SnackBar(content: Text('Imported ${_model.sourceGenes?.genes.length} genes.')));
+        _scaffoldMessenger.showSnackBar(SnackBar(content: Text('Imported ${_model.sourceGenes?.genes.length} genes.')));
       } else {
-        messenger.showSnackBar(SnackBar(
+        _scaffoldMessenger.showSnackBar(SnackBar(
             backgroundColor: Colors.red,
             content: Text(
                 'Imported ${_model.sourceGenes?.genes.length} genes, ${_model.sourceGenes?.errors.length} errors.')));
       }
+      widget.onShouldClose();
     } catch (error) {
-      messenger.showSnackBar(SnackBar(
+      _scaffoldMessenger.showSnackBar(SnackBar(
         content: Text('Error loading data: $error'),
         backgroundColor: Colors.red,
       ));
@@ -240,6 +229,8 @@ class _SourceState extends State<_Source> {
 
   void _handleClear() {
     _model.reset();
+    _scaffoldMessenger
+        .showSnackBar(const SnackBar(content: Text('Cleared all data. Please pick a new organism to analyze.')));
   }
 }
 
@@ -258,9 +249,9 @@ class _OrganismCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     return SizedBox(
-      width: 260,
-      height: 80,
+      width: 240,
       child: Card(
         color: organism == null ? Theme.of(context).colorScheme.surfaceVariant : null,
         child: InkWell(
@@ -274,9 +265,9 @@ class _OrganismCard extends StatelessWidget {
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(organism!.name, style: Theme.of(context).textTheme.titleSmall),
+                      FittedBox(child: Text(organism!.name, style: textTheme.titleLarge)),
                       const SizedBox(height: 8),
-                      Text(organism!.description ?? '', style: Theme.of(context).textTheme.caption),
+                      FittedBox(child: Text(organism!.description ?? '', style: textTheme.caption)),
                     ],
                   ),
           ),

@@ -47,10 +47,10 @@ class Motif {
 
   static String? validate(List<String> definitions) {
     if (definitions.isEmpty) {
-      throw ArgumentError('Definition cannot be empty');
+      return 'Definition cannot be empty';
     }
     if (definitions.where((definition) => !RegExp(r"^[AGCTURYNWSMKBHDV]+$").hasMatch(definition)).isNotEmpty) {
-      throw ArgumentError('Motif definition contains invalid characters');
+      return 'Motif definition contains invalid characters';
     }
     return null;
   }

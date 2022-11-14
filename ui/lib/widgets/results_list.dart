@@ -1,0 +1,76 @@
+import 'package:flex_color_picker/flex_color_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:geneweb/analysis/analysis.dart';
+import 'package:geneweb/genes/gene_model.dart';
+import 'package:provider/provider.dart';
+
+class ResultsList extends StatefulWidget {
+  const ResultsList({super.key, required this.onSelected});
+
+  final Function(String? selected) onSelected;
+
+  @override
+  State<ResultsList> createState() => _ResultsListState();
+}
+
+class _ResultsListState extends State<ResultsList> {
+  String? _selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final analyses = context.select<GeneModel, List<Analysis>>((model) => model.analyses);
+    return ReorderableListView(
+      onReorder: (oldIndex, newIndex) => _handleReorder(context, oldIndex, newIndex),
+      children: [
+        for (final analysis in analyses)
+          ListTile(
+            key: Key(analysis.name),
+            onTap: () => _handleSelected(analysis.name),
+            dense: true,
+            selected: analysis.name == _selected,
+            selectedTileColor: colorScheme.primaryContainer,
+            selectedColor: colorScheme.onPrimaryContainer,
+            leading: IconButton(
+              onPressed: () => _handleSetVisibility(context, analysis),
+              icon: analysis.visible
+                  ? ColorIndicator(
+                      color: analysis.color,
+                      borderRadius: 4,
+                      width: 24,
+                      height: 24,
+                    )
+                  : const Icon(Icons.visibility_off),
+            ),
+            title: Text(analysis.name),
+            subtitle: Text(
+              '${analysis.distribution!.totalGenesCount} genes (${analysis.distribution!.totalGenesWithMotifCount} with motif), ${analysis.distribution!.totalCount} motifs',
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _handleReorder(BuildContext context, int oldIndex, int newIndex) {
+    final analyses = List<Analysis>.from(GeneModel.of(context).analyses);
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    final item = analyses.removeAt(oldIndex);
+    analyses.insert(newIndex, item);
+    GeneModel.of(context).setAnalyses(analyses);
+  }
+
+  void _handleSelected(String name) {
+    setState(() => _selected = _selected == name ? null : name);
+    widget.onSelected(_selected);
+  }
+
+  void _handleSetVisibility(BuildContext context, Analysis analysis) {
+    final model = GeneModel.of(context);
+    model.setAnalyses([
+      for (final a in model.analyses)
+        if (a.name == analysis.name) analysis.copyWith(visible: !analysis.visible) else a
+    ]);
+  }
+}

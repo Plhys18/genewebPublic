@@ -14,36 +14,84 @@ class Analysis {
   final String name;
   final Motif motif;
   final Color color;
+  final int stroke;
+  final bool visible;
 
   /// When `true`, analysis will filter overlapping matches
   final bool noOverlaps;
 
-  List<AnalysisResult>? result;
-  Distribution? distribution;
+  final List<AnalysisResult>? result;
+  final Distribution? distribution;
 
-  Analysis(
-      {required this.geneList,
-      required this.noOverlaps,
-      required this.min,
-      required this.max,
-      required this.interval,
-      required this.motif,
-      required this.name,
-      required this.color,
-      this.alignMarker});
+  Analysis({
+    required this.geneList,
+    required this.noOverlaps,
+    required this.min,
+    required this.max,
+    required this.interval,
+    required this.motif,
+    required this.name,
+    required this.color,
+    this.alignMarker,
+    this.stroke = 2,
+    this.visible = true,
+    required this.result,
+    required this.distribution,
+  });
 
-  void run(Motif motif) {
-    List<AnalysisResult> results = [];
-    for (var gene in geneList.genes) {
-      results.addAll(_findMatches(gene, motif));
-    }
-    result = results;
-    distribution =
-        Distribution(min: min, max: max, interval: interval, alignMarker: alignMarker, name: name, color: color)
-          ..run(this);
+  Analysis copyWith({Color? color, int? stroke, bool? visible}) {
+    return Analysis(
+      geneList: geneList,
+      noOverlaps: noOverlaps,
+      min: min,
+      max: max,
+      interval: interval,
+      alignMarker: alignMarker,
+      name: name,
+      motif: motif,
+      color: color ?? this.color,
+      stroke: stroke ?? this.stroke,
+      visible: visible ?? this.visible,
+      result: result,
+      distribution: distribution,
+    );
   }
 
-  List<AnalysisResult> _findMatches(Gene gene, Motif motif) {
+  factory Analysis.run({
+    required GeneList geneList,
+    noOverlaps = true,
+    required int min,
+    required int max,
+    required int interval,
+    required Motif motif,
+    required String name,
+    required Color color,
+    String? alignMarker,
+    int stroke = 2,
+    bool visible = true,
+  }) {
+    List<AnalysisResult> results = [];
+    for (var gene in geneList.genes) {
+      results.addAll(_findMatches(gene, motif, noOverlaps));
+    }
+    final distribution =
+        Distribution(min: min, max: max, interval: interval, alignMarker: alignMarker, name: name, color: color)
+          ..run(results, geneList.genes.length);
+    return Analysis(
+      geneList: geneList,
+      noOverlaps: noOverlaps,
+      min: min,
+      max: max,
+      interval: interval,
+      motif: motif,
+      name: name,
+      color: color,
+      result: results,
+      distribution: distribution,
+    );
+  }
+
+  static List<AnalysisResult> _findMatches(Gene gene, Motif motif, bool noOverlaps) {
     List<AnalysisResult> result = [];
     final definitions = {
       ...motif.regExp,

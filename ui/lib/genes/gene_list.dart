@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:geneweb/genes/filter_definition.dart';
+import 'package:geneweb/genes/stage_selection.dart';
 import 'package:geneweb/genes/gene.dart';
 import 'package:geneweb/statistics/series.dart';
 
@@ -53,13 +53,15 @@ class GeneList extends Equatable {
     return GeneList._(source, _transcriptionRates(source), const []);
   }
 
-  GeneList filter(StageSelection filter) {
-    genes.sort((a, b) => a.transcriptionRates[filter.key]!.compareTo(b.transcriptionRates[filter.key]!));
+  GeneList filter(StageSelection filter, String stage) {
+    assert(filter.stages != null);
+    assert(filter.stages!.contains(stage));
+    genes.sort((a, b) => a.transcriptionRates[stage]!.compareTo(b.transcriptionRates[stage]!));
     if (filter.selection == FilterSelection.percentile) {
       if (filter.strategy == FilterStrategy.top) {
-        return GeneList.fromList(_topPercentile(filter.percentile!, filter.key));
+        return GeneList.fromList(_topPercentile(filter.percentile!, stage));
       } else {
-        return GeneList.fromList(_bottomPercentile(filter.percentile!, filter.key));
+        return GeneList.fromList(_bottomPercentile(filter.percentile!, stage));
       }
     } else {
       if (filter.strategy == FilterStrategy.top) {

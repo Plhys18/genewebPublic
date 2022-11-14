@@ -1,12 +1,12 @@
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
+import 'package:geneweb/analysis/analysis.dart';
 import 'package:geneweb/analysis/distribution.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:provider/provider.dart';
 
 class DistributionView extends StatefulWidget {
-  final Map<String, Color> colors;
-  final Map<String, int> stroke;
+  final String? focus;
   final bool usePercentages;
   final bool groupByGenes;
   final double? verticalAxisMin;
@@ -15,8 +15,7 @@ class DistributionView extends StatefulWidget {
   final double? horizontalAxisMax;
   const DistributionView(
       {Key? key,
-      required this.colors,
-      required this.stroke,
+      required this.focus,
       required this.usePercentages,
       required this.groupByGenes,
       required this.verticalAxisMin,
@@ -54,7 +53,13 @@ class _DistributionViewState extends State<DistributionView> {
 
   @override
   Widget build(BuildContext context) {
-    final distributions = context.select<GeneModel, List<Distribution>>((model) => model.distributions);
+    final analyses =
+        context.select<GeneModel, List<Analysis>>((model) => model.analyses.where((a) => a.visible).toList());
+    if (analyses.isEmpty) {
+      return const Center(child: Text('No series enabled'));
+    }
+
+    final distributions = analyses.map((a) => a.distribution!).toList();
     const defaultVerticalMin = 0;
     final defaultVerticalMax = _verticalMaximum(distributions);
     final defaultHorizontalMin = distributions.first.min;
@@ -66,18 +71,22 @@ class _DistributionViewState extends State<DistributionView> {
         Expanded(
           child: charts.LineChart(
             [
-              for (final distribution in distributions)
+              for (final analysis in analyses)
                 charts.Series<DistributionDataPoint, int>(
-                  id: distribution.name,
-                  data: distribution.dataPoints!,
+                  id: analysis.name,
+                  data: analysis.distribution!.dataPoints!,
                   domainFn: (DistributionDataPoint point, i) => point.min,
                   measureFn: _measureFn,
                   labelAccessorFn: (DistributionDataPoint point, _) => '<${point.min}; ${point.max})',
-                  strokeWidthPxFn: (_, __) => widget.stroke[distribution.name] ?? 2,
-                  seriesColor: charts.ColorUtil.fromDartColor(
-                      widget.colors[distribution.name] ?? distribution.color ?? Colors.grey),
+                  strokeWidthPxFn: (_, __) => analysis.stroke,
+                  seriesColor: widget.focus == null
+                      ? charts.ColorUtil.fromDartColor(analysis.color)
+                      : widget.focus == analysis.name
+                          ? charts.ColorUtil.fromDartColor(analysis.color)
+                          : charts.ColorUtil.fromDartColor(Colors.grey.withOpacity(0.1)),
                 ),
             ],
+            animate: false,
             primaryMeasureAxis: charts.NumericAxisSpec(
               tickProviderSpec: charts.BasicNumericTickProviderSpec(
                 desiredMinTickCount: 10,
