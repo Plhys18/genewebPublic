@@ -11,20 +11,22 @@ class StageSubtitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final filter = context.select<GeneModel, StageSelection?>((model) => model.filter);
-    final stages = filter == null
-        ? null
-        : filter.stages.isEmpty
-            ? 'No stages selected'
-            : filter.stages.length == 1
-                ? 'Analyze ${filter.stages.first} stage'
-                : 'Compare ${filter.stages.length} stages';
-    return filter == null
-        ? const Text('Use all genes regardless of development stage')
-        : filter.stages.isEmpty
-            ? const Text('No stages selected')
-            : Text(
-                '$stages by taking ${filter.strategy.name} ${filter.selection == FilterSelection.fixed ? '${filter.count} genes' : '${(filter.percentile! * 100).round()}th percentile of genes'} based on TPM');
+    final stages = context.select<GeneModel, List<String>>((model) => model.filter?.stages ?? []);
+    final expectedResults = context.select<GeneModel, int>((model) => model.expectedResults);
+    if (expectedResults > 60 && stages.length > 5) {
+      return Text('Analysis would result in $expectedResults series, reduce the number of selected stages');
+    }
+    if (stages.isEmpty) {
+      return const Text('No stages selected');
+    }
+    final isMain = stages.contains(GeneModel.kAllStages);
+    final realStages = stages.where((s) => s != GeneModel.kAllStages).toList();
+    List<String> texts = [];
+    if (isMain) texts.add('Genome');
+    if (realStages.isNotEmpty) {
+      texts.add(realStages.length == 1 ? realStages.first : '${realStages.length} other stages');
+    }
+    return Text(texts.join(' and '));
   }
 }
 
@@ -40,11 +42,11 @@ class StagePanel extends StatefulWidget {
 class _StagePanelState extends State<StagePanel> {
   final _formKey = GlobalKey<FormState>();
 
-  List<String>? _stages;
-  FilterStrategy _strategy = FilterStrategy.top;
-  FilterSelection _selection = FilterSelection.fixed;
-  double _percentile = 0.95;
-  int _count = 3200;
+  late List<String> _stages;
+  late FilterStrategy _strategy;
+  late FilterSelection _selection;
+  late double _percentile;
+  late int _count;
 
   final _percentileController = TextEditingController();
   final _countController = TextEditingController();
@@ -52,8 +54,7 @@ class _StagePanelState extends State<StagePanel> {
   @override
   void initState() {
     super.initState();
-    _percentileController.text = '${(_percentile * 100).round()}';
-    _countController.text = '$_count';
+    _updateStateFromModel();
   }
 
   @override
@@ -63,26 +64,34 @@ class _StagePanelState extends State<StagePanel> {
     super.dispose();
   }
 
-  StageSelection? get _filter => _stages != null && _formKey.currentState?.validate() == true
-      ? StageSelection(
-          stages: _stages!,
-          strategy: _strategy,
-          selection: _selection,
-          percentile: _percentile,
-          count: _count,
-        )
-      : null;
+  @override
+  void didUpdateWidget(covariant StagePanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.key != widget.key) {
+      _updateStateFromModel();
+    }
+  }
+
+  void _updateStateFromModel() {
+    final filter = GeneModel.of(context).filter ?? StageSelection();
+    _stages = filter.stages;
+    _strategy = filter.strategy;
+    _selection = filter.selection;
+    _percentile = filter.percentile;
+    _count = filter.count;
+    _percentileController.text = '${(_percentile * 100).round()}';
+    _countController.text = '$_count';
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
-    final keys =
+    final allStagesKeys =
         context.select<GeneModel, List<String>>((model) => model.sourceGenes?.transcriptionRates.keys.toList() ?? []);
-
     final sourceGenes = context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
-    final filteredGenes =
-        _stages != null && _stages!.length == 1 ? sourceGenes?.filter(_filter!, _filter!.stages.first) : null;
-
     if (sourceGenes == null) return const Center(child: Text('Load source data first'));
+    final public = context.select<GeneModel, bool>((model) => model.publicSite);
+    final textTheme = Theme.of(context).textTheme;
     return Align(
       alignment: Alignment.topLeft,
       child: Form(
@@ -90,92 +99,90 @@ class _StagePanelState extends State<StagePanel> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CupertinoSlidingSegmentedControl<bool>(
-              children: const {
-                false: Text('Analyze all genes'),
-                true: Text('Compare development stages'),
-              },
-              groupValue: _stages != null,
-              onValueChanged: _handleCompareToggle,
+            Text('GENOME', style: textTheme.titleSmall),
+            Text('Distribution of the motif across the genome.', style: textTheme.caption),
+            const SizedBox(height: 16),
+            _StageCard(
+              name: 'GENOME',
+              isSelected: _stages.contains(GeneModel.kAllStages) == true,
+              onToggle: (value) => _handleToggle(GeneModel.kAllStages, value),
             ),
-            if (_stages != null) ...[
-              const SizedBox(height: 16),
-              Text('Choose stages to compare', style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final key in keys)
-                    _StageCard(
-                      name: key,
-                      isSelected: _stages?.contains(key) == true,
-                      onToggle: (value) => _handleToggle(key, value),
-                    ),
-                ],
-              ),
-            ],
-            if (_stages?.isNotEmpty == true) ...[
-              const SizedBox(height: 16),
-              Text('Choose how to select genes based on TPM in each stage',
-                  style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.end,
-                children: [
-                  CupertinoSlidingSegmentedControl<FilterStrategy>(
-                    children: const {
-                      FilterStrategy.top: Text('Most transcribed'),
-                      FilterStrategy.bottom: Text('Least transcribed'),
-                    },
-                    onValueChanged: (value) {
-                      setState(() => _strategy = value!);
-                      _handleChanged();
-                    },
-                    groupValue: _strategy,
+            const SizedBox(height: 16),
+            Text('DEVELOPMENTAL STAGES', style: textTheme.titleSmall),
+            Text('Distribution of the motif in genes with elevated transcript levels in certain developmental stage.',
+                style: textTheme.caption),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final key in allStagesKeys)
+                  _StageCard(
+                    name: key,
+                    isSelected: _stages.contains(key) == true,
+                    onToggle: (value) => _handleToggle(key, value),
                   ),
-                  if (_selection == FilterSelection.percentile)
-                    SizedBox(
-                      width: 200,
-                      child: TextFormField(
-                        controller: _percentileController,
-                        decoration: const InputDecoration(labelText: 'Percentile', suffix: Text('th')),
-                        keyboardType: TextInputType.number,
-                        onChanged: (value) {
-                          setState(() =>
-                              _percentile = ((double.tryParse(_percentileController.text) ?? 0) / 100).clamp(0, 1));
-                          _handleChanged();
-                        },
-                        validator: (value) {
-                          final parsed = double.tryParse(_percentileController.text);
-                          if (parsed == null || parsed < 0 || parsed > 100) return 'Enter a number between 0 and 100';
-                          return null;
-                        },
-                      ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text('Choose the transcript level based on TPM:', style: textTheme.titleSmall),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.end,
+              children: [
+                CupertinoSlidingSegmentedControl<FilterStrategy>(
+                  children: const {
+                    FilterStrategy.top: Text('Most transcribed'),
+                    FilterStrategy.bottom: Text('Least transcribed'),
+                  },
+                  onValueChanged: (value) {
+                    setState(() => _strategy = value!);
+                    _handleChanged();
+                  },
+                  groupValue: _strategy,
+                ),
+                if (_selection == FilterSelection.percentile)
+                  SizedBox(
+                    width: 200,
+                    child: TextFormField(
+                      controller: _percentileController,
+                      decoration: const InputDecoration(labelText: 'Percentile', suffix: Text('th')),
+                      keyboardType: TextInputType.number,
+                      onChanged: (value) {
+                        setState(
+                            () => _percentile = ((double.tryParse(_percentileController.text) ?? 0) / 100).clamp(0, 1));
+                        _handleChanged();
+                      },
+                      validator: (value) {
+                        final parsed = double.tryParse(_percentileController.text);
+                        if (parsed == null || parsed < 0 || parsed > 100) return 'Enter a number between 0 and 100';
+                        return null;
+                      },
                     ),
-                  if (_selection == FilterSelection.fixed)
-                    SizedBox(
-                      width: 200,
-                      child: TextFormField(
-                        controller: _countController,
-                        decoration: const InputDecoration(labelText: 'Count'),
-                        keyboardType: TextInputType.number,
-                        onChanged: (value) {
-                          setState(() =>
-                              _count = (int.tryParse(_countController.text) ?? 0).clamp(0, sourceGenes.genes.length));
-                          _handleChanged();
-                        },
-                        validator: (value) {
-                          final parsed = int.tryParse(_countController.text);
-                          if (parsed == null || parsed < 0 || parsed > sourceGenes.genes.length) {
-                            return 'Enter a number between 0 and ${sourceGenes.genes.length}';
-                          }
-                          return null;
-                        },
-                      ),
+                  ),
+                if (_selection == FilterSelection.fixed)
+                  SizedBox(
+                    width: 200,
+                    child: TextFormField(
+                      controller: _countController,
+                      decoration: const InputDecoration(labelText: 'Count'),
+                      keyboardType: TextInputType.number,
+                      onChanged: (value) {
+                        setState(() =>
+                            _count = (int.tryParse(_countController.text) ?? 0).clamp(0, sourceGenes.genes.length));
+                        _handleChanged();
+                      },
+                      validator: (value) {
+                        final parsed = int.tryParse(_countController.text);
+                        if (parsed == null || parsed < 0 || parsed > sourceGenes.genes.length) {
+                          return 'Enter a number between 0 and ${sourceGenes.genes.length}';
+                        }
+                        return null;
+                      },
                     ),
+                  ),
+                if (!public)
                   CupertinoSlidingSegmentedControl<FilterSelection>(
                     children: const {
                       FilterSelection.fixed: Text('Genes'),
@@ -187,9 +194,8 @@ class _StagePanelState extends State<StagePanel> {
                     },
                     groupValue: _selection,
                   ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ],
         ),
       ),
@@ -199,39 +205,22 @@ class _StagePanelState extends State<StagePanel> {
   void _handleChanged() {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      if (_stages != null) {
-        widget.onChanged(StageSelection(
-          stages: _stages!,
-          strategy: _strategy,
-          selection: _selection,
-          percentile: _percentile,
-          count: _count,
-        ));
-      } else {
-        widget.onChanged(null);
-      }
+      widget.onChanged(StageSelection(
+        stages: _stages,
+        strategy: _strategy,
+        selection: _selection,
+        percentile: _percentile,
+        count: _count,
+      ));
     }
   }
 
   void _handleToggle(String key, bool value) {
     setState(() {
       if (value) {
-        _stages ??= [];
-        _stages!.add(key);
+        _stages.add(key);
       } else {
-        _stages!.remove(key);
-      }
-    });
-    _handleChanged();
-  }
-
-  void _handleCompareToggle(bool? value) {
-    final keys = GeneModel.of(context).sourceGenes?.transcriptionRates.keys.toList() ?? [];
-    setState(() {
-      if (value == true) {
-        _stages = List.of(keys);
-      } else {
-        _stages = null;
+        _stages.remove(key);
       }
     });
     _handleChanged();

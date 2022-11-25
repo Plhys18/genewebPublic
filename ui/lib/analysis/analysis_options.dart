@@ -4,5 +4,5 @@ class AnalysisOptions {
   final int interval;
   final String? alignMarker;
 
-  AnalysisOptions({this.min = 0, this.max = 10000, this.interval = 100, this.alignMarker});
+  AnalysisOptions({this.min = 0, this.max = 10000, this.interval = 30, this.alignMarker});
 }

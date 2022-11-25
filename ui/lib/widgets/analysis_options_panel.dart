@@ -3,27 +3,21 @@ import 'package:geneweb/analysis/analysis_options.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:provider/provider.dart';
 
-class AnalysisOptionsHeader extends StatelessWidget {
-  const AnalysisOptionsHeader({super.key, required this.isExpanded});
-
-  final bool isExpanded;
+class AnalysisOptionsSubtitle extends StatelessWidget {
+  const AnalysisOptionsSubtitle({super.key});
 
   @override
   Widget build(BuildContext context) {
     final analysisOptions = context.select<GeneModel, AnalysisOptions>((model) => model.analysisOptions);
-    return ListTile(
-      title: const Text('Analysis Options'),
-      subtitle: Text(
-          'Interval <${analysisOptions.min}; ${analysisOptions.max}> bp of ${(analysisOptions.alignMarker ?? 'sequence start').toUpperCase()}, chunk size ${analysisOptions.interval} bp'),
-    );
+    return Text(
+        'Analyzing interval <${analysisOptions.min}; ${analysisOptions.max}> bp relative to ${(analysisOptions.alignMarker?.toUpperCase() ?? 'sequence start')}, bucket size ${analysisOptions.interval} bp');
   }
 }
 
 class AnalysisOptionsPanel extends StatefulWidget {
   final Function(AnalysisOptions options) onChanged;
-  final bool enabled;
 
-  const AnalysisOptionsPanel({Key? key, required this.onChanged, this.enabled = true}) : super(key: key);
+  const AnalysisOptionsPanel({Key? key, required this.onChanged}) : super(key: key);
 
   @override
   State<AnalysisOptionsPanel> createState() => _AnalysisOptionsPanelState();
@@ -44,14 +38,7 @@ class _AnalysisOptionsPanelState extends State<AnalysisOptionsPanel> {
   @override
   void initState() {
     super.initState();
-    final options = GeneModel.of(context).analysisOptions;
-    _min = options.min;
-    _max = options.max;
-    _interval = options.interval;
-    _alignMarker = options.alignMarker;
-    _minController.text = '$_min';
-    _maxController.text = '$_max';
-    _intervalController.text = '$_interval';
+    _updateStateFromWidget();
   }
 
   @override
@@ -60,6 +47,26 @@ class _AnalysisOptionsPanelState extends State<AnalysisOptionsPanel> {
     _minController.dispose();
     _maxController.dispose();
     _intervalController.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant AnalysisOptionsPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.key != widget.key) {
+      _updateStateFromWidget();
+    }
+  }
+
+  void _updateStateFromWidget() {
+    final options = GeneModel.of(context).analysisOptions;
+    _min = options.min;
+    _max = options.max;
+    _interval = options.interval;
+    _alignMarker = options.alignMarker;
+    _minController.text = '$_min';
+    _maxController.text = '$_max';
+    _intervalController.text = '$_interval';
+    setState(() {});
   }
 
   @override
@@ -73,11 +80,6 @@ class _AnalysisOptionsPanelState extends State<AnalysisOptionsPanel> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!widget.enabled) ...[
-              Text('To edit analysis options, please first remove all existing results from the Results tab.',
-                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
-              const SizedBox(height: 16),
-            ],
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -86,26 +88,26 @@ class _AnalysisOptionsPanelState extends State<AnalysisOptionsPanel> {
                 SizedBox(
                   width: 300,
                   child: DropdownButtonFormField<String?>(
-                      items: [
-                        const DropdownMenuItem(value: null, child: Text('Sequence start')),
-                        for (final marker in markers)
-                          DropdownMenuItem(value: marker, child: Text(marker.toUpperCase())),
-                      ],
-                      onChanged: widget.enabled
-                          ? (value) {
-                              setState(() => _alignMarker = value);
-                              _handleChanged();
-                            }
-                          : null,
-                      value: _alignMarker,
-                      decoration: const InputDecoration(labelText: 'Sequence alignment')),
+                    items: [
+                      const DropdownMenuItem(value: null, child: Text('Sequence start')),
+                      for (final marker in markers) DropdownMenuItem(value: marker, child: Text(marker.toUpperCase())),
+                    ],
+                    onChanged: (value) {
+                      setState(() => _alignMarker = value);
+                      _handleChanged();
+                    },
+                    value: _alignMarker,
+                    decoration: const InputDecoration(
+                        labelText: 'Motif mapping', helperText: 'Motifs are mapped relative to TSS or ATG'),
+                  ),
                 ),
                 SizedBox(
                   width: 200,
                   child: TextFormField(
-                    enabled: widget.enabled,
                     controller: _minController,
-                    decoration: const InputDecoration(labelText: 'Min (bp)'),
+                    decoration: InputDecoration(
+                        labelText: 'Genomic interval Min [bp]',
+                        helperText: 'Relative to ${_alignMarker?.toUpperCase() ?? 'sequence start'}'),
                     keyboardType: TextInputType.number,
                     onChanged: (value) {
                       setState(() => _min = (int.tryParse(_minController.text) ?? 0));
@@ -121,9 +123,10 @@ class _AnalysisOptionsPanelState extends State<AnalysisOptionsPanel> {
                 SizedBox(
                   width: 200,
                   child: TextFormField(
-                    enabled: widget.enabled,
                     controller: _maxController,
-                    decoration: const InputDecoration(labelText: 'Max (bp)'),
+                    decoration: InputDecoration(
+                        labelText: 'Genomic interval Max [bp]',
+                        helperText: 'Relative to ${_alignMarker?.toUpperCase() ?? 'sequence start'}'),
                     keyboardType: TextInputType.number,
                     onChanged: (value) {
                       setState(() => _max = (int.tryParse(_maxController.text) ?? 0));
@@ -139,9 +142,11 @@ class _AnalysisOptionsPanelState extends State<AnalysisOptionsPanel> {
                 SizedBox(
                   width: 200,
                   child: TextFormField(
-                    enabled: widget.enabled,
                     controller: _intervalController,
-                    decoration: const InputDecoration(labelText: 'Chunk size (bp)'),
+                    decoration: const InputDecoration(
+                      labelText: 'Bucket size [bp]',
+                      helperText: 'Interval used to group the results',
+                    ),
                     keyboardType: TextInputType.number,
                     onChanged: (value) {
                       setState(() => _interval = (int.tryParse(_intervalController.text) ?? 1).clamp(1, 10000));
@@ -165,9 +170,7 @@ class _AnalysisOptionsPanelState extends State<AnalysisOptionsPanel> {
   void _handleChanged() {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      if (widget.enabled) {
-        widget.onChanged(AnalysisOptions(min: _min, max: _max, interval: _interval, alignMarker: _alignMarker));
-      }
+      widget.onChanged(AnalysisOptions(min: _min, max: _max, interval: _interval, alignMarker: _alignMarker));
     }
   }
 }

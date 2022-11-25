@@ -2,6 +2,8 @@
 ///
 /// Codes via https://www.genome.jp/kegg/catalog/codes1.html
 class Motif {
+  String get id => definitions.join(',');
+  final bool isCustom;
   final String name;
   final List<String> definitions;
 
@@ -43,7 +45,7 @@ class Motif {
     'V': 'B',
   };
 
-  Motif({required this.name, required this.definitions});
+  Motif({required this.name, required this.definitions, this.isCustom = false});
 
   static String? validate(List<String> definitions) {
     if (definitions.isEmpty) {

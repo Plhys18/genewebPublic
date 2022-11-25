@@ -2,14 +2,12 @@ import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/analysis.dart';
-import 'package:geneweb/analysis/analysis_options.dart';
 import 'package:geneweb/analysis/motif.dart';
 import 'package:geneweb/genes/gene_list.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:geneweb/genes/stage_selection.dart';
 import 'package:geneweb/output/distributions_output.dart';
 import 'package:geneweb/output/genes_output.dart';
-import 'package:geneweb/widgets/analysis_options_panel.dart';
 import 'package:geneweb/widgets/distribution_view.dart';
 import 'package:geneweb/widgets/drill_down_view.dart';
 import 'package:geneweb/widgets/results_list.dart';
@@ -35,8 +33,11 @@ class ResultsPanel extends StatefulWidget {
 }
 
 class _ResultsPanelState extends State<ResultsPanel> {
+  late final _scaffoldMessenger = ScaffoldMessenger.of(context);
+  late final _model = GeneModel.of(context);
+
   bool _usePercentages = true;
-  bool _groupByGenes = false;
+  bool _groupByGenes = true;
   bool _customAxis = false;
   double? _verticalAxisMin;
   double? _verticalAxisMax;
@@ -62,14 +63,21 @@ class _ResultsPanelState extends State<ResultsPanel> {
   @override
   Widget build(BuildContext context) {
     final sourceGenes = context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
-    final motif = context.select<GeneModel, Motif?>((model) => model.motif);
+    final motifs = context.select<GeneModel, List<Motif>>((model) => model.motifs);
     final filter = context.select<GeneModel, StageSelection?>((model) => model.filter);
     final analyses = context.select<GeneModel, List<Analysis>>((model) => model.analyses);
+    final visibleAnalyses =
+        context.select<GeneModel, List<Analysis>>((model) => model.analyses.where((a) => a.visible).toList());
     final analysisProgress = context.select<GeneModel, double?>((model) => model.analysisProgress);
+    final analysisCancelled = context.select<GeneModel, bool>((model) => model.analysisCancelled);
+    final expectedResults = context.select<GeneModel, int>((model) => model.expectedResults);
+    final analysis = context.select<GeneModel, Analysis?>(
+        (model) => model.analyses.firstWhereOrNull((a) => a.name == _selectedAnalysisName));
     final canAnalyzeErrors = [
       if (sourceGenes == null) 'no source genes selected',
-      if (motif == null) 'no motif selected',
-      if (filter?.stages.isEmpty == true) 'no stages to compare selected',
+      if (motifs.isEmpty) 'no motifs selected',
+      if (filter?.stages.isEmpty == true) 'no stages selected',
+      if (expectedResults > 60) 'too many results (max 60)',
     ];
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -82,20 +90,45 @@ class _ResultsPanelState extends State<ResultsPanel> {
             const SizedBox(height: 16),
           ],
           if (analysisProgress != null) ...[
-            LinearProgressIndicator(value: analysisProgress),
-            const SizedBox(height: 16),
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                Expanded(child: LinearProgressIndicator(value: analysisProgress)),
+                IconButton(
+                  onPressed: analysisCancelled ? null : _handleStopAnalysis,
+                  tooltip: 'Stop analysis',
+                  icon: Icon(Icons.cancel, color: Theme.of(context).colorScheme.primary),
+                )
+              ],
+            ),
+            const SizedBox(height: 32),
           ],
           if (analyses.isEmpty && analysisProgress == null) ...[
-            AnalysisOptionsPanel(onChanged: _handleAnalysisOptionsChanged, enabled: analyses.isEmpty),
             const SizedBox(height: 16),
             ElevatedButton(onPressed: _handleAnalyze, child: const Text('Run Analysis')),
+            const SizedBox(height: 16),
+            if (expectedResults > 20) ...[
+              Text(
+                  'Warning: This analysis will produce $expectedResults series. Analysis may take a long time and consume a lot of system memory. Consider reducing the amount of motifs and/or stages.',
+                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              const SizedBox(height: 16),
+            ],
           ] else
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                TextButton(
-                    onPressed: analysisProgress == null ? () => _handleExportDistributions(context) : null,
-                    child: const Text('Export distributions (XLSX)')),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    if (visibleAnalyses.isNotEmpty)
+                      TextButton(
+                          onPressed: analysisProgress == null ? () => _handleExportDistributions(context) : null,
+                          child: Text('Export ${visibleAnalyses.length} series')),
+                    if (analysis != null)
+                      TextButton(
+                          onPressed: () => _handleExportAnalysis(analysis), child: Text('Export "${analysis.name}"')),
+                  ],
+                ),
                 TextButton(onPressed: _handleResetAnalyses, child: const Text('Close')),
               ],
             ),
@@ -123,14 +156,14 @@ class _ResultsPanelState extends State<ResultsPanel> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (analysis != null) Text(analysis.name, style: textTheme.titleLarge),
-              const SizedBox(height: 16),
               _buildGraphSettings(),
               _buildCustomGraphAxisSettings(),
               const SizedBox(height: 16),
-              _buildGraph(),
+              Expanded(flex: 2, child: _buildGraph()),
               const SizedBox(height: 16),
-              if (analysis != null)
+              if (analysis != null) ...[
+                Text(analysis.name, style: textTheme.titleLarge),
+                const SizedBox(height: 16),
                 Expanded(
                   child: Row(
                     children: [
@@ -139,6 +172,7 @@ class _ResultsPanelState extends State<ResultsPanel> {
                     ],
                   ),
                 ),
+              ],
             ],
           ),
         ),
@@ -251,17 +285,21 @@ class _ResultsPanelState extends State<ResultsPanel> {
     );
   }
 
-  void _handleAnalyze() {
-    final motif = GeneModel.of(context).motif;
-    final filter = GeneModel.of(context).filter;
-    if (motif == null) return;
-    GeneModel.of(context).analyze(filter, motif);
+  void _handleAnalyze() async {
+    final result = await _model.analyze();
+    if (result) {
+      _scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Analysis complete')));
+    } else {
+      _scaffoldMessenger.showSnackBar(const SnackBar(backgroundColor: Colors.red, content: Text('Analysis cancelled')));
+    }
   }
 
   Future<void> _handleExportDistributions(BuildContext context) async {
-    final output = DistributionsOutput(
-        GeneModel.of(context).analyses.where((a) => a.visible).map((e) => e.distribution!).toList());
-    final fileName = 'distributions_${GeneModel.of(context).name}_${GeneModel.of(context).motif?.name}.xlsx';
+    final output = DistributionsOutput(_model.analyses.where((a) => a.visible).map((e) => e.distribution!).toList());
+    final stageName =
+        _model.filter!.stages.length == 1 ? _model.filter!.stages.first : '${_model.filter!.stages.length} stages';
+    final motifName = _model.motifs.length == 1 ? _model.motifs.first : '${_model.motifs.length} motifs';
+    final fileName = 'distributions_${_model.name}_${motifName}_$stageName.xlsx';
     final data = output.toExcel(fileName);
   }
 
@@ -283,7 +321,6 @@ class _ResultsPanelState extends State<ResultsPanel> {
   }
 
   void _handleResetAnalyses() {
-    GeneModel.of(context).removeAnalyses();
     Navigator.of(context).pop();
   }
 
@@ -291,13 +328,8 @@ class _ResultsPanelState extends State<ResultsPanel> {
     setState(() => _selectedAnalysisName = selected);
   }
 
-  void _handleAnalysisOptionsChanged(AnalysisOptions options) {
-    GeneModel.of(context).setOptions(options);
-  }
-
   Widget _buildAnalysisRowSettings(Analysis analysis) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return ListView(
       children: [
         CheckboxListTile(
             title: const Text('Enabled'),
@@ -318,8 +350,6 @@ class _ResultsPanelState extends State<ResultsPanel> {
               onValueChanged: (value) => _handleSetStroke(analysis, value),
               groupValue: analysis.stroke,
             )),
-        const SizedBox(height: 16),
-        TextButton(onPressed: () => _handleExportAnalysis(analysis), child: const Text('Export stage data (XLSX)')),
       ],
     );
   }
@@ -350,5 +380,9 @@ class _ResultsPanelState extends State<ResultsPanel> {
   void _handleExportAnalysis(Analysis analysis) {
     final output = AnalysisOutput(analysis);
     final data = output.toExcel(sanitizeFilename('${analysis.name}.xlsx'));
+  }
+
+  void _handleStopAnalysis() {
+    _model.cancelAnalysis();
   }
 }

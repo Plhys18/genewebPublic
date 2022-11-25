@@ -1,40 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:geneweb/analysis/analysis_options.dart';
 import 'package:geneweb/analysis/motif.dart';
 import 'package:geneweb/genes/gene_list.dart';
 import 'package:geneweb/genes/stage_selection.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:geneweb/screens/analysis_screen.dart';
+import 'package:geneweb/widgets/analysis_options_panel.dart';
 import 'package:geneweb/widgets/motif_panel.dart';
 import 'package:geneweb/widgets/stage_panel.dart';
 import 'package:geneweb/widgets/source_panel.dart';
 import 'package:provider/provider.dart';
 
-class HomePanel extends StatefulWidget {
-  const HomePanel({Key? key}) : super(key: key);
+class Home extends StatefulWidget {
+  const Home({Key? key}) : super(key: key);
 
   @override
-  State<HomePanel> createState() => _HomePanelState();
+  State<Home> createState() => _HomeState();
 }
 
-class _HomePanelState extends State<HomePanel> {
+class _HomeState extends State<Home> {
+  late final _model = GeneModel.of(context);
+
   late int _index = 0;
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        // child: _buildExpansionPanelList(context),
-        child: _buildStepper(context),
-      ),
-    );
-  }
-
-  Widget _buildStepper(BuildContext context) {
-    final analysesCount = context.select<GeneModel, int>((model) => model.analyses.length);
+    final name = context.select<GeneModel, String?>((model) => model.name);
     final sourceGenes = context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
-    final motif = context.select<GeneModel, Motif?>((model) => model.motif);
+    final motifs = context.select<GeneModel, List<Motif>>((model) => model.motifs);
     final filter = context.select<GeneModel, StageSelection?>((model) => model.filter);
+    final expectedResults = context.select<GeneModel, int>((model) => model.expectedResults);
 
     return Stepper(
       currentStep: _index,
@@ -43,28 +38,34 @@ class _HomePanelState extends State<HomePanel> {
       onStepTapped: _handleStepTapped,
       steps: <Step>[
         Step(
-          title: const Text('Source data'),
+          title: const Text('Species'),
           subtitle: const SourceSubtitle(),
           content: SourcePanel(onShouldClose: () => _handleStepTapped(1)),
           state: sourceGenes == null ? StepState.indexed : StepState.complete,
         ),
         Step(
+          title: const Text('Genomic interval'),
+          subtitle: const AnalysisOptionsSubtitle(),
+          content: AnalysisOptionsPanel(key: ValueKey(name), onChanged: _handleAnalysisOptionsChanged),
+          state: sourceGenes == null ? StepState.indexed : StepState.complete,
+        ),
+        Step(
           title: const Text('Analyzed motifs'),
           subtitle: const MotifSubtitle(),
-          content: MotifPanel(onChanged: _handleMotifChanged),
-          state: motif == null ? StepState.indexed : StepState.complete,
+          content: MotifPanel(key: ValueKey(name), onChanged: _handleMotifsChanged),
+          state: expectedResults > 60 && motifs.length > 5
+              ? StepState.error
+              : motifs.isEmpty
+                  ? StepState.indexed
+                  : StepState.complete,
         ),
         Step(
           title: const Text('Development stages'),
           subtitle: const StageSubtitle(),
-          content: StagePanel(onChanged: _handleFilterChanged),
-          state: filter == null
-              ? StepState.indexed
-              : filter.stages.isNotEmpty
-                  ? StepState.complete
-                  : filter.stages.isEmpty
-                      ? StepState.error
-                      : StepState.complete,
+          content: StagePanel(key: ValueKey(name), onChanged: _handleFilterChanged),
+          state: filter?.stages.isEmpty == true || expectedResults > 60 && (filter?.stages.length ?? 0) > 5
+              ? StepState.error
+              : StepState.indexed,
         ),
       ],
     );
@@ -75,14 +76,14 @@ class _HomePanelState extends State<HomePanel> {
     switch (nextStep) {
       case 0: // source data
         return true;
-      case 1: // motif
+      case 1: // analysis options
         return model.sourceGenes != null;
-      case 2: // stage
-        return model.sourceGenes != null && model.motif != null;
-      case 3: // analysis
-        return model.sourceGenes != null &&
-            model.motif != null &&
-            (model.filter == null || model.filter!.stages.isNotEmpty);
+      case 2: // motif
+        return model.sourceGenes != null;
+      case 3: // stage
+        return model.sourceGenes != null;
+      case 4: // analysis
+        return model.sourceGenes != null && model.expectedResults > 0 && model.expectedResults <= 60;
       default:
         return false;
     }
@@ -98,8 +99,9 @@ class _HomePanelState extends State<HomePanel> {
 
   Future<void> _handleStepContinue() async {
     final nextStep = _index + 1;
-    if (nextStep == 3) {
+    if (nextStep == 4) {
       await Navigator.of(context).push(MaterialPageRoute(builder: (context) => const AnalysisScreen()));
+      _model.removeAnalyses();
       return;
     }
     if (_isStepAllowed(nextStep)) {
@@ -121,7 +123,11 @@ class _HomePanelState extends State<HomePanel> {
     GeneModel.of(context).setFilter(filter);
   }
 
-  void _handleMotifChanged(Motif? motif) {
-    GeneModel.of(context).setMotif(motif);
+  void _handleMotifsChanged(List<Motif> motifs) {
+    GeneModel.of(context).setMotifs(motifs);
+  }
+
+  void _handleAnalysisOptionsChanged(AnalysisOptions options) {
+    GeneModel.of(context).setOptions(options);
   }
 }

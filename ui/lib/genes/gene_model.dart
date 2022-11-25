@@ -9,6 +9,12 @@ import 'package:provider/provider.dart';
 import 'package:universal_file/universal_file.dart';
 
 class GeneModel extends ChangeNotifier {
+  static const kAllStages = '__ALL__';
+
+  bool get publicSite => _publicSite;
+  bool _publicSite = true;
+  bool get analysisCancelled => _analysisCancelled;
+  bool _analysisCancelled = false;
   String? name;
   GeneList? sourceGenes;
   List<Analysis> analyses = [];
@@ -16,8 +22,10 @@ class GeneModel extends ChangeNotifier {
   AnalysisOptions analysisOptions = AnalysisOptions();
   StageSelection? _filter;
   StageSelection? get filter => _filter;
-  Motif? _motif;
-  Motif? get motif => _motif;
+  List<Motif> _motifs = [];
+  List<Motif> get motifs => _motifs;
+
+  int get expectedResults => motifs.length * (filter?.stages.length ?? 0);
 
   GeneModel();
 
@@ -30,7 +38,17 @@ class GeneModel extends ChangeNotifier {
     analysisProgress = null;
     analysisOptions = AnalysisOptions();
     _filter = null;
-    _motif = null;
+    _motifs = [];
+  }
+
+  void cancelAnalysis() {
+    _analysisCancelled = true;
+    notifyListeners();
+  }
+
+  void setPublicSite(bool value) {
+    _publicSite = value;
+    notifyListeners();
   }
 
   void setAnalyses(List<Analysis> analyses) {
@@ -38,8 +56,8 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setMotif(Motif? motif) {
-    _motif = motif;
+  void setMotifs(List<Motif> newMotifs) {
+    _motifs = newMotifs;
     notifyListeners();
   }
 
@@ -68,11 +86,19 @@ class GeneModel extends ChangeNotifier {
   void resetAnalysisOptions() {
     final keys = sourceGenes?.genes.first.markers.keys;
     if (keys != null && keys.isNotEmpty) {
-      analysisOptions = AnalysisOptions(alignMarker: keys.first, min: -1000, max: 1000, interval: 10);
+      analysisOptions = AnalysisOptions(alignMarker: keys.first, min: -1000, max: 1000, interval: 30);
     } else {
       analysisOptions = AnalysisOptions();
     }
-    notifyListeners();
+  }
+
+  void resetFilter() {
+    final stages = sourceGenes?.transcriptionRates.keys.toList() ?? [];
+    _filter = StageSelection(
+        stages: [kAllStages, ...stages],
+        strategy: FilterStrategy.top,
+        selection: FilterSelection.percentile,
+        percentile: 0.9);
   }
 
   Future<void> loadFromString(String data, {String? name}) async {
@@ -80,6 +106,7 @@ class GeneModel extends ChangeNotifier {
     this.name = name;
     sourceGenes = GeneList.fromFasta(data);
     resetAnalysisOptions();
+    resetFilter();
     notifyListeners();
   }
 
@@ -89,6 +116,7 @@ class GeneModel extends ChangeNotifier {
     final data = await File(path).readAsString();
     sourceGenes = GeneList.fromFasta(data);
     resetAnalysisOptions();
+    resetFilter();
     notifyListeners();
   }
 
@@ -97,41 +125,48 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> analyze(
-    StageSelection? filter,
-    Motif motif,
-  ) async {
-    const kAll = '__ALL__';
-    final stages = filter?.stages ?? [kAll];
-    final totalIterations = stages.length;
+  Future<bool> analyze() async {
+    assert(filter != null);
+    assert(filter!.stages.isNotEmpty);
+    assert(motifs.isNotEmpty);
+    final totalIterations = filter!.stages.length * motifs.length;
     assert(totalIterations > 0);
     int iterations = 0;
     analysisProgress = 0.0;
+    _analysisCancelled = false;
     notifyListeners();
-    for (final key in stages) {
-      await Future.delayed(const Duration(milliseconds: 50)); // Allow UI to refresh on web
-      final filteredGenes = key == kAll ? sourceGenes : sourceGenes!.filter(filter!, key);
-      final name = '${key == kAll ? 'all' : key} - ${motif.name}';
-      final color = _colorFor(name);
-      removeAnalysis(name);
+    for (final motif in motifs) {
+      for (final key in filter!.stages) {
+        await Future.delayed(const Duration(milliseconds: 50)); // Allow UI to refresh on web
+        if (_analysisCancelled) {
+          analysisProgress = null;
+          notifyListeners();
+          return false;
+        }
+        final filteredGenes = key == kAllStages ? sourceGenes : sourceGenes!.filter(filter!, key);
+        final name = '${key == kAllStages ? 'all' : key} - ${motif.name}';
+        final color = _colorFor(name);
+        removeAnalysis(name);
 
-      final analysis = await compute(runAnalysis, {
-        'genes': filteredGenes,
-        'motif': motif,
-        'name': name,
-        'min': analysisOptions.min,
-        'max': analysisOptions.max,
-        'interval': analysisOptions.interval,
-        'alignMarker': analysisOptions.alignMarker,
-        'color': color.value,
-      });
-      analyses.add(analysis);
-      iterations++;
-      analysisProgress = iterations / totalIterations;
-      notifyListeners();
+        final analysis = await compute(runAnalysis, {
+          'genes': filteredGenes,
+          'motif': motif,
+          'name': name,
+          'min': analysisOptions.min,
+          'max': analysisOptions.max,
+          'interval': analysisOptions.interval,
+          'alignMarker': analysisOptions.alignMarker,
+          'color': color.value,
+        });
+        analyses.add(analysis);
+        iterations++;
+        analysisProgress = iterations / totalIterations;
+        notifyListeners();
+      }
     }
     analysisProgress = null;
     notifyListeners();
+    return true;
   }
 
   Color _colorFor(String text) {

@@ -11,15 +11,21 @@ class MotifSubtitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final motif = context.select<GeneModel, Motif?>((model) => model.motif);
-    return motif == null
-        ? const Text('Choose a motif to analyze')
-        : Text(truncate('${motif.name} (${motif.definitions.join(', ')})', 100));
+    final motifs = context.select<GeneModel, List<Motif>>((model) => model.motifs);
+    final expectedResults = context.select<GeneModel, int>((model) => model.expectedResults);
+    if (expectedResults > 60 && motifs.length > 5) {
+      return Text('Analysis would result in $expectedResults series, reduce the number of selected motifs');
+    }
+    return motifs.isEmpty
+        ? const Text('Choose motifs to analyze or enter a custom motif')
+        : motifs.length == 1
+            ? Text(truncate('${motifs.first.name} (${motifs.first.definitions.join(', ')})', 100))
+            : Text('${motifs.length} motifs');
   }
 }
 
 class MotifPanel extends StatefulWidget {
-  final Function(Motif? motif) onChanged;
+  final Function(List<Motif> motif) onChanged;
 
   const MotifPanel({Key? key, required this.onChanged}) : super(key: key);
 
@@ -29,9 +35,11 @@ class MotifPanel extends StatefulWidget {
 
 class _MotifPanelState extends State<MotifPanel> {
   final _formKey = GlobalKey<FormState>();
+  late final _model = GeneModel.of(context);
 
-  String? _motifName;
-  String? _motifDefinition;
+  String? _customMotifName;
+  String? _customMotifDefinition;
+  String? _customMotifError;
   final _nameController = TextEditingController();
   final _definitionController = TextEditingController();
   final _reverseComplementsController = TextEditingController();
@@ -49,13 +57,8 @@ class _MotifPanelState extends State<MotifPanel> {
   Widget build(BuildContext context) {
     final sourceGenes = context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
     if (sourceGenes == null) return const Center(child: Text('Load source data first'));
-    Motif? motif;
-    if (_motifDefinition != null) {
-      final defs = _getDefinitions(_motifDefinition!);
-      if (Motif.validate(defs) == null) {
-        motif = Motif(name: 'X', definitions: defs);
-      }
-    }
+    final motifs = context.select<GeneModel, List<Motif>>((model) => model.motifs);
+    final customMotifs = motifs.where((m) => m.isCustom).toList();
     return Align(
       alignment: Alignment.topLeft,
       child: Form(
@@ -64,8 +67,31 @@ class _MotifPanelState extends State<MotifPanel> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!_showEditor && motif != null)
-              TextButton(child: const Text('Edit motif…'), onPressed: () => setState(() => _showEditor = true)),
+            const Text('CUSTOM MOTIFS'),
+            const SizedBox(height: 16.0),
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                ...customMotifs.map((m) => _MotifCard(
+                      motif: m,
+                      onToggle: (bool value) => _handlePresetToggled(m, value),
+                      isSelected: true,
+                    )),
+                if (!_showEditor) TextButton(onPressed: _handleOpenEditor, child: const Text('Add custom motif…'))
+              ],
+            ),
+            if (_showEditor) ...[
+              _buildMotifEditor(),
+              const SizedBox(height: 16),
+              Text('R = AG, Y = CT, W = AT, S = GC, M = AC, K = GT, B = CGT, D = AGT, H = ACT, V = ACG, N = ACGT',
+                  style: Theme.of(context).textTheme.caption!),
+              const SizedBox(height: 16),
+            ],
+            const SizedBox(height: 16.0),
+            const Text('PRESETS'),
+            const SizedBox(height: 16.0),
             Wrap(
               spacing: 4,
               runSpacing: 4,
@@ -73,86 +99,80 @@ class _MotifPanelState extends State<MotifPanel> {
               children: [
                 ...Presets.analyzedMotifs.map((m) => _MotifCard(
                       motif: m,
-                      onSelected: () => _handlePresetSelected(m),
-                      isSelected: m.definitions.join(',') == motif?.definitions.join(','),
+                      onToggle: (bool value) => _handlePresetToggled(m, value),
+                      isSelected: motifs.contains(m),
                     )),
-                TextButton(onPressed: () => _handlePresetSelected(null), child: const Text('Custom motif…'))
               ],
             ),
-            const SizedBox(height: 16),
-            if (_showEditor)
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.start,
-                children: [
-                  SizedBox(
-                    width: 200,
-                    child: TextFormField(
-                      controller: _nameController,
-                      validator: (value) => value != null && value.isNotEmpty ? null : 'Enter the motif name',
-                      onChanged: (value) {
-                        setState(() => _motifName = value);
-                        _handleChanged();
-                      },
-                      onSaved: (value) => _motifName = value,
-                      decoration: const InputDecoration(
-                        labelText: "Motif name",
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 400,
-                    child: TextFormField(
-                      controller: _definitionController,
-                      validator: _validateMotifDefinition,
-                      onChanged: (value) {
-                        setState(() => _motifDefinition = value);
-                        _handleChanged();
-                      },
-                      onSaved: (value) => _motifDefinition = value,
-                      textCapitalization: TextCapitalization.characters,
-                      autocorrect: false,
-                      maxLines: null,
-                      decoration: const InputDecoration(
-                        labelText: "Motif definition. Separate multiple by new line",
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 400,
-                    child: TextFormField(
-                      controller: _reverseComplementsController,
-                      textCapitalization: TextCapitalization.characters,
-                      autocorrect: false,
-                      maxLines: null,
-                      readOnly: true,
-                      enabled: false,
-                      decoration: const InputDecoration(
-                        labelText: "Reverse complements (read-only)",
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            const SizedBox(height: 8),
-            if (_showEditor)
-              Text('R = AG, Y = CT, W = AT, S = GC, M = AC, K = GT, B = CGT, D = AGT, H = ACT, V = ACG, N = ACGT',
-                  style: Theme.of(context).textTheme.caption!),
           ],
         ),
       ),
     );
   }
 
-  void _handleChanged() {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-      final motif = _motifDefinition == null
-          ? null
-          : Motif(name: _motifName ?? 'Unnamed motif', definitions: _getDefinitions(_motifDefinition!));
-      _reverseComplementsController.text = motif?.reverseDefinitions.join('\n') ?? '';
-      widget.onChanged(motif);
+  Wrap _buildMotifEditor() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.start,
+      children: [
+        SizedBox(
+          width: 200,
+          child: TextFormField(
+            controller: _nameController,
+            validator: (value) => value != null && value.isNotEmpty ? null : 'Enter the motif name',
+            onChanged: (value) {
+              setState(() => _customMotifName = value);
+            },
+            decoration: const InputDecoration(
+              labelText: "Motif name",
+            ),
+          ),
+        ),
+        SizedBox(
+          width: 400,
+          child: TextFormField(
+            controller: _definitionController,
+            validator: _validateMotifDefinition,
+            onChanged: (value) {
+              setState(() => _customMotifDefinition = value);
+              _updateReverseComplements();
+            },
+            textCapitalization: TextCapitalization.characters,
+            autocorrect: false,
+            maxLines: null,
+            decoration: InputDecoration(
+                labelText: "Motif definition",
+                helperText: "Separate multiple motifs with new line.",
+                errorText: _customMotifError),
+          ),
+        ),
+        SizedBox(
+          width: 400,
+          child: TextFormField(
+            controller: _reverseComplementsController,
+            textCapitalization: TextCapitalization.characters,
+            autocorrect: false,
+            maxLines: null,
+            readOnly: true,
+            enabled: false,
+            decoration: const InputDecoration(labelText: "Reverse complements (read only)"),
+          ),
+        ),
+        ElevatedButton(onPressed: _handleAddMotif, child: const Text('ADD')),
+      ],
+    );
+  }
+
+  void _updateReverseComplements() {
+    final error = _validateMotifDefinition(_customMotifDefinition);
+    setState(() => _customMotifError = error);
+    if (error == null) {
+      final motif =
+          Motif(name: _customMotifName ?? 'Unnamed motif', definitions: _getDefinitions(_customMotifDefinition!));
+      _reverseComplementsController.text = motif.reverseDefinitions.join('\n');
+    } else {
+      _reverseComplementsController.text = '';
     }
   }
 
@@ -165,32 +185,41 @@ class _MotifPanelState extends State<MotifPanel> {
       return 'Please enter the motif definition';
     }
     final defs = _getDefinitions(value);
-    try {
-      Motif.validate(defs);
-    } catch (error) {
-      return error.toString();
-    }
-    return null;
+    return Motif.validate(defs);
   }
 
-  void _handlePresetSelected(Motif? motif) {
-    _nameController.text = motif?.name ?? '';
-    _definitionController.text = motif?.definitions.join('\n') ?? '';
-    _reverseComplementsController.text = motif?.reverseDefinitions.join('\n') ?? '';
-    setState(() {
-      _motifName = motif?.name;
-      _motifDefinition = motif?.definitions.join('\n');
-      _showEditor = motif == null;
-    });
-    _handleChanged();
+  void _handlePresetToggled(Motif motif, bool value) {
+    final newMotifs = List.of(_model.motifs);
+    if (value) {
+      newMotifs.add(motif);
+    } else {
+      newMotifs.remove(motif);
+    }
+    _model.setMotifs(newMotifs);
+  }
+
+  void _handleOpenEditor() {
+    setState(() => _showEditor = true);
+    _nameController.text = '';
+    _definitionController.text = '';
+    _reverseComplementsController.text = '';
+  }
+
+  void _handleAddMotif() {
+    if (_formKey.currentState!.validate()) {
+      final motif = Motif(
+          name: _customMotifName ?? 'Unnamed motif', definitions: _customMotifDefinition!.split('\n'), isCustom: true);
+      _model.setMotifs([motif, ..._model.motifs]);
+    }
+    setState(() => _showEditor = false);
   }
 }
 
 class _MotifCard extends StatelessWidget {
   final Motif motif;
-  final VoidCallback onSelected;
+  final Function(bool value) onToggle;
   final bool isSelected;
-  const _MotifCard({required this.motif, required this.onSelected, required this.isSelected});
+  const _MotifCard({required this.motif, required this.onToggle, required this.isSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -201,13 +230,22 @@ class _MotifCard extends StatelessWidget {
       child: Card(
         color: isSelected ? colorScheme.primaryContainer : null,
         child: InkWell(
-          onTap: onSelected,
+          onTap: () => onToggle(!isSelected),
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                FittedBox(child: Text(truncate(motif.name, 20), style: textTheme.titleSmall)),
+                Row(
+                  children: [
+                    Checkbox(value: isSelected, onChanged: (value) => onToggle(value!)),
+                    Expanded(
+                        child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(truncate(motif.name, 20), style: textTheme.titleSmall))),
+                  ],
+                ),
                 const SizedBox(height: 8),
                 FittedBox(child: Text(truncate(motif.definitions.join(', '), 25), style: textTheme.caption)),
               ],

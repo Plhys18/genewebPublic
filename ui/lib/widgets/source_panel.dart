@@ -18,29 +18,30 @@ class SourceSubtitle extends StatelessWidget {
     final sourceGenes = context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
     final name = context.select<GeneModel, String?>((model) => model.name);
     return sourceGenes == null
-        ? const Text('Please choose an organism to analyze')
+        ? const Text(
+            'Motif positions are mapped relative to the transcription start sites (TSS) or Translation start site (ATG)')
         : Text('$name, ${sourceGenes.genes.length} genes');
   }
 }
 
 class SourcePanel extends StatefulWidget {
-  static const List<_Organism> kOrganisms = [
-    _Organism(
+  static const List<Organism> kOrganisms = [
+    Organism(name: 'Marchantia polymorpha', filename: 'Mp.fasta.zip', description: 'ATG'),
+    Organism(name: 'Marchantia polymorpha', filename: 'Mp-with-tss.fasta.zip', description: 'ATG, TSS'),
+    Organism(name: 'Physcomitrella patens', filename: 'Physco.fasta.zip', description: 'ATG'),
+    Organism(name: 'Physcomitrella patens', filename: 'Physco-with-tss.fasta.zip', description: 'ATG, TSS'),
+    Organism(name: 'Amborella trichopoda', filename: 'Ambo.fasta.zip', description: 'ATG'),
+    Organism(name: 'Oryza sativa', description: 'Available soon'),
+    Organism(name: 'Zea mays', filename: 'Zea.fasta.zip', description: 'ATG'),
+    Organism(name: 'Zea mays', filename: 'Zea-with-tss.fasta.zip', description: 'ATG, TSS'),
+    Organism(name: 'Solanum lycopersicum', filename: 'Sola.fasta.zip', description: 'ATG'),
+    Organism(name: 'Solanum lycopersicum', filename: 'Sola-with-tss.fasta.zip', description: 'ATG, TSS'),
+    Organism(
         name: 'Arabidopsis thaliana', filename: 'Arabidopsis.fasta.zip', description: 'TSS, ATG, no splicing variants'),
-    _Organism(
+    Organism(
         name: 'Arabidopsis thaliana',
         filename: 'Arabidopsis-variants.fasta.zip',
         description: 'TSS, ATG, splicing variants'),
-    _Organism(name: 'Ambo', filename: 'Ambo.fasta.zip', description: 'ATG'),
-    _Organism(name: 'Ginkgo', filename: 'Ginkgo.fasta.zip', description: 'ATG'),
-    _Organism(name: 'Marchantia', filename: 'Mp.fasta.zip', description: 'ATG'),
-    _Organism(name: 'Marchantia', filename: 'Mp-with-tss.fasta.zip', description: 'ATG, TSS'),
-    _Organism(name: 'Physco', filename: 'Physco.fasta.zip', description: 'ATG'),
-    _Organism(name: 'Physco', filename: 'Physco-with-tss.fasta.zip', description: 'ATG, TSS'),
-    _Organism(name: 'Sola', filename: 'Sola.fasta.zip', description: 'ATG'),
-    _Organism(name: 'Sola', filename: 'Sola-with-tss.fasta.zip', description: 'ATG, TSS'),
-    _Organism(name: 'Zea', filename: 'Zea.fasta.zip', description: 'ATG'),
-    _Organism(name: 'Zea', filename: 'Zea-with-tss.fasta.zip', description: 'ATG, TSS'),
   ];
 
   const SourcePanel({super.key, required this.onShouldClose});
@@ -82,6 +83,7 @@ class _SourcePanelState extends State<SourcePanel> {
   }
 
   Widget _buildLoad(BuildContext context) {
+    final public = context.select<GeneModel, bool>((model) => model.publicSite);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -90,9 +92,10 @@ class _SourcePanelState extends State<SourcePanel> {
           runSpacing: 8.0,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            ...SourcePanel.kOrganisms.map((organism) =>
-                _OrganismCard(organism: organism, onSelected: () => _handleDownloadFasta(organism.filename))),
-            TextButton(onPressed: _handlePickFile, child: const Text('Open .fasta file…')),
+            ...SourcePanel.kOrganisms.map((organism) => _OrganismCard(
+                organism: organism,
+                onSelected: organism.filename == null ? null : () => _handleDownloadFasta(organism.filename!))),
+            if (!public) TextButton(onPressed: _handlePickFile, child: const Text('Open .fasta file…')),
           ],
         ),
       ],
@@ -105,7 +108,7 @@ class _SourcePanelState extends State<SourcePanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextButton(onPressed: _handleClear, child: const Text('Choose another organism')),
+        TextButton(onPressed: _handleClear, child: const Text('Choose another species…')),
         if (sourceGenes.errors.isNotEmpty) ...[
           const SizedBox(height: 16),
           Text('Found ${sourceGenes.errors.length} errors during the import, listing first ${sampleErrors.length}:'),
@@ -234,17 +237,17 @@ class _SourcePanelState extends State<SourcePanel> {
   }
 }
 
-class _Organism {
+class Organism {
   final String name;
-  final String filename;
+  final String? filename;
   final String? description;
 
-  const _Organism({required this.name, required this.filename, this.description});
+  const Organism({required this.name, this.filename, this.description});
 }
 
 class _OrganismCard extends StatelessWidget {
-  final _Organism? organism;
-  final VoidCallback onSelected;
+  final Organism organism;
+  final VoidCallback? onSelected;
   const _OrganismCard({required this.organism, required this.onSelected});
 
   @override
@@ -253,23 +256,19 @@ class _OrganismCard extends StatelessWidget {
     return SizedBox(
       width: 240,
       child: Card(
-        color: organism == null ? Theme.of(context).colorScheme.surfaceVariant : null,
         child: InkWell(
           onTap: onSelected,
           child: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: organism == null
-                ? const Center(
-                    child: Text('Load local fasta file…'),
-                  )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      FittedBox(child: Text(organism!.name, style: textTheme.titleLarge)),
-                      const SizedBox(height: 8),
-                      FittedBox(child: Text(organism!.description ?? '', style: textTheme.caption)),
-                    ],
-                  ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                FittedBox(
+                    child: Text(organism.name, style: textTheme.titleSmall!.copyWith(fontStyle: FontStyle.italic))),
+                const SizedBox(height: 8),
+                FittedBox(child: Text(organism.description ?? '', style: textTheme.caption)),
+              ],
+            ),
           ),
         ),
       ),
