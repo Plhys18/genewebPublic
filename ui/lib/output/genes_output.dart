@@ -9,20 +9,21 @@ class AnalysisOutput {
   List<int>? toExcel(String fileName) {
     assert(analysis.geneList.genes.isNotEmpty);
     var excel = Excel.createExcel();
+    final originalSheets = excel.sheets.keys;
     final headerCellStyle = CellStyle(backgroundColorHex: 'FFDDFFDD', bold: true);
 
     // genes
     Sheet genesSheet = excel['selected_genes'];
     genesSheet.appendRow([
       'Gene Id',
-      for (final key in analysis.geneList.genes.first.markers.keys) key,
+      'Matches',
       for (final key in analysis.geneList.genes.first.transcriptionRates.keys) key,
     ]);
     for (var i = 0; i < analysis.geneList.genes.length; i++) {
       final gene = analysis.geneList.genes[i];
       genesSheet.appendRow([
         gene.geneId,
-        for (final key in analysis.geneList.genes.first.markers.keys) gene.markers[key],
+        analysis.result?.where((g) => g.gene.geneId == gene.geneId).length,
         for (final key in analysis.geneList.genes.first.transcriptionRates.keys) gene.transcriptionRates[key],
       ]);
     }
@@ -50,6 +51,9 @@ class AnalysisOutput {
       distributionSheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: i)).cellStyle = headerCellStyle;
     }
 
+    for (var element in originalSheets) {
+      excel.delete(element);
+    }
     return excel.save(fileName: fileName);
   }
 }

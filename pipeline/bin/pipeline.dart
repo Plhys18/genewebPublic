@@ -31,16 +31,16 @@ void main(List<String> arguments) async {
   final gff = await Gff.fromFile(configuration.gffFile, nameTransformer: (attributes) {
     // Some source files mismatch gene names in GFF and TPM tables
     switch (organism) {
-      case 'Ambo':
+      case 'Amborella_trichopoda':
         // Convert `evm_27.model.AmTr_v1.0_scaffold00001.1` to `evm_27.TU.AmTr_v1.0_scaffold00001.1`
         final original = attributes['Name'];
         if (original == null) return null;
         final parts = original.split('.');
         return [parts[0], 'TU', ...parts.sublist(2)].join('.');
-      case 'Zea':
+      case 'Zea_mays':
         // We use transcript_id instead of Name
         return attributes['transcript_id'];
-      case 'Ginkgo':
+      case 'Ginkgo_biloba':
         // We use ID instead of Name
         return attributes['ID'];
       default:
@@ -60,21 +60,29 @@ void main(List<String> arguments) async {
   // Load tpm files
   Map<String, Tpm> tpm = {};
   for (final tpmFile in configuration.tpmFiles) {
-    final tpmKey = tpmFile.path.split('/').last;
-    final tpmData = await Tpm.fromFile(tpmFile, sequenceIdentifier: (line) {
-      // Some organisms define the gene as an alias instead as a sequence
-      switch (organism) {
-        case 'Ambo': // It's in the Alias field
-          return line[1];
-        case 'Zea':
-          // We need to convert `Zm00001e000001_P001` to `Zm00001e000001_T001` used in GFF
-          return line[0].replaceAll('_P', '_T');
-        default:
-          return line[0];
-      }
-    });
-    tpm[tpmKey] = tpmData;
-    print('Loaded tpm file `${tpmFile.path}` with ${tpmData.genes.length} genes');
+    final tpmKey = RegExp(r'^.*\/[0-9]+\.\s*([^.]*)').firstMatch(tpmFile.path)!.group(1)!;
+    try {
+      final tpmData = await Tpm.fromFile(tpmFile, sequenceIdentifier: (line) {
+        // Some organisms define the gene as an alias instead as a sequence
+        switch (organism) {
+          case 'Amborella_trichopoda': // It's in the Alias field
+            return line[1];
+          case 'Zea_mays':
+            // We need to convert `Zm00001e000001_P001` to `Zm00001e000001_T001` used in GFF
+            return line[0].replaceAll('_P', '_T');
+          default:
+            return line[0];
+        }
+      });
+      tpm[tpmKey] = tpmData;
+      print('Loaded tpm file `${tpmFile.path}` as `$tpmKey` with ${tpmData.genes.length} genes');
+    } on FormatException catch (error) {
+      print('Error loading tpm file `${tpmFile.path}`: ${error.message}');
+    } on FileSystemException catch (error) {
+      print('Error loading tpm file `${tpmFile.path}`: ${error.message}');
+    } on StateError catch (error) {
+      print('Error loading tpm file `${tpmFile.path}`: ${error.message}');
+    }
   }
 
   // Validate data
@@ -125,14 +133,15 @@ class BatchConfiguration {
     final dir = Directory(path);
     final List<FileSystemEntity> dirEntities = await dir.list().toList();
     final fastaFiles = dirEntities.where((e) => e.path.endsWith('.fa') || e.path.endsWith('.fasta'));
-    if (fastaFiles.length != 1) throw StateError('Expected exactly one fasta file, ${fastaFiles.length} files found.');
+    if (fastaFiles.length != 1) throw StateError('Expected exactly one FASTA file, ${fastaFiles.length} files found.');
     final fastaFile = fastaFiles.first;
-    final gffFiles = dirEntities.where((e) => e.path.endsWith('.gff'));
-    if (gffFiles.length != 1) throw StateError('Expected exactly one gff file, ${gffFiles.length} files found.');
+    final gffFiles = dirEntities.where((e) => e.path.endsWith('.gff') || e.path.endsWith('.gff3'));
+    if (gffFiles.length != 1) throw StateError('Expected exactly one GFF file, ${gffFiles.length} files found.');
     final gffFile = gffFiles.first;
     final tpmDir = Directory('$path/TPM');
     final List<FileSystemEntity> tpmFiles = await tpmDir.list().toList();
-    if (tpmFiles.isEmpty) throw StateError('Expected at least one tpm file, ${tpmFiles.length} files found.');
+    if (tpmFiles.isEmpty) throw StateError('Expected at least one TPM file, ${tpmFiles.length} files found.');
+    tpmFiles.sort((a, b) => a.path.compareTo(b.path));
     return BatchConfiguration(fastaFile: fastaFile, gffFile: gffFile, tpmFiles: tpmFiles);
   }
 }

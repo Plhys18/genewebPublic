@@ -5,6 +5,7 @@ import 'package:pipeline/fasta.dart';
 import 'package:pipeline/gff.dart';
 import 'package:pipeline/tpm.dart';
 import 'package:string_splitter/string_splitter.dart';
+import 'package:collection/collection.dart';
 
 class FastaGenerator {
   static const reverseComplements = {
@@ -67,7 +68,7 @@ class FastaGenerator {
       final List<String> result = [
         '>${gene.name} ${gene.strand!.name.toUpperCase()}',
         ';SOURCE $gene',
-        ';DESCRIPTION ${geneTpm.values.first.description}',
+        ';DESCRIPTION ${geneTpm.values.firstOrNull?.description}',
         ';TRANSCRIPTION_RATES ${jsonEncode(geneTpmJson)}',
         ';MARKERS {"atg":$atgPosition${useTss ? ',"tss":$tssPosition' : ''}}',
         ...splitSequences

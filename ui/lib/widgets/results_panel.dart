@@ -46,6 +46,8 @@ class _ResultsPanelState extends State<ResultsPanel> {
 
   String? _selectedAnalysisName;
 
+  bool _exportInProgress = false;
+
   late final _verticalAxisMinController = TextEditingController()..addListener(_axisListener);
   late final _verticalAxisMaxController = TextEditingController()..addListener(_axisListener);
   late final _horizontalAxisMinController = TextEditingController()..addListener(_axisListener);
@@ -79,29 +81,36 @@ class _ResultsPanelState extends State<ResultsPanel> {
       if (filter?.stages.isEmpty == true) 'no stages selected',
       if (expectedResults > 60) 'too many results (max 60)',
     ];
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (canAnalyzeErrors.isNotEmpty) ...[
-            Text('Analysis cannot be run: ${canAnalyzeErrors.join(', ')}',
-                style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            Text('Analysis cannot be run: ${canAnalyzeErrors.join(', ')}', style: TextStyle(color: colorScheme.error)),
             const SizedBox(height: 16),
           ],
           if (analysisProgress != null) ...[
-            const SizedBox(height: 32),
-            Row(
+            const SizedBox(height: 16),
+            Column(
               children: [
-                Expanded(child: LinearProgressIndicator(value: analysisProgress)),
-                IconButton(
-                  onPressed: analysisCancelled ? null : _handleStopAnalysis,
-                  tooltip: 'Stop analysis',
-                  icon: Icon(Icons.cancel, color: Theme.of(context).colorScheme.primary),
-                )
+                Text('Analysis in progress… (${(analysisProgress * 100).round()}% complete)', style: textTheme.caption),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(child: LinearProgressIndicator(value: analysisProgress)),
+                    IconButton(
+                      onPressed: analysisCancelled ? null : _handleStopAnalysis,
+                      tooltip: 'Stop analysis',
+                      icon: Icon(Icons.cancel, color: colorScheme.primary),
+                    ),
+                  ],
+                ),
               ],
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 16),
           ],
           if (analyses.isEmpty && analysisProgress == null) ...[
             const SizedBox(height: 16),
@@ -110,26 +119,40 @@ class _ResultsPanelState extends State<ResultsPanel> {
             if (expectedResults > 20) ...[
               Text(
                   'Warning: This analysis will produce $expectedResults series. Analysis may take a long time and consume a lot of system memory. Consider reducing the amount of motifs and/or stages.',
-                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                  style: TextStyle(color: colorScheme.error)),
               const SizedBox(height: 16),
             ],
-          ] else
+          ] else if (analysisProgress != null)
+            const SizedBox.shrink()
+          else
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    if (visibleAnalyses.isNotEmpty)
+                if (analysis != null)
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    children: [
+                      Text(analysis.name, style: textTheme.titleMedium),
                       TextButton(
-                          onPressed: analysisProgress == null ? () => _handleExportDistributions(context) : null,
-                          child: Text('Export ${visibleAnalyses.length} series')),
-                    if (analysis != null)
-                      TextButton(
-                          onPressed: () => _handleExportAnalysis(analysis), child: Text('Export "${analysis.name}"')),
-                  ],
-                ),
-                TextButton(onPressed: _handleResetAnalyses, child: const Text('Close')),
+                          onPressed: !_exportInProgress ? () => _handleExportSingleSeries(analysis) : null,
+                          child: const Text('Export this series')),
+                      TextButton(onPressed: () => _handleAnalysisSelected(null), child: const Text('Deselect')),
+                    ],
+                  )
+                else
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      if (visibleAnalyses.isNotEmpty)
+                        TextButton(
+                            onPressed: analysisProgress == null && !_exportInProgress
+                                ? () => _handleExportAllSeries(context)
+                                : null,
+                            child: Text('Export ${visibleAnalyses.length} series')),
+                    ],
+                  ),
+                TextButton(onPressed: _handleResetAnalyses, child: const Text('Close analysis')),
               ],
             ),
           if (analyses.isNotEmpty) ...[
@@ -146,7 +169,6 @@ class _ResultsPanelState extends State<ResultsPanel> {
     assert(analyses.isNotEmpty);
     final analysis = context.select<GeneModel, Analysis?>(
         (model) => model.analyses.firstWhereOrNull((a) => a.name == _selectedAnalysisName));
-    final textTheme = Theme.of(context).textTheme;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -162,8 +184,7 @@ class _ResultsPanelState extends State<ResultsPanel> {
               Expanded(flex: 2, child: _buildGraph()),
               const SizedBox(height: 16),
               if (analysis != null) ...[
-                Text(analysis.name, style: textTheme.titleLarge),
-                const SizedBox(height: 16),
+                const Divider(),
                 Expanded(
                   child: Row(
                     children: [
@@ -294,13 +315,17 @@ class _ResultsPanelState extends State<ResultsPanel> {
     }
   }
 
-  Future<void> _handleExportDistributions(BuildContext context) async {
+  Future<void> _handleExportAllSeries(BuildContext context) async {
+    setState(() => _exportInProgress = true);
     final output = DistributionsOutput(_model.analyses.where((a) => a.visible).map((e) => e.distribution!).toList());
     final stageName =
         _model.filter!.stages.length == 1 ? _model.filter!.stages.first : '${_model.filter!.stages.length} stages';
     final motifName = _model.motifs.length == 1 ? _model.motifs.first : '${_model.motifs.length} motifs';
-    final fileName = 'distributions_${_model.name}_${motifName}_$stageName.xlsx';
-    final data = output.toExcel(fileName);
+    final filename = 'distributions_${_model.name}_${motifName}_$stageName.xlsx';
+    final data = output.toExcel(filename);
+    if (data == null) return;
+    debugPrint('Saving $filename (${data.length} bytes)');
+    setState(() => _exportInProgress = false);
   }
 
   void _setAxis(bool? value) {
@@ -377,9 +402,14 @@ class _ResultsPanelState extends State<ResultsPanel> {
     _updateAnalysis(model, analysis.copyWith(visible: value ?? true));
   }
 
-  void _handleExportAnalysis(Analysis analysis) {
+  Future<void> _handleExportSingleSeries(Analysis analysis) async {
+    setState(() => _exportInProgress = true);
     final output = AnalysisOutput(analysis);
-    final data = output.toExcel(sanitizeFilename('${analysis.name}.xlsx'));
+    final filename = sanitizeFilename('${analysis.name}.xlsx');
+    final data = output.toExcel(filename);
+    if (data == null) return;
+    debugPrint('Saving $filename (${data.length} bytes)');
+    setState(() => _exportInProgress = false);
   }
 
   void _handleStopAnalysis() {

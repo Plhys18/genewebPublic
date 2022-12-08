@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 class Tpm {
@@ -7,16 +8,30 @@ class Tpm {
 
   static Future<Tpm> fromFile(FileSystemEntity entity, {String Function(List<String> line)? sequenceIdentifier}) async {
     final file = File(entity.path);
-    final lines = await file.readAsLines();
+    List<String> lines;
+    try {
+      lines = await file.readAsLines(encoding: Utf8Codec(allowMalformed: true));
+    } on FileSystemException catch (_) {
+      lines = await file.readAsLines(encoding: ascii); //UTF-8 causes problems with some files
+      // if it throws again, its not a valid file
+    }
     final Map<String, List<TpmFeature>> sequences = {};
-
+    TPMFileFormat format;
     final firstLine = lines.first;
-    if (firstLine != 'Sequence	Aliases	Description	Avg.Expression	Min.Expression	Max.Expression') {
-      throw StateError('Invalid header line: $firstLine');
+    switch (firstLine) {
+      case 'Sequence	Aliases	Description	Avg.Expression	Min.Expression	Max.Expression':
+        format = TPMFileFormat.long;
+        break;
+      case 'gene_id	averageTPM':
+      case 'gene_id	average TPM':
+        format = TPMFileFormat.short;
+        break;
+      default:
+        throw StateError('Invalid header line: $firstLine');
     }
 
     for (final line in lines.skip(1)) {
-      final feature = TpmFeature.fromLine(line, sequenceIdentifier: sequenceIdentifier);
+      final feature = TpmFeature.fromLine(line, sequenceIdentifier: sequenceIdentifier, format: format);
       if (sequences.containsKey(feature.sequence)) {
         sequences[feature.sequence]!.add(feature);
       } else {
@@ -29,32 +44,45 @@ class Tpm {
 
 class TpmFeature {
   final String sequence;
-  final String aliases;
-  final String description;
+  final String? aliases;
+  final String? description;
   final double avg;
-  final double min;
-  final double max;
+  final double? min;
+  final double? max;
 
   TpmFeature({
     required this.sequence,
-    required this.aliases,
-    required this.description,
+    this.aliases,
+    this.description,
     required this.avg,
-    required this.min,
-    required this.max,
+    this.min,
+    this.max,
   });
 
-  factory TpmFeature.fromLine(String line, {required String Function(List<String> line)? sequenceIdentifier}) {
-    final parts = line.split('\t');
-    final sequence = sequenceIdentifier != null ? sequenceIdentifier(parts) : parts[0];
-    return TpmFeature(
-      sequence: sequence,
-      aliases: parts[1],
-      description: parts[2],
-      avg: double.parse(parts[3]),
-      min: double.parse(parts[4]),
-      max: double.parse(parts[5]),
-    );
+  factory TpmFeature.fromLine(String line,
+      {required String Function(List<String> line)? sequenceIdentifier, required TPMFileFormat format}) {
+    if (format == TPMFileFormat.short) {
+      final parts = line.split(RegExp(r'\s'));
+      if (parts.length != 2) throw StateError('Invalid line: $line');
+      final sequence = sequenceIdentifier != null ? sequenceIdentifier(parts) : parts[0];
+      return TpmFeature(
+        sequence: sequence,
+        avg: double.parse(parts[1]),
+      );
+    } else if (format == TPMFileFormat.long) {
+      final parts = line.split('\t');
+      if (parts.length != 6) throw StateError('Invalid line: $line');
+      final sequence = sequenceIdentifier != null ? sequenceIdentifier(parts) : parts[0];
+      return TpmFeature(
+        sequence: sequence,
+        aliases: parts[1],
+        description: parts[2],
+        avg: double.parse(parts[3]),
+        min: double.parse(parts[4]),
+        max: double.parse(parts[5]),
+      );
+    }
+    throw StateError('Invalid format: $format');
   }
 
   @override
@@ -62,3 +90,5 @@ class TpmFeature {
     return '$sequence $min $avg $max';
   }
 }
+
+enum TPMFileFormat { long, short }

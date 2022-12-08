@@ -44,7 +44,7 @@ class _ResultsListState extends State<ResultsList> {
             ),
             title: Text(analysis.name),
             subtitle: Text(
-              '${analysis.distribution!.totalGenesCount} genes (${analysis.distribution!.totalGenesWithMotifCount} with motif), ${analysis.distribution!.totalCount} motifs',
+              '${analysis.distribution!.totalCount} motifs in ${analysis.distribution!.totalGenesWithMotifCount} genes (of ${analysis.distribution!.totalGenesCount} genes)',
             ),
           ),
       ],

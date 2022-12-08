@@ -7,3 +7,4 @@ build/
 
 output/**
 source_data/**
+source_data_original/**

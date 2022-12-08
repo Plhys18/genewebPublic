@@ -9,6 +9,7 @@ class DistributionsOutput {
   List<int>? toExcel(String fileName) {
     assert(distributions.isNotEmpty);
     var excel = Excel.createExcel();
+    final originalSheets = excel.sheets.keys;
     final headerCellStyle = CellStyle(backgroundColorHex: 'FFDDFFDD', bold: true);
     final dataPoints = distributions.map((distribution) => distribution.dataPoints!).toList();
     final first = dataPoints.first;
@@ -67,6 +68,9 @@ class DistributionsOutput {
       genesSheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: i)).cellStyle = headerCellStyle;
     }
 
+    for (var element in originalSheets) {
+      excel.delete(element);
+    }
     return excel.save(fileName: fileName);
   }
 }

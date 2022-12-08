@@ -26,22 +26,64 @@ class SourceSubtitle extends StatelessWidget {
 
 class SourcePanel extends StatefulWidget {
   static const List<Organism> kOrganisms = [
-    Organism(name: 'Marchantia polymorpha', filename: 'Mp.fasta.zip', description: 'ATG'),
-    Organism(name: 'Marchantia polymorpha', filename: 'Mp-with-tss.fasta.zip', description: 'ATG, TSS'),
-    Organism(name: 'Physcomitrella patens', filename: 'Physco.fasta.zip', description: 'ATG'),
-    Organism(name: 'Physcomitrella patens', filename: 'Physco-with-tss.fasta.zip', description: 'ATG, TSS'),
-    Organism(name: 'Amborella trichopoda', filename: 'Ambo.fasta.zip', description: 'ATG'),
-    Organism(name: 'Oryza sativa', description: 'Available soon'),
-    Organism(name: 'Zea mays', filename: 'Zea.fasta.zip', description: 'ATG'),
-    Organism(name: 'Zea mays', filename: 'Zea-with-tss.fasta.zip', description: 'ATG, TSS'),
-    Organism(name: 'Solanum lycopersicum', filename: 'Sola.fasta.zip', description: 'ATG'),
-    Organism(name: 'Solanum lycopersicum', filename: 'Sola-with-tss.fasta.zip', description: 'ATG, TSS'),
     Organism(
-        name: 'Arabidopsis thaliana', filename: 'Arabidopsis.fasta.zip', description: 'TSS, ATG, no splicing variants'),
+        public: true,
+        name: 'Marchantia polymorpha',
+        filename: '2022-12-08/Marchantia_polymorpha.fasta.zip',
+        description: 'ATG'),
     Organism(
+        public: true,
+        name: 'Marchantia polymorpha',
+        filename: '2022-12-08/Marchantia_polymorpha-with-tss.fasta.zip',
+        description: 'ATG, TSS'),
+    Organism(
+        public: true,
+        name: 'Physcomitrella patens',
+        filename: '2022-12-08/Physcomitrella_patens.fasta.zip',
+        description: 'ATG'),
+    Organism(
+        public: true,
+        name: 'Physcomitrella patens',
+        filename: '2022-12-08/Physcomitrella_patens-with-tss.fasta.zip',
+        description: 'ATG, TSS'),
+    Organism(
+        public: true,
+        name: 'Amborella trichopoda',
+        filename: '2022-12-08/Amborella_trichopoda.fasta.zip',
+        description: 'ATG'),
+    Organism(public: true, name: 'Oryza sativa', filename: '2022-12-08/Oryza_sativa.fasta.zip', description: 'ATG'),
+    Organism(public: true, name: 'Zea mays', filename: '2022-12-08/Zea_mays.fasta.zip', description: 'ATG'),
+    Organism(
+        public: true, name: 'Zea mays', filename: '2022-12-08/Zea_mays-with-tss.fasta.zip', description: 'ATG, TSS'),
+    Organism(
+        public: true,
+        name: 'Solanum lycopersicum',
+        filename: '2022-12-08/Solanum_lycopersicum-with-tss.fasta.zip',
+        description: 'ATG'),
+    Organism(
+        public: true,
+        name: 'Solanum lycopersicum',
+        filename: '2022-12-08/Solanum_lycopersicum-with-tss.fasta.zip',
+        description: 'ATG, TSS'),
+    Organism(
+        public: true,
+        name: 'Arabidopsis thaliana',
+        filename: 'Arabidopsis.fasta.zip',
+        description: 'TSS, ATG, no splicing variants'),
+    Organism(
+        public: true,
         name: 'Arabidopsis thaliana',
         filename: 'Arabidopsis-variants.fasta.zip',
         description: 'TSS, ATG, splicing variants'),
+    Organism(name: '[PUVODNI] Marchantia polymorpha', filename: 'Mp.fasta.zip', description: 'ATG'),
+    Organism(name: '[PUVODNI] Marchantia polymorpha', filename: 'Mp-with-tss.fasta.zip', description: 'ATG, TSS'),
+    Organism(name: '[PUVODNI] Physcomitrella patens', filename: 'Physco.fasta.zip', description: 'ATG'),
+    Organism(name: '[PUVODNI] Physcomitrella patens', filename: 'Physco-with-tss.fasta.zip', description: 'ATG, TSS'),
+    Organism(name: '[PUVODNI] Amborella trichopoda', filename: 'Ambo.fasta.zip', description: 'ATG'),
+    Organism(name: '[PUVODNI] Zea mays', filename: 'Zea.fasta.zip', description: 'ATG'),
+    Organism(name: '[PUVODNI] Zea mays', filename: 'Zea-with-tss.fasta.zip', description: 'ATG, TSS'),
+    Organism(name: '[PUVODNI] Solanum lycopersicum', filename: 'Sola.fasta.zip', description: 'ATG'),
+    Organism(name: '[PUVODNI] Solanum lycopersicum', filename: 'Sola-with-tss.fasta.zip', description: 'ATG, TSS'),
   ];
 
   const SourcePanel({super.key, required this.onShouldClose});
@@ -75,7 +117,7 @@ class _SourcePanelState extends State<SourcePanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(_loadingMessage!),
+        Text(_loadingMessage!, style: Theme.of(context).textTheme.caption),
         const SizedBox(height: 16),
         LinearProgressIndicator(value: _progress),
       ],
@@ -92,7 +134,7 @@ class _SourcePanelState extends State<SourcePanel> {
           runSpacing: 8.0,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            ...SourcePanel.kOrganisms.map((organism) => _OrganismCard(
+            ...SourcePanel.kOrganisms.where((o) => o.public || public == false).map((organism) => _OrganismCard(
                 organism: organism,
                 onSelected: organism.filename == null ? null : () => _handleDownloadFasta(organism.filename!))),
             if (!public) TextButton(onPressed: _handlePickFile, child: const Text('Open .fasta file…')),
@@ -241,8 +283,9 @@ class Organism {
   final String name;
   final String? filename;
   final String? description;
+  final bool public;
 
-  const Organism({required this.name, this.filename, this.description});
+  const Organism({required this.name, this.filename, this.description, this.public = false});
 }
 
 class _OrganismCard extends StatelessWidget {

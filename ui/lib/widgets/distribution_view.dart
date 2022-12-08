@@ -1,5 +1,9 @@
+import 'dart:ui';
+
 import 'package:charts_flutter/flutter.dart' as charts;
+import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:geneweb/analysis/analysis.dart';
 import 'package:geneweb/analysis/distribution.dart';
 import 'package:geneweb/genes/gene_model.dart';
@@ -30,6 +34,7 @@ class DistributionView extends StatefulWidget {
 
 class _DistributionViewState extends State<DistributionView> {
   String? label;
+  late final _key = GlobalKey();
 
   String get leftAxisTitle {
     if (widget.groupByGenes) {
@@ -67,53 +72,65 @@ class _DistributionViewState extends State<DistributionView> {
 
     return Column(
       children: [
-        Text(subtitle),
+        Row(
+          children: [
+            Expanded(child: Text(subtitle)),
+            const SizedBox(width: 16.0),
+            TextButton(onPressed: _handleSave, child: const Text('Save PNG')),
+          ],
+        ),
         Expanded(
-          child: charts.LineChart(
-            [
-              for (final analysis in analyses)
-                charts.Series<DistributionDataPoint, int>(
-                  id: analysis.name,
-                  data: analysis.distribution!.dataPoints!,
-                  domainFn: (DistributionDataPoint point, i) => point.min,
-                  measureFn: _measureFn,
-                  labelAccessorFn: (DistributionDataPoint point, _) => '<${point.min}; ${point.max})',
-                  strokeWidthPxFn: (_, __) => analysis.stroke,
-                  seriesColor: widget.focus == null
-                      ? charts.ColorUtil.fromDartColor(analysis.color)
-                      : widget.focus == analysis.name
+          child: RepaintBoundary(
+            key: _key,
+            child: ColoredBox(
+              color: Colors.white,
+              child: charts.LineChart(
+                [
+                  for (final analysis in analyses)
+                    charts.Series<DistributionDataPoint, int>(
+                      id: analysis.name,
+                      data: analysis.distribution!.dataPoints!,
+                      domainFn: (DistributionDataPoint point, i) => point.min,
+                      measureFn: _measureFn,
+                      labelAccessorFn: (DistributionDataPoint point, _) => '<${point.min}; ${point.max})',
+                      strokeWidthPxFn: (_, __) => analysis.stroke,
+                      seriesColor: widget.focus == null
                           ? charts.ColorUtil.fromDartColor(analysis.color)
-                          : charts.ColorUtil.fromDartColor(Colors.grey.withOpacity(0.1)),
+                          : widget.focus == analysis.name
+                              ? charts.ColorUtil.fromDartColor(analysis.color)
+                              : charts.ColorUtil.fromDartColor(Colors.grey.withOpacity(0.1)),
+                    ),
+                ],
+                animate: false,
+                primaryMeasureAxis: charts.NumericAxisSpec(
+                  tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                    desiredMinTickCount: 10,
+                    zeroBound: false,
+                    dataIsInWholeNumbers: !widget.usePercentages,
+                  ),
+                  tickFormatterSpec: charts.BasicNumericTickFormatterSpec(
+                      (value) => widget.usePercentages ? '$value%' : '${value?.floor()}'),
+                  viewport: charts.NumericExtents(
+                      widget.verticalAxisMin ?? defaultVerticalMin, widget.verticalAxisMax ?? defaultVerticalMax ?? 0),
                 ),
-            ],
-            animate: false,
-            primaryMeasureAxis: charts.NumericAxisSpec(
-              tickProviderSpec: charts.BasicNumericTickProviderSpec(
-                desiredMinTickCount: 10,
-                zeroBound: false,
-                dataIsInWholeNumbers: !widget.usePercentages,
+                domainAxis: charts.NumericAxisSpec(
+                    viewport: charts.NumericExtents(widget.horizontalAxisMin ?? defaultHorizontalMin,
+                        widget.horizontalAxisMax ?? defaultHorizontalMax)),
+                behaviors: [
+                  charts.ChartTitle(leftAxisTitle, behaviorPosition: charts.BehaviorPosition.start),
+                  charts.LinePointHighlighter(
+                      selectionModelType: charts.SelectionModelType.info,
+                      showHorizontalFollowLine: charts.LinePointHighlighterFollowLineType.nearest,
+                      showVerticalFollowLine: charts.LinePointHighlighterFollowLineType.nearest),
+                  if (distributions.first.alignMarker != null)
+                    charts.RangeAnnotation([
+                      charts.LineAnnotationSegment(0, charts.RangeAnnotationAxisType.domain,
+                          startLabel: distributions.first.alignMarker?.toUpperCase())
+                    ]),
+                  //              charts.SeriesLegend(position: charts.BehaviorPosition.end),
+                ],
               ),
-              tickFormatterSpec: charts.BasicNumericTickFormatterSpec(
-                  (value) => widget.usePercentages ? '$value%' : '${value?.floor()}'),
-              viewport: charts.NumericExtents(
-                  widget.verticalAxisMin ?? defaultVerticalMin, widget.verticalAxisMax ?? defaultVerticalMax ?? 0),
             ),
-            domainAxis: charts.NumericAxisSpec(
-                viewport: charts.NumericExtents(widget.horizontalAxisMin ?? defaultHorizontalMin,
-                    widget.horizontalAxisMax ?? defaultHorizontalMax)),
-            behaviors: [
-              charts.ChartTitle(leftAxisTitle, behaviorPosition: charts.BehaviorPosition.start),
-              charts.LinePointHighlighter(
-                  selectionModelType: charts.SelectionModelType.info,
-                  showHorizontalFollowLine: charts.LinePointHighlighterFollowLineType.nearest,
-                  showVerticalFollowLine: charts.LinePointHighlighterFollowLineType.nearest),
-              if (distributions.first.alignMarker != null)
-                charts.RangeAnnotation([
-                  charts.LineAnnotationSegment(0, charts.RangeAnnotationAxisType.domain,
-                      startLabel: distributions.first.alignMarker?.toUpperCase())
-                ]),
-//              charts.SeriesLegend(position: charts.BehaviorPosition.end),
-            ],
           ),
         ),
         if (label != null)
@@ -123,6 +140,18 @@ class _DistributionViewState extends State<DistributionView> {
           ),
       ],
     );
+  }
+
+  Future<void> _handleSave() async {
+    final renderObject = _key.currentContext!.findRenderObject();
+    final boundary = renderObject as RenderRepaintBoundary;
+    final screenshot = await boundary.toImage(pixelRatio: 3);
+    final bytes = await screenshot.toByteData(format: ImageByteFormat.png);
+    if (bytes == null) return;
+    final slideImage = bytes.buffer.asUint8List();
+    const filename = 'graph.png';
+    debugPrint('Saving $filename (${slideImage.length} bytes)');
+    await FileSaver.instance.saveFile(filename, slideImage, 'png', mimeType: MimeType.PNG);
   }
 
   void _onSelectionChanged(charts.SelectionModel<num> model) {
