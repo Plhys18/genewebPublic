@@ -18,16 +18,10 @@ class Tpm {
     final Map<String, List<TpmFeature>> sequences = {};
     TPMFileFormat format;
     final firstLine = lines.first;
-    switch (firstLine) {
-      case 'Sequence	Aliases	Description	Avg.Expression	Min.Expression	Max.Expression':
-        format = TPMFileFormat.long;
-        break;
-      case 'gene_id	averageTPM':
-      case 'gene_id	average TPM':
-        format = TPMFileFormat.short;
-        break;
-      default:
-        throw StateError('Invalid header line: $firstLine');
+    if (firstLine == 'Sequence	Aliases	Description	Avg.Expression	Min.Expression	Max.Expression') {
+      format = TPMFileFormat.long;
+    } else {
+      format = TPMFileFormat.short;
     }
 
     for (final line in lines.skip(1)) {
@@ -62,7 +56,7 @@ class TpmFeature {
   factory TpmFeature.fromLine(String line,
       {required String Function(List<String> line)? sequenceIdentifier, required TPMFileFormat format}) {
     if (format == TPMFileFormat.short) {
-      final parts = line.split(RegExp(r'\s'));
+      final parts = line.split(RegExp(r'[\s,]'));
       if (parts.length != 2) throw StateError('Invalid line: $line');
       final sequence = sequenceIdentifier != null ? sequenceIdentifier(parts) : parts[0];
       return TpmFeature(

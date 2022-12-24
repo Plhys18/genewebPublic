@@ -60,7 +60,9 @@ void main(List<String> arguments) async {
   // Load tpm files
   Map<String, Tpm> tpm = {};
   for (final tpmFile in configuration.tpmFiles) {
-    final tpmKey = RegExp(r'^.*\/[0-9]+\.\s*([^.]*)').firstMatch(tpmFile.path)!.group(1)!;
+    final tpmKey = RegExp(r'^.*\/[0-9]+\.\s*([^.]*)').firstMatch(tpmFile.path)?.group(1) ??
+        RegExp(r'^.*\/([^.]*)').firstMatch(tpmFile.path)?.group(1) ??
+        tpmFile.path;
     try {
       final tpmData = await Tpm.fromFile(tpmFile, sequenceIdentifier: (line) {
         // Some organisms define the gene as an alias instead as a sequence
@@ -70,6 +72,10 @@ void main(List<String> arguments) async {
           case 'Zea_mays':
             // We need to convert `Zm00001e000001_P001` to `Zm00001e000001_T001` used in GFF
             return line[0].replaceAll('_P', '_T');
+          case 'Arabidopsis_thaliana_mitochondrion':
+          case 'Arabidopsis_thaliana_chloroplast':
+            // All names in GFF have .1, but TPM files do not have it
+            return '${line[0]}.1';
           default:
             return line[0];
         }
