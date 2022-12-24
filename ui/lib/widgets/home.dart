@@ -24,6 +24,19 @@ class _HomeState extends State<Home> {
   late int _index = 0;
 
   @override
+  void initState() {
+    super.initState();
+    /*
+    for (final motif in Presets.analyzedMotifs) {
+      debugPrint(motif.name);
+      debugPrint(motif.definitions.join(','));
+      debugPrint(motif.reverseDefinitions.join(','));
+      debugPrint('\n');
+    }
+    */
+  }
+
+  @override
   Widget build(BuildContext context) {
     final name = context.select<GeneModel, String?>((model) => model.name);
     final sourceGenes = context.select<GeneModel, GeneList?>((model) => model.sourceGenes);

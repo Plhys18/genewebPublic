@@ -26,6 +26,7 @@ dependencies:
   flutter_svg: ^1.0.0
   file_saver: ^0.1.1
   share_plus: ^6.3.0
+  flutter_native_splash: ^2.1.0
 
 dev_dependencies:
   flutter_test:
@@ -36,4 +37,8 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/fasta/
+    - assets/
+
+flutter_native_splash:
+  color: "#eeeeee"
+  image: assets/logo_prif@3x.png

@@ -101,20 +101,20 @@ class GeneModel extends ChangeNotifier {
         percentile: 0.9);
   }
 
-  Future<void> loadFromString(String data, {String? name}) async {
+  Future<void> loadFromString(String data, {String? name, required bool merge}) async {
     _reset();
     this.name = name;
-    sourceGenes = GeneList.fromFasta(data);
+    sourceGenes = GeneList.fromFasta(data, merge);
     resetAnalysisOptions();
     resetFilter();
     notifyListeners();
   }
 
-  Future<void> loadFromFile(String path, {String? filename}) async {
+  Future<void> loadFromFile(String path, {String? filename, required bool merge}) async {
     _reset();
     name = filename;
     final data = await File(path).readAsString();
-    sourceGenes = GeneList.fromFasta(data);
+    sourceGenes = GeneList.fromFasta(data, merge);
     resetAnalysisOptions();
     resetFilter();
     notifyListeners();

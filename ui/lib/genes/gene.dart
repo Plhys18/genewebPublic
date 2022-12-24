@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 class Gene {
   static final geneIdRegExp = RegExp(r"(?<gene>[A-Za-z0-9+_\.]+)");
@@ -30,7 +31,11 @@ class Gene {
   });
 
   String? _geneCode;
-  String get geneCode => _geneCode ??= geneId.split('.').first;
+  String get geneCode {
+    final items = geneId.split('.');
+    _geneCode ??= items.sublist(0, max(items.length - 1, 1)).join('.');
+    return _geneCode!;
+  }
 
   String get geneSplicingVariant => geneId.split('.').last;
 

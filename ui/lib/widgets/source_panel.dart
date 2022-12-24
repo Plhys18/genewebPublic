@@ -20,7 +20,8 @@ class SourceSubtitle extends StatelessWidget {
     return sourceGenes == null
         ? const Text(
             'Motif positions are mapped relative to the transcription start sites (TSS) or Translation start site (ATG)')
-        : Text('$name, ${sourceGenes.genes.length} genes');
+        : Text(
+            '$name, ${sourceGenes.genes.length} genes${sourceGenes.mergeTranscripts == true ? ' (first transcript only)' : ''}');
   }
 }
 
@@ -97,6 +98,7 @@ class SourcePanel extends StatefulWidget {
 class _SourcePanelState extends State<SourcePanel> {
   String? _loadingMessage;
   double? _progress;
+  bool _mergeTranscripts = false;
 
   late final _model = GeneModel.of(context);
   late final _scaffoldMessenger = ScaffoldMessenger.of(context);
@@ -129,6 +131,15 @@ class _SourcePanelState extends State<SourcePanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8.0,
+          children: [
+            Checkbox(value: _mergeTranscripts, onChanged: (value) => setState(() => _mergeTranscripts = value!)),
+            const Text('Include only the first transcript from each gene'),
+          ],
+        ),
+        const SizedBox(height: 16),
         Wrap(
           spacing: 8.0,
           runSpacing: 8.0,
@@ -175,10 +186,10 @@ class _SourcePanelState extends State<SourcePanel> {
       if (kIsWeb) {
         final data = String.fromCharCodes(result.files.single.bytes!);
         debugPrint('Loaded ${data.length} bytes');
-        await _model.loadFromString(data, name: filename);
+        await _model.loadFromString(data, name: filename, merge: _mergeTranscripts);
       } else {
         final path = result.files.single.path!;
-        await _model.loadFromFile(path, filename: filename);
+        await _model.loadFromFile(path, filename: filename, merge: _mergeTranscripts);
       }
       if (_model.sourceGenes!.errors.isEmpty) {
         _scaffoldMessenger.showSnackBar(SnackBar(content: Text('Imported ${_model.sourceGenes?.genes.length} genes.')));
@@ -223,7 +234,7 @@ class _SourcePanelState extends State<SourcePanel> {
       if (mounted) setState(() => _loadingMessage = 'Analyzing $name (${content.length ~/ (1024 * 1024)} MB)…');
       if (mounted) setState(() => _progress = 0.9);
       await Future.delayed(const Duration(milliseconds: 100));
-      await _model.loadFromString(content, name: name);
+      await _model.loadFromString(content, name: name, merge: _mergeTranscripts);
       debugPrint('Finished loading');
       if (_model.sourceGenes!.errors.isEmpty) {
         _scaffoldMessenger.showSnackBar(SnackBar(content: Text('Imported ${_model.sourceGenes?.genes.length} genes.')));

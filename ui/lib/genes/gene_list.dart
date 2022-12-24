@@ -4,17 +4,20 @@ import 'package:geneweb/genes/gene.dart';
 import 'package:geneweb/statistics/series.dart';
 
 class GeneList extends Equatable {
-  final List<Gene> genes;
+  List<Gene> get genes => _genes;
+  final List<Gene> _genes;
   final Map<String, Series> transcriptionRates;
   final List<dynamic> errors;
+  final bool mergeTranscripts;
 
-  const GeneList._(
-    this.genes,
-    this.transcriptionRates,
-    this.errors,
-  );
+  const GeneList._({
+    required List<Gene> genes,
+    required this.transcriptionRates,
+    required this.errors,
+    required this.mergeTranscripts,
+  }) : _genes = genes;
 
-  factory GeneList.fromFasta(String data) {
+  factory GeneList.fromFasta(String data, bool mergeTranscripts) {
     final chunks = data.split('>');
     final genes = <Gene>[];
     final errors = <dynamic>[];
@@ -30,7 +33,35 @@ class GeneList extends Equatable {
         errors.add(error);
       }
     }
-    return GeneList._(genes, _transcriptionRates(genes), errors);
+
+    if (mergeTranscripts) {
+      Map<String, List<String>> keys = {};
+
+      for (final gene in genes) {
+        final geneCode = gene.geneCode;
+        keys[geneCode] = [...(keys[geneCode] ?? []), gene.geneId];
+      }
+
+      List<Gene> merged = [];
+      for (final key in keys.keys) {
+        keys[key]!.sort();
+        final first = keys[key]!.first;
+        merged.add(genes.where((gene) => gene.geneId == first).first);
+      }
+      return GeneList._(
+        genes: merged,
+        transcriptionRates: _transcriptionRates(genes),
+        errors: errors,
+        mergeTranscripts: mergeTranscripts,
+      );
+    }
+
+    return GeneList._(
+      genes: genes,
+      transcriptionRates: _transcriptionRates(genes),
+      errors: errors,
+      mergeTranscripts: mergeTranscripts,
+    );
   }
 
   static Map<String, Series> _transcriptionRates(List<Gene> genes) {
@@ -49,25 +80,25 @@ class GeneList extends Equatable {
     };
   }
 
-  factory GeneList.fromList(List<Gene> source) {
-    return GeneList._(source, _transcriptionRates(source), const []);
+  factory GeneList.fromList(List<Gene> source, bool merged) {
+    return GeneList._(
+        genes: source, transcriptionRates: _transcriptionRates(source), errors: const [], mergeTranscripts: merged);
   }
 
   GeneList filter(StageSelection filter, String stage) {
-    assert(filter.stages != null);
-    assert(filter.stages!.contains(stage));
+    assert(filter.stages.contains(stage));
     genes.sort((a, b) => a.transcriptionRates[stage]!.compareTo(b.transcriptionRates[stage]!));
     if (filter.selection == FilterSelection.percentile) {
       if (filter.strategy == FilterStrategy.top) {
-        return GeneList.fromList(_topPercentile(filter.percentile!, stage));
+        return GeneList.fromList(_topPercentile(filter.percentile, stage), mergeTranscripts);
       } else {
-        return GeneList.fromList(_bottomPercentile(filter.percentile!, stage));
+        return GeneList.fromList(_bottomPercentile(filter.percentile, stage), mergeTranscripts);
       }
     } else {
       if (filter.strategy == FilterStrategy.top) {
-        return GeneList.fromList(_top(filter.count!));
+        return GeneList.fromList(_top(filter.count), mergeTranscripts);
       } else {
-        return GeneList.fromList(_bottom(filter.count!));
+        return GeneList.fromList(_bottom(filter.count), mergeTranscripts);
       }
     }
   }

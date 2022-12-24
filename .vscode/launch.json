@@ -5,35 +5,19 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "pipeline Ambo",
+            "name": "pipeline Mitochondrion",
             "cwd": "pipeline",
             "request": "launch",
             "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
-            "args": ["Ambo"],
+            "args": ["Arabidopsis_thaliana_mitochondrion"],
             "type": "dart"
         },
         {
-            "name": "pipeline Sola TSS",
+            "name": "pipeline Chloroplast",
             "cwd": "pipeline",
             "request": "launch",
             "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
-            "args": ["Sola", "--with-tss"],
-            "type": "dart"
-        },
-        {
-            "name": "pipeline Zea",
-            "cwd": "pipeline",
-            "request": "launch",
-            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
-            "args": ["Zea"],
-            "type": "dart"
-        },
-        {
-            "name": "pipeline Ginkgo",
-            "cwd": "pipeline",
-            "request": "launch",
-            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
-            "args": ["Ginkgo"],
+            "args": ["Arabidopsis_thaliana_chloroplast"],
             "type": "dart"
         },
         {
