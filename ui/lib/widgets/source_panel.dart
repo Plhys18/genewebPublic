@@ -21,7 +21,7 @@ class SourceSubtitle extends StatelessWidget {
         ? const Text(
             'Motif positions are mapped relative to the transcription start sites (TSS) or Translation start site (ATG)')
         : Text(
-            '$name, ${sourceGenes.genes.length} genes${sourceGenes.mergeTranscripts == true ? ' (first transcript only)' : ''}');
+            '$name, ${sourceGenes.genes.length} genes${sourceGenes.mergeTranscripts == true ? ' (first transcript only)' : ''}, ${sourceGenes.stageKeys.length} stages');
   }
 }
 
@@ -148,7 +148,7 @@ class _SourcePanelState extends State<SourcePanel> {
             ...SourcePanel.kOrganisms.where((o) => o.public || public == false).map((organism) => _OrganismCard(
                 organism: organism,
                 onSelected: organism.filename == null ? null : () => _handleDownloadFasta(organism.filename!))),
-            if (!public) TextButton(onPressed: _handlePickFile, child: const Text('Open .fasta file…')),
+            if (!public) TextButton(onPressed: _handlePickFastaFile, child: const Text('Load custom .fasta file…')),
           ],
         ),
       ],
@@ -156,11 +156,23 @@ class _SourcePanelState extends State<SourcePanel> {
   }
 
   Widget _buildLoadedState(BuildContext context) {
+    final public = context.select<GeneModel, bool>((model) => model.publicSite);
     final sourceGenes = context.select<GeneModel, GeneList>((model) => model.sourceGenes!);
     final sampleErrors = sourceGenes.errors.take(100);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (!public)
+          Wrap(
+            spacing: 8.0,
+            runSpacing: 8.0,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+//              TextButton(onPressed: () => UnimplementedError(), child: const Text('Add custom TPM (.csv)…')), //TODO
+              TextButton(onPressed: _handlePickStagesFile, child: const Text('Add custom Stages (.csv)…')),
+            ],
+          ),
+        const SizedBox(height: 16),
         TextButton(onPressed: _handleClear, child: const Text('Choose another species…')),
         if (sourceGenes.errors.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -172,24 +184,23 @@ class _SourcePanelState extends State<SourcePanel> {
     );
   }
 
-  Future<void> _handlePickFile() async {
+  Future<void> _handlePickFastaFile() async {
     try {
       setState(() => _loadingMessage = 'Picking file…');
       FilePickerResult? result = await FilePicker.platform.pickFiles();
       if (result == null) {
-        debugPrint('Cancelled');
         return;
       }
       final filename = result.files.single.name;
       setState(() => _loadingMessage = 'Loading $filename…');
       await Future.delayed(const Duration(milliseconds: 100));
       if (kIsWeb) {
-        final data = String.fromCharCodes(result.files.single.bytes!);
+        final data = const Utf8Decoder().convert(result.files.single.bytes!);
         debugPrint('Loaded ${data.length} bytes');
-        await _model.loadFromString(data, name: filename, merge: _mergeTranscripts);
+        await _model.loadFastaFromString(data, name: filename, merge: _mergeTranscripts);
       } else {
         final path = result.files.single.path!;
-        await _model.loadFromFile(path, filename: filename, merge: _mergeTranscripts);
+        await _model.loadFastaFromFile(path, filename: filename, merge: _mergeTranscripts);
       }
       if (_model.sourceGenes!.errors.isEmpty) {
         _scaffoldMessenger.showSnackBar(SnackBar(content: Text('Imported ${_model.sourceGenes?.genes.length} genes.')));
@@ -199,6 +210,39 @@ class _SourcePanelState extends State<SourcePanel> {
             content: Text(
                 'Imported ${_model.sourceGenes?.genes.length} genes, ${_model.sourceGenes?.errors.length} errors.')));
       }
+      if (_model.publicSite) {
+        widget.onShouldClose();
+      }
+    } catch (error) {
+      _scaffoldMessenger.showSnackBar(SnackBar(
+        content: Text('Error loading data: $error'),
+        backgroundColor: Colors.red,
+      ));
+    } finally {
+      setState(() => _loadingMessage = null);
+    }
+  }
+
+  Future<void> _handlePickStagesFile() async {
+    try {
+      setState(() => _loadingMessage = 'Picking file…');
+      FilePickerResult? result = await FilePicker.platform.pickFiles();
+      if (result == null) {
+        return;
+      }
+      final filename = result.files.single.name;
+      setState(() => _loadingMessage = 'Loading $filename…');
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (kIsWeb) {
+        final data = const Utf8Decoder().convert(result.files.single.bytes!);
+        debugPrint('Loaded ${data.length} bytes');
+        await _model.loadStagesFromString(data);
+      } else {
+        final path = result.files.single.path!;
+        await _model.loadStagesFromFile(path);
+      }
+      _scaffoldMessenger
+          .showSnackBar(SnackBar(content: Text('Imported ${_model.sourceGenes?.stages?.length ?? 0} stages.')));
       widget.onShouldClose();
     } catch (error) {
       _scaffoldMessenger.showSnackBar(SnackBar(
@@ -234,7 +278,7 @@ class _SourcePanelState extends State<SourcePanel> {
       if (mounted) setState(() => _loadingMessage = 'Analyzing $name (${content.length ~/ (1024 * 1024)} MB)…');
       if (mounted) setState(() => _progress = 0.9);
       await Future.delayed(const Duration(milliseconds: 100));
-      await _model.loadFromString(content, name: name, merge: _mergeTranscripts);
+      await _model.loadFastaFromString(content, name: name, merge: _mergeTranscripts);
       debugPrint('Finished loading');
       if (_model.sourceGenes!.errors.isEmpty) {
         _scaffoldMessenger.showSnackBar(SnackBar(content: Text('Imported ${_model.sourceGenes?.genes.length} genes.')));

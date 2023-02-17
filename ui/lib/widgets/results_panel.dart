@@ -66,7 +66,7 @@ class _ResultsPanelState extends State<ResultsPanel> {
   Widget build(BuildContext context) {
     final sourceGenes = context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
     final motifs = context.select<GeneModel, List<Motif>>((model) => model.motifs);
-    final filter = context.select<GeneModel, StageSelection?>((model) => model.filter);
+    final filter = context.select<GeneModel, StageSelection?>((model) => model.stageSelection);
     final analyses = context.select<GeneModel, List<Analysis>>((model) => model.analyses);
     final visibleAnalyses =
         context.select<GeneModel, List<Analysis>>((model) => model.analyses.where((a) => a.visible).toList());
@@ -78,7 +78,7 @@ class _ResultsPanelState extends State<ResultsPanel> {
     final canAnalyzeErrors = [
       if (sourceGenes == null) 'no source genes selected',
       if (motifs.isEmpty) 'no motifs selected',
-      if (filter?.stages.isEmpty == true) 'no stages selected',
+      if (filter?.selectedStages.isEmpty == true) 'no stages selected',
       if (expectedResults > 60) 'too many results (max 60)',
     ];
     final colorScheme = Theme.of(context).colorScheme;
@@ -318,8 +318,9 @@ class _ResultsPanelState extends State<ResultsPanel> {
   Future<void> _handleExportAllSeries(BuildContext context) async {
     setState(() => _exportInProgress = true);
     final output = DistributionsOutput(_model.analyses.where((a) => a.visible).map((e) => e.distribution!).toList());
-    final stageName =
-        _model.filter!.stages.length == 1 ? _model.filter!.stages.first : '${_model.filter!.stages.length} stages';
+    final stageName = _model.stageSelection!.selectedStages.length == 1
+        ? _model.stageSelection!.selectedStages.first
+        : '${_model.stageSelection!.selectedStages.length} stages';
     final motifName = _model.motifs.length == 1 ? _model.motifs.first : '${_model.motifs.length} motifs';
     final filename = 'distributions_${_model.name}_${motifName}_$stageName.xlsx';
     final data = output.toExcel(filename);

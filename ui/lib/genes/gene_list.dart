@@ -1,26 +1,39 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 import 'package:geneweb/genes/stage_selection.dart';
 import 'package:geneweb/genes/gene.dart';
 import 'package:geneweb/statistics/series.dart';
 
+/// Holds a list of genes
 class GeneList extends Equatable {
   List<Gene> get genes => _genes;
   final List<Gene> _genes;
+
+  /// TODO what is this
   final Map<String, Series> transcriptionRates;
+
+  /// List of stages. Key is stage name, value is a list of Gene.ids for that stage (unvalidated) This can be `null` if not supplied
+  final Map<String, Set<String>>? stages;
+
+  /// Map of colors to be applied for given stage
+  final Map<String, Color> colors;
   final List<dynamic> errors;
   final bool mergeTranscripts;
 
-  const GeneList._({
+  GeneList._({
     required List<Gene> genes,
-    required this.transcriptionRates,
+    required this.stages,
+    required this.colors,
     required this.errors,
     required this.mergeTranscripts,
-  }) : _genes = genes;
+  })  : _genes = genes,
+        transcriptionRates = _transcriptionRates(genes);
 
   factory GeneList.fromFasta(String data, bool mergeTranscripts) {
     final chunks = data.split('>');
     final genes = <Gene>[];
     final errors = <dynamic>[];
+    final Map<String, Color> colors = {};
     for (final chunk in chunks) {
       if (chunk.isEmpty) {
         continue;
@@ -50,18 +63,41 @@ class GeneList extends Equatable {
       }
       return GeneList._(
         genes: merged,
-        transcriptionRates: _transcriptionRates(genes),
         errors: errors,
         mergeTranscripts: mergeTranscripts,
+        stages: null,
+        colors: colors,
       );
     }
 
     return GeneList._(
       genes: genes,
-      transcriptionRates: _transcriptionRates(genes),
+      errors: errors,
+      mergeTranscripts: mergeTranscripts,
+      stages: null,
+      colors: colors,
+    );
+  }
+
+  GeneList copyWith({
+    List<Gene>? genes,
+    Map<String, Set<String>>? stages,
+    Map<String, Color>? colors,
+  }) {
+    return GeneList._(
+      genes: genes ?? _genes,
+      stages: stages ?? this.stages,
+      colors: colors ?? this.colors,
       errors: errors,
       mergeTranscripts: mergeTranscripts,
     );
+  }
+
+  List<String> get stageKeys {
+    if (stages != null) {
+      return stages!.keys.toList();
+    }
+    return transcriptionRates.keys.toList();
   }
 
   static Map<String, Series> _transcriptionRates(List<Gene> genes) {
@@ -80,25 +116,28 @@ class GeneList extends Equatable {
     };
   }
 
-  factory GeneList.fromList(List<Gene> source, bool merged) {
-    return GeneList._(
-        genes: source, transcriptionRates: _transcriptionRates(source), errors: const [], mergeTranscripts: merged);
-  }
+  /// Filters gene for given [stage]. Either uses [stages] or applies [stageSelection], if specified
+  GeneList filter({required String stage, required StageSelection stageSelection}) {
+    assert(stageKeys.contains(stage), 'Unknown stage $stage');
+    if (stages != null) {
+      assert(stages![stage] != null && stages![stage]!.isNotEmpty, 'No genes for stage $stage');
+      final ids = stages![stage]!;
+      return copyWith(genes: genes.where((gene) => ids.contains(gene.geneId)).toList());
+    }
 
-  GeneList filter(StageSelection filter, String stage) {
-    assert(filter.stages.contains(stage));
+    assert(stageSelection.selectedStages.contains(stage));
     genes.sort((a, b) => a.transcriptionRates[stage]!.compareTo(b.transcriptionRates[stage]!));
-    if (filter.selection == FilterSelection.percentile) {
-      if (filter.strategy == FilterStrategy.top) {
-        return GeneList.fromList(_topPercentile(filter.percentile, stage), mergeTranscripts);
+    if (stageSelection.selection == FilterSelection.percentile) {
+      if (stageSelection.strategy == FilterStrategy.top) {
+        return copyWith(genes: _topPercentile(stageSelection.percentile!, stage));
       } else {
-        return GeneList.fromList(_bottomPercentile(filter.percentile, stage), mergeTranscripts);
+        return copyWith(genes: _bottomPercentile(stageSelection.percentile!, stage));
       }
     } else {
-      if (filter.strategy == FilterStrategy.top) {
-        return GeneList.fromList(_top(filter.count), mergeTranscripts);
+      if (stageSelection.strategy == FilterStrategy.top) {
+        return copyWith(genes: _top(stageSelection.count!));
       } else {
-        return GeneList.fromList(_bottom(filter.count), mergeTranscripts);
+        return copyWith(genes: _bottom(stageSelection.count!));
       }
     }
   }

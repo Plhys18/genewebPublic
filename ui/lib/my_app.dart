@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-        title: 'Gene web',
+        title: 'GOLEM',
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),

@@ -38,10 +38,11 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
-    final name = context.select<GeneModel, String?>((model) => model.name);
+    final organismAndStages =
+        context.select<GeneModel, String?>((model) => '${model.name} ${model.sourceGenes?.stageKeys.join('+')}');
     final sourceGenes = context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
     final motifs = context.select<GeneModel, List<Motif>>((model) => model.motifs);
-    final filter = context.select<GeneModel, StageSelection?>((model) => model.filter);
+    final filter = context.select<GeneModel, StageSelection?>((model) => model.stageSelection);
     final expectedResults = context.select<GeneModel, int>((model) => model.expectedResults);
 
     return Stepper(
@@ -59,13 +60,13 @@ class _HomeState extends State<Home> {
         Step(
           title: const Text('Genomic interval'),
           subtitle: const AnalysisOptionsSubtitle(),
-          content: AnalysisOptionsPanel(key: ValueKey(name), onChanged: _handleAnalysisOptionsChanged),
+          content: AnalysisOptionsPanel(key: ValueKey(organismAndStages), onChanged: _handleAnalysisOptionsChanged),
           state: sourceGenes == null ? StepState.indexed : StepState.complete,
         ),
         Step(
           title: const Text('Analyzed motifs'),
           subtitle: const MotifSubtitle(),
-          content: MotifPanel(key: ValueKey(name), onChanged: _handleMotifsChanged),
+          content: MotifPanel(key: ValueKey(organismAndStages), onChanged: _handleMotifsChanged),
           state: expectedResults > 60 && motifs.length > 5
               ? StepState.error
               : motifs.isEmpty
@@ -75,10 +76,11 @@ class _HomeState extends State<Home> {
         Step(
           title: const Text('Development stages'),
           subtitle: const StageSubtitle(),
-          content: StagePanel(key: ValueKey(name), onChanged: _handleFilterChanged),
-          state: filter?.stages.isEmpty == true || expectedResults > 60 && (filter?.stages.length ?? 0) > 5
-              ? StepState.error
-              : StepState.indexed,
+          content: StagePanel(key: ValueKey(organismAndStages), onChanged: _handleStageSelectionChanged),
+          state:
+              filter?.selectedStages.isEmpty == true || expectedResults > 60 && (filter?.selectedStages.length ?? 0) > 5
+                  ? StepState.error
+                  : StepState.indexed,
         ),
       ],
     );
@@ -132,8 +134,8 @@ class _HomeState extends State<Home> {
     }
   }
 
-  void _handleFilterChanged(StageSelection? filter) {
-    GeneModel.of(context).setFilter(filter);
+  void _handleStageSelectionChanged(StageSelection? selection) {
+    GeneModel.of(context).setStageSelection(selection);
   }
 
   void _handleMotifsChanged(List<Motif> motifs) {

@@ -1,12 +1,13 @@
+/// Holds data for selected [selectedStages] and TPM filtering to use (optional)
 class StageSelection {
-  final List<String> stages;
-  final FilterStrategy strategy;
-  final FilterSelection selection;
-  final double percentile;
-  final int count;
+  final List<String> selectedStages;
+  final FilterStrategy? strategy;
+  final FilterSelection? selection;
+  final double? percentile;
+  final int? count;
 
   StageSelection({
-    this.stages = const [],
+    this.selectedStages = const [],
     this.strategy = FilterStrategy.top,
     this.selection = FilterSelection.percentile,
     this.percentile = 0.9,
@@ -15,7 +16,8 @@ class StageSelection {
 
   @override
   String toString() {
-    return '$stages.${strategy.name}${selection == FilterSelection.fixed ? count : '${(percentile * 100).round()}th'}';
+    if (strategy == null || selection == null) return '${selectedStages.length} stages';
+    return '${selectedStages.length} stages: ${strategy!.name} ${selection == FilterSelection.fixed ? count : '${(percentile! * 100).round()}th'}';
   }
 }
 
