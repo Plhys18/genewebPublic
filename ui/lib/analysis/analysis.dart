@@ -32,8 +32,8 @@ class Analysis {
     required this.motif,
     required this.name,
     required this.color,
+    required this.stroke,
     this.alignMarker,
-    this.stroke = 2,
     this.visible = true,
     required this.result,
     required this.distribution,
@@ -67,7 +67,7 @@ class Analysis {
     required String name,
     required Color color,
     String? alignMarker,
-    int stroke = 2,
+    int? stroke,
     bool visible = true,
   }) {
     List<AnalysisResult> results = [];
@@ -86,6 +86,7 @@ class Analysis {
       motif: motif,
       name: name,
       color: color,
+      stroke: stroke ?? 2,
       result: results,
       distribution: distribution,
     );

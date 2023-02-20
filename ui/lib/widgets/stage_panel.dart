@@ -244,14 +244,11 @@ class _StageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     return SizedBox(
       width: 160,
       child: Card(
-        color: isSelected
-            ? (color ?? colorScheme.primaryContainer)
-            : (color ?? colorScheme.primaryContainer).withOpacity(0.4),
+        color: isSelected ? (color ?? Colors.grey) : (color ?? Colors.grey).withOpacity(0.4),
         child: InkWell(
           onTap: () => onToggle(!isSelected),
           child: Padding(

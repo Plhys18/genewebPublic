@@ -55,7 +55,11 @@ class _HomeState extends State<Home> {
           title: const Text('Species'),
           subtitle: const SourceSubtitle(),
           content: SourcePanel(onShouldClose: () => _handleStepTapped(1)),
-          state: sourceGenes == null ? StepState.indexed : StepState.complete,
+          state: sourceGenes == null
+              ? StepState.indexed
+              : sourceGenes.errors.isNotEmpty
+                  ? StepState.error
+                  : StepState.complete,
         ),
         Step(
           title: const Text('Genomic interval'),

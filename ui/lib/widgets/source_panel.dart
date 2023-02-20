@@ -233,17 +233,21 @@ class _SourcePanelState extends State<SourcePanel> {
       final filename = result.files.single.name;
       setState(() => _loadingMessage = 'Loading $filename…');
       await Future.delayed(const Duration(milliseconds: 100));
+      bool status;
       if (kIsWeb) {
         final data = const Utf8Decoder().convert(result.files.single.bytes!);
         debugPrint('Loaded ${data.length} bytes');
-        await _model.loadStagesFromString(data);
+        status = _model.loadStagesFromString(data);
       } else {
         final path = result.files.single.path!;
-        await _model.loadStagesFromFile(path);
+        status = await _model.loadStagesFromFile(path);
       }
+
       _scaffoldMessenger
           .showSnackBar(SnackBar(content: Text('Imported ${_model.sourceGenes?.stages?.length ?? 0} stages.')));
-      widget.onShouldClose();
+      if (status) {
+        widget.onShouldClose();
+      }
     } catch (error) {
       _scaffoldMessenger.showSnackBar(SnackBar(
         content: Text('Error loading data: $error'),

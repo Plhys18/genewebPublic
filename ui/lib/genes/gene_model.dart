@@ -33,8 +33,10 @@ class GeneModel extends ChangeNotifier {
   static GeneModel of(BuildContext context) => Provider.of<GeneModel>(context, listen: false);
 
   void _reset({bool preserveSource = false}) {
-    if (!preserveSource) name = null;
-    if (!preserveSource) sourceGenes = null;
+    if (!preserveSource) {
+      name = null;
+      sourceGenes = null;
+    }
     analyses = [];
     analysisProgress = null;
     analysisOptions = AnalysisOptions();
@@ -107,8 +109,9 @@ class GeneModel extends ChangeNotifier {
   /// Loads genes and transcript rates from .fasta data
   Future<void> loadFastaFromString(String data, {String? name, required bool merge}) async {
     _reset();
-    this.name = name;
-    sourceGenes = GeneList.fromFasta(data, merge);
+
+    this.name = RegExp(r'([A-Za-z0-9]+).*').firstMatch(name ?? '')?.group(1);
+    sourceGenes = GeneList.fromFasta(data: data, mergeTranscripts: merge, organism: this.name);
     resetAnalysisOptions();
     resetFilter();
     notifyListeners();
@@ -122,19 +125,34 @@ class GeneModel extends ChangeNotifier {
   /// Loads info about stages and colors from CSV file
   ///
   /// See [StagesData]
-  Future<void> loadStagesFromString(String data) async {
+  bool loadStagesFromString(String data) {
     _reset(preserveSource: true);
     assert(sourceGenes != null);
     final stages = StagesData.fromCsv(data);
-    sourceGenes = sourceGenes?.copyWith(stages: stages.stages, colors: stages.colors);
+
+    final List<dynamic> errors = [];
+    final genes = sourceGenes!.genes.map((g) => g.geneId).toSet();
+    for (final stageKey in stages.stages.keys) {
+      final stageGenes = stages.stages[stageKey]!.toSet();
+      final diff = stageGenes.difference(genes);
+      if (diff.isNotEmpty) {
+        errors.add(
+            'Found ${diff.length} genes in stage $stageKey that are not in the gene list: ${diff.toList().take(3).join(', ')}${diff.length > 3 ? '…' : ''}');
+      }
+    }
+    sourceGenes = sourceGenes?.copyWith(
+        stages: stages.stages,
+        colors: stages.colors,
+        errors: errors.isEmpty ? null : [...errors, ...sourceGenes!.errors]);
     resetAnalysisOptions();
     resetFilter();
     notifyListeners();
+    return errors.isEmpty;
   }
 
-  Future<void> loadStagesFromFile(String path) async {
+  Future<bool> loadStagesFromFile(String path) async {
     final data = await File(path).readAsString();
-    return await loadStagesFromString(data);
+    return loadStagesFromString(data);
   }
 
   void reset() {
@@ -165,6 +183,7 @@ class GeneModel extends ChangeNotifier {
         final name = '${key == kAllStages ? 'all' : key} - ${motif.name}';
         final color =
             sourceGenes?.colors.isNotEmpty == true ? (sourceGenes!.colors[key] ?? Colors.grey) : _randomColorOf(name);
+        final stroke = key == kAllStages ? 4 : sourceGenes?.stroke[key];
         removeAnalysis(name);
 
         final analysis = await compute(runAnalysis, {
@@ -176,6 +195,7 @@ class GeneModel extends ChangeNotifier {
           'interval': analysisOptions.interval,
           'alignMarker': analysisOptions.alignMarker,
           'color': color.value,
+          'stroke': stroke,
         });
         analyses.add(analysis);
         iterations++;
@@ -211,15 +231,18 @@ Future<Analysis> runAnalysis(Map<String, dynamic> params) async {
   final interval = params['interval'] as int;
   final alignMarker = params['alignMarker'] as String?;
   final color = Color(params['color'] as int);
+  final stroke = params['stroke'] as int?;
   final analysis = Analysis.run(
-      geneList: list,
-      noOverlaps: true,
-      min: min,
-      max: max,
-      interval: interval,
-      alignMarker: alignMarker,
-      motif: motif,
-      name: name,
-      color: color);
+    geneList: list,
+    noOverlaps: true,
+    min: min,
+    max: max,
+    interval: interval,
+    alignMarker: alignMarker,
+    motif: motif,
+    name: name,
+    color: color,
+    stroke: stroke,
+  );
   return analysis;
 }
