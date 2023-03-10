@@ -17,10 +17,11 @@ class Gff {
       final feature = GffFeature.fromLine(line, nameTransformer: nameTransformer);
       if (feature.type == 'chromosome') continue;
       if (feature.type == 'gene') continue;
+      if (feature.type == 'transcript') continue;
       if (feature.type == 'mRNA') {
         genes.add(feature);
       } else {
-        assert(genes.isNotEmpty);
+        assert(genes.isNotEmpty, 'Feature $feature does not have a parent gene.');
         final parent = genes.last;
         if (parent.start > feature.start || parent.end < feature.end) {
           // print('Feature $feature does not fall into its parent bounds.');
@@ -34,6 +35,8 @@ class Gff {
 }
 
 class GffFeature {
+  static final kGtfRegExp = RegExp(r'^\s*([^"]+)\s+"([^"]+)"\s*$');
+
   final String seqid;
   final String source;
   final String type;
@@ -88,7 +91,18 @@ class GffFeature {
     final Map<String, String> map = {};
     for (final part in parts) {
       final keyValue = part.split('=');
-      map[keyValue[0]] = keyValue[1];
+      if (keyValue.length == 2) {
+        // GFF3 format
+        map[keyValue[0]] = keyValue[1];
+      } else {
+        // GFF2/GTF format
+        final match = kGtfRegExp.firstMatch(part);
+        if (match != null) {
+          final key = match.group(1)!.trim();
+          final value = match.group(2)!.trim();
+          map[key] = value;
+        }
+      }
     }
     return map;
   }

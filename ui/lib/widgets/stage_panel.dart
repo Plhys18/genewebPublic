@@ -245,19 +245,27 @@ class _StageCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final backgroundColor = isSelected ? (color ?? Colors.grey) : (color ?? Colors.grey).withOpacity(0.4);
+    final textColor = backgroundColor.computeLuminance() > 0.5 ? Colors.black : Colors.white;
     return SizedBox(
       width: 160,
+      height: 120,
       child: Card(
-        color: isSelected ? (color ?? Colors.grey) : (color ?? Colors.grey).withOpacity(0.4),
+        color: backgroundColor,
         child: InkWell(
           onTap: () => onToggle(!isSelected),
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                FittedBox(child: Text(truncate(name, 20), style: textTheme.titleSmall)),
-                const SizedBox(height: 8),
+                Text(
+                  truncate(name.replaceAll('_', ' '), 60),
+                  overflow: TextOverflow.fade,
+                  style: textTheme.titleSmall?.copyWith(color: textColor),
+                  maxLines: 3,
+                ),
                 Checkbox(value: isSelected, onChanged: (value) => onToggle(value!))
               ],
             ),

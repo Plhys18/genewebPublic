@@ -2,25 +2,6 @@ import 'dart:convert';
 import 'dart:math';
 
 class Gene {
-  static final geneIdRegExp = RegExp(r"(?<gene>[A-Za-z0-9+_\.]+)");
-  static final markersRegExp = RegExp(r";MARKERS (?<json>\{.*\})$");
-  static final transcriptionRatesRegExp = RegExp(r";TRANSCRIPTION_RATES (?<json>\{.*\})$");
-
-  /// Gene name including splicing variant, e.g. `ATG0001.1`
-  final String geneId;
-
-  /// Raw nucleotides data
-  final String data;
-
-  /// Header line (>GENE ID...)
-  final String header;
-
-  /// Notes
-  final List<String> notes;
-
-  final Map<String, num> transcriptionRates;
-  final Map<String, int> markers;
-
   Gene({
     required this.geneId,
     required this.data,
@@ -29,15 +10,6 @@ class Gene {
     this.transcriptionRates = const {},
     this.markers = const {},
   });
-
-  String? _geneCode;
-  String get geneCode {
-    final items = geneId.split('.');
-    _geneCode ??= items.sublist(0, max(items.length - 1, 1)).join('.');
-    return _geneCode!;
-  }
-
-  String get geneSplicingVariant => geneId.split('.').last;
 
   factory Gene.fromFasta(List<String> lines) {
     String? header;
@@ -90,8 +62,56 @@ class Gene {
     );
   }
 
+  static final geneIdRegExp = RegExp(r"(?<gene>[A-Za-z0-9+_\.]+)");
+  static final markersRegExp = RegExp(r";MARKERS (?<json>\{.*\})$");
+  static final transcriptionRatesRegExp = RegExp(r";TRANSCRIPTION_RATES (?<json>\{.*\})$");
+
+  /// Raw nucleotides data
+  final String data;
+
+  /// Gene name including splicing variant, e.g. `ATG0001.1`
+  final String geneId;
+
+  /// Header line (>GENE ID...)
+  final String header;
+
+  final Map<String, int> markers;
+
+  /// Notes
+  final List<String> notes;
+
+  final Map<String, num> transcriptionRates;
+
+  String? _geneCode;
+
   @override
   String toString() {
     return geneId;
   }
+
+  Gene copyWith({
+    String? geneId,
+    String? data,
+    String? header,
+    List<String>? notes,
+    Map<String, num>? transcriptionRates,
+    Map<String, int>? markers,
+  }) {
+    return Gene(
+      geneId: geneId ?? this.geneId,
+      data: data ?? this.data,
+      header: header ?? this.header,
+      notes: notes ?? this.notes,
+      transcriptionRates: transcriptionRates ?? this.transcriptionRates,
+      markers: markers ?? this.markers,
+    );
+  }
+
+  String get geneCode {
+    final items = geneId.split('.');
+    _geneCode ??= items.sublist(0, max(items.length - 1, 1)).join('.');
+    return _geneCode!;
+  }
+
+  String get geneSplicingVariant => geneId.split('.').last;
 }

@@ -1,5 +1,5 @@
 
 datasets/**
-pipeline/source_data_original/.DS_Store
-pipeline/.DS_Store
-pipeline/.DS_Store
+**/.DS_Store
+public_datasets/**
+.DS_Store

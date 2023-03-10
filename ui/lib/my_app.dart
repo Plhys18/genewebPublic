@@ -18,7 +18,10 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'GOLEM',
         theme: ThemeData(
-          primarySwatch: Colors.blue,
+          colorSchemeSeed: const Color(0xff488AB9),
+          fontFamily: 'Barlow',
+          appBarTheme: const AppBarTheme(backgroundColor: Color(0xffA0CB85)),
+          useMaterial3: true,
         ),
         home: const HomeScreen(),
       ),

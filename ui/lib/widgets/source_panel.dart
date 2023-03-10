@@ -19,7 +19,7 @@ class SourceSubtitle extends StatelessWidget {
     final name = context.select<GeneModel, String?>((model) => model.name);
     return sourceGenes == null
         ? const Text(
-            'Motif positions are mapped relative to the transcription start sites (TSS) or Translation start site (ATG)')
+            'Motif positions are mapped relative to the transcription start sites (TSS) or translation start site (ATG)')
         : Text(
             '$name, ${sourceGenes.genes.length} genes${sourceGenes.mergeTranscripts == true ? ' (first transcript only)' : ''}, ${sourceGenes.stageKeys.length} stages');
   }
@@ -27,64 +27,34 @@ class SourceSubtitle extends StatelessWidget {
 
 class SourcePanel extends StatefulWidget {
   static const List<Organism> kOrganisms = [
+    Organism(name: 'Marchantia polymorpha', filename: 'Marchantia_polymorpha.fasta.zip', description: 'ATG'),
     Organism(
         public: true,
         name: 'Marchantia polymorpha',
-        filename: '2022-12-08/Marchantia_polymorpha.fasta.zip',
-        description: 'ATG'),
-    Organism(
-        public: true,
-        name: 'Marchantia polymorpha',
-        filename: '2022-12-08/Marchantia_polymorpha-with-tss.fasta.zip',
+        filename: 'Marchantia_polymorpha-with-tss.fasta.zip',
         description: 'ATG, TSS'),
+    Organism(name: 'Physcomitrella patens', filename: 'Physcomitrella_patens.fasta.zip', description: 'ATG'),
     Organism(
         public: true,
         name: 'Physcomitrella patens',
-        filename: '2022-12-08/Physcomitrella_patens.fasta.zip',
-        description: 'ATG'),
-    Organism(
-        public: true,
-        name: 'Physcomitrella patens',
-        filename: '2022-12-08/Physcomitrella_patens-with-tss.fasta.zip',
+        filename: 'Physcomitrella_patens-with-tss.fasta.zip',
         description: 'ATG, TSS'),
     Organism(
-        public: true,
-        name: 'Amborella trichopoda',
-        filename: '2022-12-08/Amborella_trichopoda.fasta.zip',
-        description: 'ATG'),
-    Organism(public: true, name: 'Oryza sativa', filename: '2022-12-08/Oryza_sativa.fasta.zip', description: 'ATG'),
-    Organism(public: true, name: 'Zea mays', filename: '2022-12-08/Zea_mays.fasta.zip', description: 'ATG'),
-    Organism(
-        public: true, name: 'Zea mays', filename: '2022-12-08/Zea_mays-with-tss.fasta.zip', description: 'ATG, TSS'),
+        public: true, name: 'Amborella trichopoda', filename: 'Amborella_trichopoda.fasta.zip', description: 'ATG'),
+    Organism(public: true, name: 'Oryza sativa', filename: 'Oryza_sativa.fasta.zip', description: 'ATG'),
+    Organism(name: 'Zea mays', filename: 'Zea_mays.fasta.zip', description: 'ATG'),
+    Organism(public: true, name: 'Zea mays', filename: 'Zea_mays-with-tss.fasta.zip', description: 'ATG, TSS'),
+    Organism(name: 'Solanum lycopersicum', filename: 'Solanum_lycopersicum-with-tss.fasta.zip', description: 'ATG'),
     Organism(
         public: true,
         name: 'Solanum lycopersicum',
-        filename: '2022-12-08/Solanum_lycopersicum-with-tss.fasta.zip',
-        description: 'ATG'),
-    Organism(
-        public: true,
-        name: 'Solanum lycopersicum',
-        filename: '2022-12-08/Solanum_lycopersicum-with-tss.fasta.zip',
+        filename: 'Solanum_lycopersicum-with-tss.fasta.zip',
         description: 'ATG, TSS'),
+    Organism(public: true, name: 'Arabidopsis thaliana', filename: 'Arabidopsis.fasta.zip', description: 'ATG, TSS'),
     Organism(
-        public: true,
-        name: 'Arabidopsis thaliana',
-        filename: 'Arabidopsis.fasta.zip',
-        description: 'TSS, ATG, no splicing variants'),
-    Organism(
-        public: true,
         name: 'Arabidopsis thaliana',
         filename: 'Arabidopsis-variants.fasta.zip',
-        description: 'TSS, ATG, splicing variants'),
-    Organism(name: '[PUVODNI] Marchantia polymorpha', filename: 'Mp.fasta.zip', description: 'ATG'),
-    Organism(name: '[PUVODNI] Marchantia polymorpha', filename: 'Mp-with-tss.fasta.zip', description: 'ATG, TSS'),
-    Organism(name: '[PUVODNI] Physcomitrella patens', filename: 'Physco.fasta.zip', description: 'ATG'),
-    Organism(name: '[PUVODNI] Physcomitrella patens', filename: 'Physco-with-tss.fasta.zip', description: 'ATG, TSS'),
-    Organism(name: '[PUVODNI] Amborella trichopoda', filename: 'Ambo.fasta.zip', description: 'ATG'),
-    Organism(name: '[PUVODNI] Zea mays', filename: 'Zea.fasta.zip', description: 'ATG'),
-    Organism(name: '[PUVODNI] Zea mays', filename: 'Zea-with-tss.fasta.zip', description: 'ATG, TSS'),
-    Organism(name: '[PUVODNI] Solanum lycopersicum', filename: 'Sola.fasta.zip', description: 'ATG'),
-    Organism(name: '[PUVODNI] Solanum lycopersicum', filename: 'Sola-with-tss.fasta.zip', description: 'ATG, TSS'),
+        description: 'TSS, ATG, all splicing variants'),
   ];
 
   const SourcePanel({super.key, required this.onShouldClose});
@@ -168,18 +138,28 @@ class _SourcePanelState extends State<SourcePanel> {
             runSpacing: 8.0,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-//              TextButton(onPressed: () => UnimplementedError(), child: const Text('Add custom TPM (.csv)…')), //TODO
+              TextButton(onPressed: _handlePickTPMFile, child: const Text('Add custom TPM (.csv)…')), //TODO
               TextButton(onPressed: _handlePickStagesFile, child: const Text('Add custom Stages (.csv)…')),
             ],
           ),
         const SizedBox(height: 16),
         TextButton(onPressed: _handleClear, child: const Text('Choose another species…')),
-        if (sourceGenes.errors.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Text('Found ${sourceGenes.errors.length} errors during the import, listing first ${sampleErrors.length}:'),
-          const SizedBox(height: 16),
-          ...sampleErrors.map((e) => Text('$e')).toList(),
-        ],
+        if (sourceGenes.errors.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: 16.0),
+            color: Theme.of(context).colorScheme.errorContainer,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                ...sampleErrors
+                    .map((e) => Text('$e', style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer)))
+                    .toList(),
+                if (sourceGenes.errors.length > sampleErrors.length)
+                  Text('and ${sourceGenes.errors.length > sampleErrors.length} another errors.',
+                      style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer)),
+              ],
+            ),
+          ),
       ],
     );
   }
@@ -264,7 +244,7 @@ class _SourcePanelState extends State<SourcePanel> {
     await Future.delayed(const Duration(milliseconds: 100));
     try {
       debugPrint('Preparing download of $filename');
-      final bytes = await _downloadFile(Uri.https('temp-geneweb.s3.eu-west-1.amazonaws.com', filename));
+      final bytes = await _downloadFile(Uri.https('golem.ncbr.muni.cz', 'datasets/$filename'));
       debugPrint('Downloaded ${bytes.length ~/ (1024 * 1024)} MB');
       if (mounted) setState(() => _loadingMessage = 'Decompressing ${bytes.length ~/ (1024 * 1024)} MB…');
       if (mounted) setState(() => _progress = 0.8);
@@ -335,6 +315,41 @@ class _SourcePanelState extends State<SourcePanel> {
     _model.reset();
     _scaffoldMessenger
         .showSnackBar(const SnackBar(content: Text('Cleared all data. Please pick a new organism to analyze.')));
+  }
+
+  Future<void> _handlePickTPMFile() async {
+    try {
+      setState(() => _loadingMessage = 'Picking file…');
+      FilePickerResult? result = await FilePicker.platform.pickFiles();
+      if (result == null) {
+        return;
+      }
+      final filename = result.files.single.name;
+      setState(() => _loadingMessage = 'Loading $filename…');
+      await Future.delayed(const Duration(milliseconds: 100));
+      bool status;
+      if (kIsWeb) {
+        final data = const Utf8Decoder().convert(result.files.single.bytes!);
+        debugPrint('Loaded ${data.length} bytes');
+        status = _model.loadTPMFromString(data);
+      } else {
+        final path = result.files.single.path!;
+        status = await _model.loadTPMFromFile(path);
+      }
+
+      _scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Imported TPM rates for ${_model.sourceGenes?.stages?.length ?? 0} stages.')));
+      if (status) {
+        widget.onShouldClose();
+      }
+    } catch (error) {
+      _scaffoldMessenger.showSnackBar(SnackBar(
+        content: Text('Error loading data: $error'),
+        backgroundColor: Colors.red,
+      ));
+    } finally {
+      setState(() => _loadingMessage = null);
+    }
   }
 }
 

@@ -1,40 +1,12 @@
 import 'package:geneweb/analysis/motif.dart';
 
-class Presets {
-  static List<Motif> analyzedMotifs = [
+class MotifPresets {
+  static List<Motif> publicMotifs = [
     Motif(
         name: 'Arabidopsis.telobox',
         definitions: ['CCCTAAAC', 'CCTAAACC', 'CTAAACCC', 'TAAACCCT', 'AAACCCTA', 'AACCCTAA', 'ACCCTAAA']),
     Motif(name: 'Arabidopsis.telobox.generic', definitions: ['NGGNNTN', 'NGGNTN']),
     Motif(name: 'Arabidopsis.siteII', definitions: ['TGGGCC', 'TGGGCT', 'GGNCCCAC', 'GTGGNCCC']),
-    Motif(name: 'Allium.Cepa.telobox', definitions: [
-      'CTCGGTTATGGGC',
-      'TCGGTTATGGGCT',
-      'CGGTTATGGGCTC',
-      'GGTTATGGGCTCG',
-      'GTTATGGGCTCGG',
-      'TTATGGGCTCGGT',
-      'TATGGGCTCGGTT',
-      'ATGGGCTCGGTTA',
-      'TGGGCTCGGTTAT',
-      'GGGCTCGGTTATG',
-      'GGCTCGGTTATGG',
-      'GCTCGGTTATGGG',
-    ]),
-    Motif(name: 'Allium.Cepa.7Nt', definitions: [
-      'TATGGGC',
-      'ATGGGCT',
-      'TGGGCTC',
-      'GGGCTCG',
-      'GGCTCGG',
-      'GCTCGGT',
-      'CTCGGTT',
-      'TCGGTTA',
-      'CGGTTAT',
-      'GGTTATG',
-      'GTTATGG',
-      'TTATGGG',
-    ]),
     Motif(name: 'SHORT LAT52/56', definitions: ['GTGA']),
     Motif(name: 'POLLEN1LeLAT52', definitions: ['AGAAA']),
     Motif(name: 'LONG LAT52/56', definitions: ['TGTGGTTATATA']),
@@ -82,5 +54,36 @@ class Presets {
     Motif(name: 'M0769_1.01', definitions: ['YTGATTGA']),
     Motif(name: 'Gap-box_motif', definitions: ['CAAATGAA']),
     Motif(name: 'Bellringer/replumless/pennywise', definitions: ['AAATTAAA']),
+  ]..sort(((a, b) => a.name.compareTo(b.name)));
+
+  static List<Motif> privateMotifs = [
+    Motif(name: 'Allium.Cepa.telobox', definitions: [
+      'CTCGGTTATGGGC',
+      'TCGGTTATGGGCT',
+      'CGGTTATGGGCTC',
+      'GGTTATGGGCTCG',
+      'GTTATGGGCTCGG',
+      'TTATGGGCTCGGT',
+      'TATGGGCTCGGTT',
+      'ATGGGCTCGGTTA',
+      'TGGGCTCGGTTAT',
+      'GGGCTCGGTTATG',
+      'GGCTCGGTTATGG',
+      'GCTCGGTTATGGG',
+    ]),
+    Motif(name: 'Allium.Cepa.7Nt', definitions: [
+      'TATGGGC',
+      'ATGGGCT',
+      'TGGGCTC',
+      'GGGCTCG',
+      'GGCTCGG',
+      'GCTCGGT',
+      'CTCGGTT',
+      'TCGGTTA',
+      'CGGTTAT',
+      'GGTTATG',
+      'GTTATGG',
+      'TTATGGG',
+    ]),
   ]..sort(((a, b) => a.name.compareTo(b.name)));
 }

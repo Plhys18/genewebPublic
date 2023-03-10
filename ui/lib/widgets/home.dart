@@ -12,7 +12,7 @@ import 'package:geneweb/widgets/source_panel.dart';
 import 'package:provider/provider.dart';
 
 class Home extends StatefulWidget {
-  const Home({Key? key}) : super(key: key);
+  const Home({super.key});
 
   @override
   State<Home> createState() => _HomeState();
@@ -110,9 +110,7 @@ class _HomeState extends State<Home> {
 
   void _handleStepTapped(int index) {
     if (_isStepAllowed(index)) {
-      setState(() {
-        _index = index;
-      });
+      setState(() => _index = index);
     }
   }
 
@@ -124,17 +122,13 @@ class _HomeState extends State<Home> {
       return;
     }
     if (_isStepAllowed(nextStep)) {
-      setState(() {
-        _index = nextStep;
-      });
+      setState(() => _index = nextStep);
     }
   }
 
   void _handleStepCancel() {
     if (_index > 0) {
-      setState(() {
-        _index -= 1;
-      });
+      setState(() => _index -= 1);
     }
   }
 

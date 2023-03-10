@@ -39,7 +39,16 @@ flutter:
 
   assets:
     - assets/
+    - assets/fonts/
+
+  fonts:
+    - family: Barlow
+      fonts:
+        - asset: assets/fonts/Barlow-Regular.ttf
+        - asset: assets/fonts/Barlow-Italic.ttf
+          style: italic
+        - asset: assets/fonts/Barlow-Bold.ttf
 
 flutter_native_splash:
-  color: "#eeeeee"
-  image: assets/logo_prif@3x.png
+  color: "#A0CB85"
+  image: assets/loading.png

@@ -5,6 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "pipeline Small RNA",
+            "cwd": "pipeline",
+            "request": "launch",
+            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
+            "args": ["Arabidopsis_small_rna"],
+            "type": "dart"
+        },
+        {
             "name": "pipeline Mitochondrion",
             "cwd": "pipeline",
             "request": "launch",

@@ -331,5 +331,5 @@ class StageAndColor {
   final Color color;
   final int stroke;
 
-  StageAndColor(this.stage, this.color, {this.stroke = 1});
+  StageAndColor(this.stage, this.color, {this.stroke = 2});
 }

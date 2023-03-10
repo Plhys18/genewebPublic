@@ -1,5 +1,7 @@
 import 'package:csv/csv.dart';
+import 'package:csv/csv_settings_autodetection.dart';
 import 'package:flutter/material.dart';
+import 'package:geneweb/genes/color_row_parser.dart';
 
 /// Parses a CSV file with the following format:
 /// ```
@@ -12,7 +14,8 @@ import 'package:flutter/material.dart';
 ///
 /// Colors row is optional, but must be in row 2 if present.
 class StagesData {
-  static const _converter = CsvToListConverter();
+  static const _converter =
+      CsvToListConverter(csvSettingsDetector: FirstOccurrenceSettingsDetector(eols: ['\r\n', '\n']));
 
   final Map<String, Set<String>> stages;
   final Map<String, Color> colors;
@@ -24,7 +27,7 @@ class StagesData {
     if (table.length < 2) {
       throw ArgumentError('CSV must have at least 2 rows');
     }
-    final stageNames = table[0];
+    final stageNames = table[0].map((e) => '$e'.trim()).toList();
     if (stageNames.isEmpty) {
       throw ArgumentError('CSV must have at least 1 column');
     }
@@ -34,7 +37,7 @@ class StagesData {
     for (int rowIndex = 1; rowIndex < table.length; rowIndex++) {
       final row = table[rowIndex];
       if (rowIndex == 1) {
-        final colorRow = _colorsRow(row);
+        final colorRow = ColorRowParser.tryParse(row);
         if (colorRow != null) {
           for (var i = 0; i < row.length; i++) {
             final color = colorRow[i];
@@ -47,7 +50,7 @@ class StagesData {
         continue;
       }
       for (var i = 0; i < row.length; i++) {
-        final gene = row[i];
+        final gene = '${row[i]}'.trim();
         final stage = stageNames[i];
         if (gene.isEmpty) {
           continue;
@@ -57,18 +60,5 @@ class StagesData {
       }
     }
     return StagesData(stages, colors);
-  }
-
-  /// Checks the List of Strings for a color value in #RRGGBB format and if all list items are either color or empty, it returns the list of colors or null. Otherwise it returns null
-  static List<Color?>? _colorsRow(List<dynamic> row) {
-    final input = row.cast<String>();
-    if (input.any((e) => e.isNotEmpty && !e.startsWith('#'))) return null;
-    final colors = input.map((e) {
-      if (e.isEmpty) return null;
-      final parsed = int.tryParse(e.substring(1), radix: 16);
-      if (parsed == null || parsed < 0 || parsed > 0xFFFFFF) return null;
-      return Color(parsed + 0xFF000000);
-    }).toList();
-    return colors;
   }
 }

@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/analysis.dart';
 import 'package:geneweb/analysis/analysis_options.dart';
 import 'package:geneweb/analysis/motif.dart';
+import 'package:geneweb/genes/gene.dart';
 import 'package:geneweb/genes/stage_selection.dart';
 import 'package:geneweb/genes/gene_list.dart';
 import 'package:geneweb/genes/stages_data.dart';
+import 'package:geneweb/genes/tpm_data.dart';
 import 'package:provider/provider.dart';
 import 'package:universal_file/universal_file.dart';
 
@@ -153,6 +155,41 @@ class GeneModel extends ChangeNotifier {
   Future<bool> loadStagesFromFile(String path) async {
     final data = await File(path).readAsString();
     return loadStagesFromString(data);
+  }
+
+  /// Loads TPM data for individual stages and colors from CSV file
+  ///
+  /// See [StagesData]
+  bool loadTPMFromString(String data) {
+    _reset(preserveSource: true);
+    assert(sourceGenes != null);
+    final tpm = TPMData.fromCsv(data);
+
+    final List<dynamic> errors = [];
+    final List<Gene> genes = [
+      for (final gene in sourceGenes!.genes)
+        if (tpm.stages.keys.every((stageKey) => tpm.stages[stageKey]![gene.geneId] != null))
+          gene.copyWith(transcriptionRates: {
+            for (final stage in tpm.stages.keys) stage: tpm.stages[stage]![gene.geneId]!,
+          }),
+    ];
+
+    if (genes.length != sourceGenes!.genes.length) {
+      errors.add('${sourceGenes!.genes.length - genes.length} genes excluded due to lack of TPM data');
+    }
+
+    sourceGenes = sourceGenes?.copyWith(
+        genes: genes, errors: errors.isEmpty ? null : [...errors, ...sourceGenes!.errors], colors: tpm.colors);
+
+    resetAnalysisOptions();
+    resetFilter();
+    notifyListeners();
+    return errors.isEmpty;
+  }
+
+  Future<bool> loadTPMFromFile(String path) async {
+    final data = await File(path).readAsString();
+    return loadTPMFromString(data);
   }
 
   void reset() {

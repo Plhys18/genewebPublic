@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/motif.dart';
-import 'package:geneweb/analysis/presets.dart';
+import 'package:geneweb/analysis/motif_presets.dart';
 import 'package:geneweb/genes/gene_list.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:provider/provider.dart';
@@ -27,7 +27,7 @@ class MotifSubtitle extends StatelessWidget {
 class MotifPanel extends StatefulWidget {
   final Function(List<Motif> motif) onChanged;
 
-  const MotifPanel({Key? key, required this.onChanged}) : super(key: key);
+  const MotifPanel({super.key, required this.onChanged});
 
   @override
   State<MotifPanel> createState() => _MotifPanelState();
@@ -59,6 +59,13 @@ class _MotifPanelState extends State<MotifPanel> {
     if (sourceGenes == null) return const Center(child: Text('Load source data first'));
     final motifs = context.select<GeneModel, List<Motif>>((model) => model.motifs);
     final customMotifs = motifs.where((m) => m.isCustom).toList();
+    final publicSite = context.select<GeneModel, bool>((model) => model.publicSite);
+
+    final presets = List.of(MotifPresets.publicMotifs);
+    if (!publicSite) {
+      presets.addAll(MotifPresets.privateMotifs);
+    }
+
     return Align(
       alignment: Alignment.topLeft,
       child: Form(
@@ -97,7 +104,7 @@ class _MotifPanelState extends State<MotifPanel> {
               runSpacing: 4,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                ...Presets.analyzedMotifs.map((m) => _MotifCard(
+                ...presets.map((m) => _MotifCard(
                       motif: m,
                       onToggle: (bool value) => _handlePresetToggled(m, value),
                       isSelected: motifs.contains(m),

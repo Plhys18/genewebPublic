@@ -6,6 +6,12 @@ remote_server=genewebncbrmuni@147.251.6.69
 # specify the path to the custom key
 key_file=~/.ssh/id_rsa_geneweb
 
+# Check if the --with-datasets argument was passed
+if [[ "$1" == "--with-datasets" ]]; then
+    echo "Copying datasets..."
+    scp -i $key_file -r ../public_datasets/. $remote_server:~/public_datasets/
+fi
+
 # build
 echo "Running build..."
 flutter build web --release
@@ -22,6 +28,14 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# create symlink to datasets
+ssh -i $key_file $remote_server "cd public_html && ln -s ../public_datasets datasets"
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to create the symlink to datasets."
+    exit 1
+fi
+
+
 # copy the contents of the local build directory to the remote server
 scp -i $key_file -r build/web/. $remote_server:~/public_html/
 if [ $? -ne 0 ]; then
@@ -31,4 +45,4 @@ fi
 
 # print a success message
 echo "Deployment completed successfully!"
-echo "http://geneweb-ncbr-muni-cz.demo.web01.ics.muni.cz/"
+echo "https://golem.ncbr.muni.cz/"
