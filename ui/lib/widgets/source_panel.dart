@@ -89,7 +89,7 @@ class _SourcePanelState extends State<SourcePanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(_loadingMessage!, style: Theme.of(context).textTheme.caption),
+        Text(_loadingMessage!, style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: 16),
         LinearProgressIndicator(value: _progress),
       ],
@@ -150,12 +150,13 @@ class _SourcePanelState extends State<SourcePanel> {
             color: Theme.of(context).colorScheme.errorContainer,
             padding: const EdgeInsets.all(16),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ...sampleErrors
                     .map((e) => Text('$e', style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer)))
                     .toList(),
                 if (sourceGenes.errors.length > sampleErrors.length)
-                  Text('and ${sourceGenes.errors.length > sampleErrors.length} another errors.',
+                  Text('and ${sourceGenes.errors.length - sampleErrors.length} other errors.',
                       style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer)),
               ],
             ),
@@ -383,7 +384,7 @@ class _OrganismCard extends StatelessWidget {
                 FittedBox(
                     child: Text(organism.name, style: textTheme.titleSmall!.copyWith(fontStyle: FontStyle.italic))),
                 const SizedBox(height: 8),
-                FittedBox(child: Text(organism.description ?? '', style: textTheme.caption)),
+                FittedBox(child: Text(organism.description ?? '', style: textTheme.bodySmall)),
               ],
             ),
           ),
