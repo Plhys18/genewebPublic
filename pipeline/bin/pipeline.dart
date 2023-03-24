@@ -28,25 +28,36 @@ void main(List<String> arguments) async {
   Directory(outputPath).createSync();
 
   // Load gff file
-  final gff = await Gff.fromFile(configuration.gffFile, nameTransformer: (attributes) {
-    // Some source files mismatch gene names in GFF and TPM tables
-    switch (organism) {
-      case 'Amborella_trichopoda':
-        // Convert `evm_27.model.AmTr_v1.0_scaffold00001.1` to `evm_27.TU.AmTr_v1.0_scaffold00001.1`
-        final original = attributes['Name'];
-        if (original == null) return null;
-        final parts = original.split('.');
-        return [parts[0], 'TU', ...parts.sublist(2)].join('.');
-      case 'Zea_mays':
-        // We use transcript_id instead of Name
-        return attributes['transcript_id'];
-      case 'Ginkgo_biloba':
-        // We use ID instead of Name
-        return attributes['ID'];
-      default:
-        return attributes['Name'];
-    }
-  });
+  final ignoredFeatures =
+      organism == 'Arabidopsis_small_rna' ? const ['chromosome', 'gene'] : const ['chromosome', 'gene', 'transcript'];
+  final triggerFeatures = organism == 'Arabidopsis_small_rna' ? const ['transcript'] : const ['mRNA'];
+
+  final gff = await Gff.fromFile(
+    configuration.gffFile,
+    ignoredFeatures: ignoredFeatures,
+    triggerFeatures: triggerFeatures,
+    nameTransformer: (attributes) {
+      // Some source files mismatch gene names in GFF and TPM tables
+      switch (organism) {
+        case 'Amborella_trichopoda':
+          // Convert `evm_27.model.AmTr_v1.0_scaffold00001.1` to `evm_27.TU.AmTr_v1.0_scaffold00001.1`
+          final original = attributes['Name'];
+          if (original == null) return null;
+          final parts = original.split('.');
+          return [parts[0], 'TU', ...parts.sublist(2)].join('.');
+        case 'Zea_mays':
+          // We use transcript_id instead of Name
+          return attributes['transcript_id'];
+        case 'Ginkgo_biloba':
+          // We use ID instead of Name
+          return attributes['ID'];
+        case 'Arabidopsis_small_rna':
+          return attributes['transcript_id'];
+        default:
+          return attributes['Name'];
+      }
+    },
+  );
   print('Loaded `${configuration.gffFile.path}` with ${gff.genes.length} genes');
   print(' - ${gff.genes.where((g) => g.startCodon() != null).length} with start_codon');
   print(' - ${gff.genes.where((g) => g.fivePrimeUtr() != null).length} with five_prime_UTR');
@@ -64,22 +75,28 @@ void main(List<String> arguments) async {
         RegExp(r'^.*\/([^.]*)').firstMatch(tpmFile.path)?.group(1) ??
         tpmFile.path;
     try {
-      final tpmData = await Tpm.fromFile(tpmFile, sequenceIdentifier: (line) {
-        // Some organisms define the gene as an alias instead as a sequence
-        switch (organism) {
-          case 'Amborella_trichopoda': // It's in the Alias field
-            return line[1];
-          case 'Zea_mays':
-            // We need to convert `Zm00001e000001_P001` to `Zm00001e000001_T001` used in GFF
-            return line[0].replaceAll('_P', '_T');
-          case 'Arabidopsis_thaliana_mitochondrion':
-          case 'Arabidopsis_thaliana_chloroplast':
-            // All names in GFF have .1, but TPM files do not have it
-            return '${line[0]}.1';
-          default:
-            return line[0];
-        }
-      });
+      final tpmData = await Tpm.fromFile(
+        tpmFile,
+        sequenceIdentifier: (line) {
+          // Some organisms define the gene as an alias instead as a sequence
+          switch (organism) {
+            case 'Amborella_trichopoda': // It's in the Alias field
+              return line[1];
+            case 'Zea_mays':
+              // We need to convert `Zm00001e000001_P001` to `Zm00001e000001_T001` used in GFF
+              return line[0].replaceAll('_P', '_T');
+            case 'Arabidopsis_thaliana_mitochondrion':
+            case 'Arabidopsis_thaliana_chloroplast':
+              // All names in GFF have .1, but TPM files do not have it
+              return '${line[0]}.1';
+            case 'Arabidopsis_small_rna':
+              // Add .1 to TPM
+              return '${line[0]}.1';
+            default:
+              return line[0];
+          }
+        },
+      );
       tpm[tpmKey] = tpmData;
       print('Loaded tpm file `${tpmFile.path}` as `$tpmKey` with ${tpmData.genes.length} genes');
     } on FormatException catch (error) {
@@ -92,7 +109,8 @@ void main(List<String> arguments) async {
   }
 
   // Validate data
-  final validator = FastaValidator(gff, fasta, tpm, useTss: useTss);
+  final validator =
+      FastaValidator(gff, fasta, tpm, useTss: useTss, allowMissingStartCodon: organism == 'Arabidopsis_small_rna');
   await validator.validate();
 
   // Print validation results
@@ -117,7 +135,10 @@ void main(List<String> arguments) async {
   // Save resulting fasta file
   final fastaOutputFile = File('$outputPath/$organism${useTss ? '-with-tss' : ''}.fasta');
   final fastaSink = fastaOutputFile.openWrite(mode: FileMode.writeOnly);
-  final generator = FastaGenerator(gff, fasta, tpm, useTss: useTss);
+  final generator = FastaGenerator(gff, fasta, tpm,
+      useTss: useTss,
+      useSelfInsteadOfStartCodon: organism == 'Arabidopsis_small_rna',
+      useAtg: organism != 'Arabidopsis_small_rna');
   await for (final gene in generator.toFasta(1000)) {
     fastaSink.writeln(gene.join("\n"));
   }

@@ -31,8 +31,12 @@ class FastaGenerator {
   final Map<String, Tpm> tpm;
   final Fasta fasta;
   final bool useTss;
+  final bool useAtg;
+  final bool useSelfInsteadOfStartCodon;
 
-  FastaGenerator(this.gff, this.fasta, this.tpm, {this.useTss = false});
+  FastaGenerator(this.gff, this.fasta, this.tpm,
+      {this.useTss = false, this.useAtg = true, this.useSelfInsteadOfStartCodon = false})
+      : assert(!useTss || useAtg, 'TSS can only be used with ATG');
 
   Stream<List<String>> toFasta(int deltaBases) async* {
     for (final gene in gff.genes) {
@@ -44,8 +48,8 @@ class FastaGenerator {
       final geneTpmJson = {
         for (final tpmKey in geneTpm.keys) tpmKey: geneTpm[tpmKey]!.avg,
       };
-      final start = gene.startCodon()!.start - 1;
-      final end = gene.startCodon()!.end;
+      final start = (useSelfInsteadOfStartCodon ? gene.start : gene.startCodon()!.start) - 1;
+      final end = useSelfInsteadOfStartCodon ? gene.end : gene.startCodon()!.end;
       final tssDelta = !useTss
           ? null
           : gene.strand == Strand.forward
@@ -58,19 +62,30 @@ class FastaGenerator {
       final sequence = gene.strand == Strand.forward
           ? '$before$codon$after'
           : '${_reverse(after)}${_reverse(codon)}${_reverse(before)}';
-      final atgPosition = gene.strand == Strand.forward ? before.length + 1 : after.length + 1;
-      final tssPosition = useTss ? atgPosition - tssDelta! : null;
+      final atgPosition = !useAtg
+          ? null
+          : gene.strand == Strand.forward
+              ? before.length + 1
+              : after.length + 1;
+      final tssPosition = useTss ? atgPosition! - tssDelta! : null;
       assert(!useTss || tssPosition != null, 'TSS not found for gene ${gene.name}');
-      final validationCodon = sequence.substring(atgPosition - 1, atgPosition - 1 + 3);
-      assert(validationCodon == 'ATG', 'Unexpected codon: $codon');
+      if (useAtg) {
+        final validationCodon = sequence.substring(atgPosition! - 1, atgPosition - 1 + 3);
+        assert(validationCodon == 'ATG', 'Unexpected codon: $codon');
+      }
       final splitSequences = StringSplitter.chunk(sequence, 80);
+
+      final markers = {
+        if (useAtg) '"atg":$atgPosition',
+        if (useTss) '"tss":$tssPosition',
+      };
 
       final List<String> result = [
         '>${gene.name} ${gene.strand!.name.toUpperCase()}',
         ';SOURCE $gene',
         ';DESCRIPTION ${geneTpm.values.firstOrNull?.description}',
         ';TRANSCRIPTION_RATES ${jsonEncode(geneTpmJson)}',
-        ';MARKERS {"atg":$atgPosition${useTss ? ',"tss":$tssPosition' : ''}}',
+        if (markers.isNotEmpty) ';MARKERS ${jsonEncode(markers)}}',
         ...splitSequences
       ];
       yield result;

@@ -7,8 +7,9 @@ class FastaValidator {
   final Map<String, Tpm> tpm;
   final Fasta fasta;
   final bool useTss;
+  final bool allowMissingStartCodon;
 
-  FastaValidator(this.gff, this.fasta, this.tpm, {this.useTss = false});
+  FastaValidator(this.gff, this.fasta, this.tpm, {this.useTss = false, this.allowMissingStartCodon = false});
 
   Future<void> validate() async {
     for (final gene in gff.genes) {
@@ -22,10 +23,12 @@ class FastaValidator {
 
       // Start codon validation
       final startCodons = gene.startCodons();
-      if (startCodons.isEmpty) {
-        errors.add(ValidationError.noStartCodonFound('Start codon is missing'));
-      } else if (startCodons.length > 1) {
-        errors.add(ValidationError.multipleStartCodonsFound('Multiple start codons found (${startCodons.length}).'));
+      if (!allowMissingStartCodon) {
+        if (startCodons.isEmpty) {
+          errors.add(ValidationError.noStartCodonFound('Start codon is missing'));
+        } else if (startCodons.length > 1) {
+          errors.add(ValidationError.multipleStartCodonsFound('Multiple start codons found (${startCodons.length}).'));
+        }
       }
       final startCodon = startCodons.isEmpty ? null : startCodons.first;
       if (startCodon != null && sequence != null) {

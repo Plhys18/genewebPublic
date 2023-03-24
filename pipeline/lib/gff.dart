@@ -7,18 +7,20 @@ class Gff {
 
   Gff({required this.genes});
 
-  static Future<Gff> fromFile(FileSystemEntity entity,
-      {String? Function(Map<String, String> attributes)? nameTransformer}) async {
+  static Future<Gff> fromFile(
+    FileSystemEntity entity, {
+    String? Function(Map<String, String> attributes)? nameTransformer,
+    List<String> ignoredFeatures = const ['chromosome', 'gene', 'transcript'],
+    List<String> triggerFeatures = const ['mRNA'],
+  }) async {
     final file = File(entity.path);
     final lines = await file.readAsLines();
     final List<GffFeature> genes = [];
     for (final line in lines) {
       if (line.startsWith('#')) continue;
       final feature = GffFeature.fromLine(line, nameTransformer: nameTransformer);
-      if (feature.type == 'chromosome') continue;
-      if (feature.type == 'gene') continue;
-      if (feature.type == 'transcript') continue;
-      if (feature.type == 'mRNA') {
+      if (ignoredFeatures.contains(feature.type)) continue;
+      if (triggerFeatures.contains(feature.type)) {
         genes.add(feature);
       } else {
         assert(genes.isNotEmpty, 'Feature $feature does not have a parent gene.');
@@ -118,6 +120,10 @@ class GffFeature {
 
   GffFeature? startCodon() {
     return features.firstWhereOrNull((element) => element.type == 'start_codon');
+  }
+
+  GffFeature? transcript() {
+    return features.firstWhereOrNull((element) => element.type == 'transcript');
   }
 
   List<GffFeature> fivePrimeUtrs() {

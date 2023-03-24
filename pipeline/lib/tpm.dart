@@ -57,7 +57,7 @@ class TpmFeature {
       {required String Function(List<String> line)? sequenceIdentifier, required TPMFileFormat format}) {
     if (format == TPMFileFormat.short) {
       final parts = line.split(RegExp(r'[\s,]'));
-      if (parts.length != 2) throw StateError('Invalid line: $line');
+      if (parts.length < 2) throw StateError('Expected 2+ columns, got ${parts.length}: $line');
       final sequence = sequenceIdentifier != null ? sequenceIdentifier(parts) : parts[0];
       return TpmFeature(
         sequence: sequence,
@@ -65,7 +65,7 @@ class TpmFeature {
       );
     } else if (format == TPMFileFormat.long) {
       final parts = line.split('\t');
-      if (parts.length != 6) throw StateError('Invalid line: $line');
+      if (parts.length != 6) throw StateError('Expected 6 columns, got ${parts.length}: $line');
       final sequence = sequenceIdentifier != null ? sequenceIdentifier(parts) : parts[0];
       return TpmFeature(
         sequence: sequence,
