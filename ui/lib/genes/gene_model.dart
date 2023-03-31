@@ -8,14 +8,17 @@ import 'package:geneweb/genes/stage_selection.dart';
 import 'package:geneweb/genes/gene_list.dart';
 import 'package:geneweb/genes/stages_data.dart';
 import 'package:geneweb/genes/tpm_data.dart';
+import 'package:geneweb/my_app.dart';
 import 'package:provider/provider.dart';
 import 'package:universal_file/universal_file.dart';
 
 class GeneModel extends ChangeNotifier {
   static const kAllStages = '__ALL__';
 
+  final DeploymentFlavor? deploymentFlavor;
+
   bool get publicSite => _publicSite;
-  bool _publicSite = true;
+  late bool _publicSite = deploymentFlavor == DeploymentFlavor.prod;
   bool get analysisCancelled => _analysisCancelled;
   bool _analysisCancelled = false;
   String? name;
@@ -30,7 +33,7 @@ class GeneModel extends ChangeNotifier {
 
   int get expectedResults => motifs.length * (stageSelection?.selectedStages.length ?? 0);
 
-  GeneModel();
+  GeneModel(this.deploymentFlavor);
 
   static GeneModel of(BuildContext context) => Provider.of<GeneModel>(context, listen: false);
 
@@ -52,6 +55,7 @@ class GeneModel extends ChangeNotifier {
   }
 
   void setPublicSite(bool value) {
+    if (deploymentFlavor != null) throw Exception('Flavor is defined by deployment');
     _publicSite = value;
     notifyListeners();
   }

@@ -44,7 +44,7 @@ class SourcePanel extends StatefulWidget {
     Organism(public: true, name: 'Oryza sativa', filename: 'Oryza_sativa.fasta.zip', description: 'ATG'),
     Organism(name: 'Zea mays', filename: 'Zea_mays.fasta.zip', description: 'ATG'),
     Organism(public: true, name: 'Zea mays', filename: 'Zea_mays-with-tss.fasta.zip', description: 'ATG, TSS'),
-    Organism(name: 'Solanum lycopersicum', filename: 'Solanum_lycopersicum-with-tss.fasta.zip', description: 'ATG'),
+    Organism(name: 'Solanum lycopersicum', filename: 'Solanum_lycopersicum.fasta.zip', description: 'ATG'),
     Organism(
         public: true,
         name: 'Solanum lycopersicum',
@@ -55,6 +55,18 @@ class SourcePanel extends StatefulWidget {
         name: 'Arabidopsis thaliana',
         filename: 'Arabidopsis-variants.fasta.zip',
         description: 'TSS, ATG, all splicing variants'),
+    Organism(
+        name: 'Arabidopsis thaliana',
+        filename: 'Arabidopsis_thaliana_mitochondrion.fasta.zip',
+        description: 'Mitochondrion dataset'),
+    Organism(
+        name: 'Arabidopsis thaliana',
+        filename: 'Arabidopsis_thaliana_chloroplast.fasta.zip',
+        description: 'Chloroplast dataset'),
+    Organism(
+        name: 'Arabidopsis thaliana',
+        filename: 'Arabidopsis_thaliana_small_rna.fasta.zip',
+        description: 'Small RNA dataset'),
   ];
 
   const SourcePanel({super.key, required this.onShouldClose});
@@ -245,7 +257,8 @@ class _SourcePanelState extends State<SourcePanel> {
     await Future.delayed(const Duration(milliseconds: 100));
     try {
       debugPrint('Preparing download of $filename');
-      final bytes = await _downloadFile(Uri.https('golem.ncbr.muni.cz', 'datasets/$filename'));
+      final bytes =
+          await _downloadFile(Uri.https(kIsWeb ? Uri.base.authority : 'golem-dev.ncbr.muni.cz', 'datasets/$filename'));
       debugPrint('Downloaded ${bytes.length ~/ (1024 * 1024)} MB');
       if (mounted) setState(() => _loadingMessage = 'Decompressing ${bytes.length ~/ (1024 * 1024)} MB…');
       if (mounted) setState(() => _progress = 0.8);
@@ -384,7 +397,15 @@ class _OrganismCard extends StatelessWidget {
                 FittedBox(
                     child: Text(organism.name, style: textTheme.titleSmall!.copyWith(fontStyle: FontStyle.italic))),
                 const SizedBox(height: 8),
-                FittedBox(child: Text(organism.description ?? '', style: textTheme.bodySmall)),
+                FittedBox(
+                    child: Wrap(
+                  spacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    if (!organism.public) const Icon(Icons.lock, size: 12),
+                    Text(organism.description ?? '', style: textTheme.bodySmall),
+                  ],
+                )),
               ],
             ),
           ),

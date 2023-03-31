@@ -6,6 +6,8 @@ remote_server=genewebncbrmuni@147.251.6.69
 # specify the path to the custom key
 key_file=~/.ssh/id_rsa_geneweb
 
+# BEWARE OF DIFFERENT DIR TO SOURCE DATASETS DEV vs PROD
+
 # Check if the --with-datasets argument was passed
 if [[ "$1" == "--with-datasets" ]]; then
     echo "Copying datasets..."
