@@ -139,7 +139,8 @@ void main(List<String> arguments) async {
       useTss: useTss,
       useSelfInsteadOfStartCodon: organism == 'Arabidopsis_small_rna',
       useAtg: organism != 'Arabidopsis_small_rna');
-  await for (final gene in generator.toFasta(1000)) {
+  final deltaBases = organism == 'Arabidopsis_small_rna' ? 0 : 1000;
+  await for (final gene in generator.toFasta(deltaBases)) {
     fastaSink.writeln(gene.join("\n"));
   }
   await fastaSink.flush();
