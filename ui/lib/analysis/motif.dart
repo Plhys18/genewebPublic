@@ -6,6 +6,7 @@ class Motif {
   final bool isCustom;
   final String name;
   final List<String> definitions;
+  final bool isPublic;
 
   static const supportedNucleotides = {
     'A',
@@ -45,7 +46,7 @@ class Motif {
     'V': 'B',
   };
 
-  Motif({required this.name, required this.definitions, this.isCustom = false});
+  Motif({required this.name, required this.definitions, this.isCustom = false, this.isPublic = true});
 
   static String? validate(List<String> definitions) {
     if (definitions.isEmpty) {

@@ -1,12 +1,13 @@
 import 'package:geneweb/analysis/motif.dart';
 
 class MotifPresets {
-  static List<Motif> publicMotifs = [
+  static List<Motif> presets = [
     Motif(
         name: 'Arabidopsis.telobox',
+        isPublic: false,
         definitions: ['CCCTAAAC', 'CCTAAACC', 'CTAAACCC', 'TAAACCCT', 'AAACCCTA', 'AACCCTAA', 'ACCCTAAA']),
-    Motif(name: 'Arabidopsis.telobox.generic', definitions: ['NGGNNTN', 'NGGNTN']),
-    Motif(name: 'Arabidopsis.siteII', definitions: ['TGGGCC', 'TGGGCT', 'GGNCCCAC', 'GTGGNCCC']),
+    Motif(name: 'Arabidopsis.telobox.generic', isPublic: false, definitions: ['NGGNNTN', 'NGGNTN']),
+    Motif(name: 'Arabidopsis.siteII', isPublic: false, definitions: ['TGGGCC', 'TGGGCT', 'GGNCCCAC', 'GTGGNCCC']),
     Motif(name: 'SHORT LAT52/56', definitions: ['GTGA']),
     Motif(name: 'POLLEN1LeLAT52', definitions: ['AGAAA']),
     Motif(name: 'LONG LAT52/56', definitions: ['TGTGGTTATATA']),
@@ -54,10 +55,7 @@ class MotifPresets {
     Motif(name: 'M0769_1.01', definitions: ['YTGATTGA']),
     Motif(name: 'Gap-box_motif', definitions: ['CAAATGAA']),
     Motif(name: 'Bellringer/replumless/pennywise', definitions: ['AAATTAAA']),
-  ]..sort(((a, b) => a.name.compareTo(b.name)));
-
-  static List<Motif> privateMotifs = [
-    Motif(name: 'Allium.Cepa.telobox', definitions: [
+    Motif(name: 'Allium.Cepa.telobox', isPublic: false, definitions: [
       'CTCGGTTATGGGC',
       'TCGGTTATGGGCT',
       'CGGTTATGGGCTC',
@@ -71,7 +69,7 @@ class MotifPresets {
       'GGCTCGGTTATGG',
       'GCTCGGTTATGGG',
     ]),
-    Motif(name: 'Allium.Cepa.7Nt', definitions: [
+    Motif(name: 'Allium.Cepa.7Nt', isPublic: false, definitions: [
       'TATGGGC',
       'ATGGGCT',
       'TGGGCTC',

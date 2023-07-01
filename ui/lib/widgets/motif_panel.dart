@@ -57,14 +57,11 @@ class _MotifPanelState extends State<MotifPanel> {
   Widget build(BuildContext context) {
     final sourceGenes = context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
     if (sourceGenes == null) return const Center(child: Text('Load source data first'));
+    final publicSite = context.select<GeneModel, bool>((model) => model.publicSite);
     final motifs = context.select<GeneModel, List<Motif>>((model) => model.motifs);
     final customMotifs = motifs.where((m) => m.isCustom).toList();
-    final publicSite = context.select<GeneModel, bool>((model) => model.publicSite);
 
-    final presets = List.of(MotifPresets.publicMotifs);
-    if (!publicSite) {
-      presets.addAll(MotifPresets.privateMotifs);
-    }
+    final presets = List.of(MotifPresets.presets).where((e) => e.isPublic || !publicSite).toList();
 
     return Align(
       alignment: Alignment.topLeft,
@@ -93,7 +90,7 @@ class _MotifPanelState extends State<MotifPanel> {
               _buildMotifEditor(),
               const SizedBox(height: 16),
               Text('R = AG, Y = CT, W = AT, S = GC, M = AC, K = GT, B = CGT, D = AGT, H = ACT, V = ACG, N = ACGT',
-                  style: Theme.of(context).textTheme.caption!),
+                  style: Theme.of(context).textTheme.labelMedium!),
               const SizedBox(height: 16),
             ],
             const SizedBox(height: 16.0),
@@ -254,7 +251,7 @@ class _MotifCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                FittedBox(child: Text(truncate(motif.definitions.join(', '), 25), style: textTheme.caption)),
+                FittedBox(child: Text(truncate(motif.definitions.join(', '), 25), style: textTheme.labelSmall)),
               ],
             ),
           ),
