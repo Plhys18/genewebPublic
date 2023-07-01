@@ -87,12 +87,12 @@ class GeneList extends Equatable {
     required this.stages,
     required Map<String, Color>? colors,
     required this.errors,
-    required this.mergeTranscripts,
+    required this.firstTranscriptOnly,
   })  : _genes = genes,
         transcriptionRates = _transcriptionRates(genes),
         _colors = colors;
 
-  factory GeneList.fromFasta({required String data, String? organism, bool mergeTranscripts = false}) {
+  factory GeneList.fromFasta({required String data, String? organism, bool firstTranscriptOnly = false}) {
     final chunks = data.split('>');
     final genes = <Gene>[];
     final errors = <dynamic>[];
@@ -109,7 +109,7 @@ class GeneList extends Equatable {
       }
     }
 
-    if (mergeTranscripts) {
+    if (firstTranscriptOnly) {
       Map<String, List<String>> keys = {};
 
       for (final gene in genes) {
@@ -127,7 +127,7 @@ class GeneList extends Equatable {
         organism: organism,
         genes: merged,
         errors: errors,
-        mergeTranscripts: mergeTranscripts,
+        firstTranscriptOnly: firstTranscriptOnly,
         stages: null,
         colors: null,
       );
@@ -137,7 +137,7 @@ class GeneList extends Equatable {
       organism: organism,
       genes: genes,
       errors: errors,
-      mergeTranscripts: mergeTranscripts,
+      firstTranscriptOnly: firstTranscriptOnly,
       stages: null,
       colors: null,
     );
@@ -146,7 +146,7 @@ class GeneList extends Equatable {
   /// Name of the organism. This is used for auto detecting colors and stage order
   final String? organism;
   final List<dynamic> errors;
-  final bool mergeTranscripts;
+  final bool firstTranscriptOnly;
 
   /// List of stages. Key is stage name, value is a list of Gene.ids for that stage (unvalidated) This can be `null` if not supplied
   final Map<String, Set<String>>? stages;
@@ -181,7 +181,7 @@ class GeneList extends Equatable {
       stages: stages ?? this.stages,
       colors: colors ?? this.colors,
       errors: errors ?? this.errors,
-      mergeTranscripts: mergeTranscripts,
+      firstTranscriptOnly: firstTranscriptOnly,
     );
   }
 

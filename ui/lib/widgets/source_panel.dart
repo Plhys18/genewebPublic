@@ -21,7 +21,7 @@ class SourceSubtitle extends StatelessWidget {
         ? const Text(
             'Motif positions are mapped relative to the transcription start sites (TSS) or translation start site (ATG)')
         : Text(
-            '$name, ${sourceGenes.genes.length} genes${sourceGenes.mergeTranscripts == true ? ' (first transcript only)' : ''}, ${sourceGenes.stageKeys.length} stages');
+            '$name, ${sourceGenes.genes.length} genes${sourceGenes.firstTranscriptOnly == true ? ' (first transcript only)' : ''}, ${sourceGenes.stageKeys.length} stages');
   }
 }
 
@@ -80,7 +80,7 @@ class SourcePanel extends StatefulWidget {
 class _SourcePanelState extends State<SourcePanel> {
   String? _loadingMessage;
   double? _progress;
-  bool _mergeTranscripts = false;
+  bool _firstTranscriptOnly = true;
 
   late final _model = GeneModel.of(context);
   late final _scaffoldMessenger = ScaffoldMessenger.of(context);
@@ -109,28 +109,31 @@ class _SourcePanelState extends State<SourcePanel> {
   }
 
   Widget _buildLoad(BuildContext context) {
-    final public = context.select<GeneModel, bool>((model) => model.publicSite);
+    final publicSite = context.select<GeneModel, bool>((model) => model.publicSite);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 8.0,
-          children: [
-            Checkbox(value: _mergeTranscripts, onChanged: (value) => setState(() => _mergeTranscripts = value!)),
-            const Text('Include only the first transcript from each gene'),
-          ],
-        ),
-        const SizedBox(height: 16),
+        if (!publicSite) ...[
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8.0,
+            children: [
+              Checkbox(
+                  value: _firstTranscriptOnly, onChanged: (value) => setState(() => _firstTranscriptOnly = value!)),
+              const Text('Include only the first transcript from each gene'),
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
         Wrap(
           spacing: 8.0,
           runSpacing: 8.0,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            ...SourcePanel.kOrganisms.where((o) => o.public || public == false).map((organism) => _OrganismCard(
+            ...SourcePanel.kOrganisms.where((o) => o.public || publicSite == false).map((organism) => _OrganismCard(
                 organism: organism,
                 onSelected: organism.filename == null ? null : () => _handleDownloadFasta(organism.filename!))),
-            if (!public) TextButton(onPressed: _handlePickFastaFile, child: const Text('Load custom .fasta file…')),
+            if (!publicSite) TextButton(onPressed: _handlePickFastaFile, child: const Text('Load custom .fasta file…')),
           ],
         ),
       ],
@@ -138,13 +141,13 @@ class _SourcePanelState extends State<SourcePanel> {
   }
 
   Widget _buildLoadedState(BuildContext context) {
-    final public = context.select<GeneModel, bool>((model) => model.publicSite);
+    final publicSite = context.select<GeneModel, bool>((model) => model.publicSite);
     final sourceGenes = context.select<GeneModel, GeneList>((model) => model.sourceGenes!);
     final sampleErrors = sourceGenes.errors.take(100);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (!public)
+        if (!publicSite)
           Wrap(
             spacing: 8.0,
             runSpacing: 8.0,
@@ -190,10 +193,10 @@ class _SourcePanelState extends State<SourcePanel> {
       if (kIsWeb) {
         final data = const Utf8Decoder().convert(result.files.single.bytes!);
         debugPrint('Loaded ${data.length} bytes');
-        await _model.loadFastaFromString(data, name: filename, merge: _mergeTranscripts);
+        await _model.loadFastaFromString(data, name: filename, firstTranscriptOnly: _firstTranscriptOnly);
       } else {
         final path = result.files.single.path!;
-        await _model.loadFastaFromFile(path, filename: filename, merge: _mergeTranscripts);
+        await _model.loadFastaFromFile(path, filename: filename, merge: _firstTranscriptOnly);
       }
       if (_model.sourceGenes!.errors.isEmpty) {
         _scaffoldMessenger.showSnackBar(SnackBar(content: Text('Imported ${_model.sourceGenes?.genes.length} genes.')));
@@ -276,7 +279,7 @@ class _SourcePanelState extends State<SourcePanel> {
       if (mounted) setState(() => _loadingMessage = 'Analyzing $name (${content.length ~/ (1024 * 1024)} MB)…');
       if (mounted) setState(() => _progress = 0.9);
       await Future.delayed(const Duration(milliseconds: 100));
-      await _model.loadFastaFromString(content, name: name, merge: _mergeTranscripts);
+      await _model.loadFastaFromString(content, name: name, firstTranscriptOnly: _firstTranscriptOnly);
       debugPrint('Finished loading');
       if (_model.sourceGenes!.errors.isEmpty) {
         _scaffoldMessenger.showSnackBar(SnackBar(content: Text('Imported ${_model.sourceGenes?.genes.length} genes.')));

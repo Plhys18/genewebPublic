@@ -29,6 +29,8 @@ class GeneModel extends ChangeNotifier {
   StageSelection? _stageSelection;
   StageSelection? get stageSelection => _stageSelection;
   List<Motif> _motifs = [];
+
+  /// All motifs
   List<Motif> get motifs => _motifs;
 
   int get expectedResults => motifs.length * (stageSelection?.selectedStages.length ?? 0);
@@ -93,9 +95,10 @@ class GeneModel extends ChangeNotifier {
   }
 
   void resetAnalysisOptions() {
-    final keys = sourceGenes?.genes.first.markers.keys;
-    if (keys != null && keys.isNotEmpty) {
-      analysisOptions = AnalysisOptions(alignMarker: keys.first, min: -1000, max: 1000, interval: 30);
+    final alignMarkers = sourceGenes?.genes.first.markers.keys.toList();
+    alignMarkers?.sort();
+    if (alignMarkers != null && alignMarkers.isNotEmpty) {
+      analysisOptions = AnalysisOptions(alignMarker: alignMarkers.first, min: -1000, max: 1000, interval: 30);
     } else {
       analysisOptions = AnalysisOptions();
     }
@@ -113,11 +116,11 @@ class GeneModel extends ChangeNotifier {
   }
 
   /// Loads genes and transcript rates from .fasta data
-  Future<void> loadFastaFromString(String data, {String? name, required bool merge}) async {
+  Future<void> loadFastaFromString(String data, {String? name, required bool firstTranscriptOnly}) async {
     _reset();
 
     this.name = RegExp(r'([A-Za-z0-9]+).*').firstMatch(name ?? '')?.group(1);
-    sourceGenes = GeneList.fromFasta(data: data, mergeTranscripts: merge, organism: this.name);
+    sourceGenes = GeneList.fromFasta(data: data, firstTranscriptOnly: firstTranscriptOnly, organism: this.name);
     resetAnalysisOptions();
     resetFilter();
     notifyListeners();
@@ -125,7 +128,7 @@ class GeneModel extends ChangeNotifier {
 
   Future<void> loadFastaFromFile(String path, {String? filename, required bool merge}) async {
     final data = await File(path).readAsString();
-    return await loadFastaFromString(data, name: filename, merge: merge);
+    return await loadFastaFromString(data, name: filename, firstTranscriptOnly: merge);
   }
 
   /// Loads info about stages and colors from CSV file
