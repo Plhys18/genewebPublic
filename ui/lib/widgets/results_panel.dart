@@ -96,7 +96,8 @@ class _ResultsPanelState extends State<ResultsPanel> {
             const SizedBox(height: 16),
             Column(
               children: [
-                Text('Analysis in progress… (${(analysisProgress * 100).round()}% complete)', style: textTheme.caption),
+                Text('Analysis in progress… (${(analysisProgress * 100).round()}% complete)',
+                    style: textTheme.bodySmall),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -133,6 +134,7 @@ class _ResultsPanelState extends State<ResultsPanel> {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     spacing: 8,
                     children: [
+                      Icon(Icons.check_box, color: colorScheme.outline),
                       Text(analysis.name, style: textTheme.titleMedium),
                       TextButton(
                           onPressed: !_exportInProgress ? () => _handleExportSingleSeries(analysis) : null,
@@ -369,9 +371,9 @@ class _ResultsPanelState extends State<ResultsPanel> {
             title: const Text('Stroke'),
             trailing: CupertinoSlidingSegmentedControl<int>(
               children: const {
-                1: Text('Thin'),
-                2: Text('Normal'),
-                4: Text('Thick'),
+                2: Text('Thin'),
+                4: Text('Normal'),
+                8: Text('Thick'),
               },
               onValueChanged: (value) => _handleSetStroke(analysis, value),
               groupValue: analysis.stroke,
