@@ -67,7 +67,6 @@ class GeneList extends Equatable {
       StageAndColor('sperm_C', const Color(0xffFFC002)),
       StageAndColor('leaves_C', const Color(0xff92D050)),
       StageAndColor('seedling_C', const Color(0xffC6E0B4)),
-
       StageAndColor('egg_C', const Color(0xff607D8B)),
 
       StageAndColor('EarlyPollen_L', const Color(0xffB71C1C), stroke: 4),
@@ -76,6 +75,19 @@ class GeneList extends Equatable {
       StageAndColor('LatePollen_L', const Color(0xff0D47A1), stroke: 4),
       StageAndColor('TCP_L', const Color(0xff21C5FF)),
       StageAndColor('MPG_L', const Color(0xff305496)),
+
+      StageAndColor('Arabidopsis_Tapetum', const Color(0xff993300)),
+      StageAndColor('Arabidopsis_EarlyPollen', const Color(0xffB71C1C), stroke: 4),
+      StageAndColor('Arabidopsis_UNM', const Color(0xffFF6D6D)),
+      StageAndColor('Arabidopsis_BCP', const Color(0xffC80002)),
+      StageAndColor('Arabidopsis_LatePollen', const Color(0xff0D47A1), stroke: 4),
+      StageAndColor('Arabidopsis_TCP', const Color(0xff21C5FF)),
+      StageAndColor('Arabidopsis_MPG', const Color(0xff305496)),
+      StageAndColor('Arabidopsis_SIV_PT', const Color(0xffFF6600)),
+      StageAndColor('Arabidopsis_Sperm', const Color(0xffFFC002)),
+      StageAndColor('Arabidopsis_Leaves', const Color(0xff92D050)),
+      StageAndColor('Arabidopsis_Seedlings', const Color(0xffC6E0B4)),
+      StageAndColor('Arabidopsis_Egg', const Color(0xff607D8B)),
 
 //      StageAndColor('PMI_C', const Color(0xff000000)),
     ],

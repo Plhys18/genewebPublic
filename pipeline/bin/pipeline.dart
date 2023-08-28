@@ -32,6 +32,11 @@ void main(List<String> arguments) async {
       organism == 'Arabidopsis_small_rna' ? const ['chromosome', 'gene'] : const ['chromosome', 'gene', 'transcript'];
   final triggerFeatures = organism == 'Arabidopsis_small_rna' ? const ['transcript'] : const ['mRNA'];
 
+  final seqIdTransformer = switch (organism) {
+    'Arabidopsis_thaliana' => (String seqId) => seqId.replaceAll('Chr', ''),
+    _ => null,
+  };
+
   final gff = await Gff.fromFile(
     configuration.gffFile,
     ignoredFeatures: ignoredFeatures,
@@ -57,6 +62,7 @@ void main(List<String> arguments) async {
           return attributes['Name'];
       }
     },
+    seqIdTransformer: seqIdTransformer,
   );
   print('Loaded `${configuration.gffFile.path}` with ${gff.genes.length} genes');
   print(' - ${gff.genes.where((g) => g.startCodon() != null).length} with start_codon');
@@ -85,6 +91,7 @@ void main(List<String> arguments) async {
             case 'Zea_mays':
               // We need to convert `Zm00001e000001_P001` to `Zm00001e000001_T001` used in GFF
               return line[0].replaceAll('_P', '_T');
+            case 'Arabidopsis_thaliana':
             case 'Arabidopsis_thaliana_mitochondrion':
             case 'Arabidopsis_thaliana_chloroplast':
               // All names in GFF have .1, but TPM files do not have it

@@ -3,8 +3,19 @@ ulimit -n 10240
 rm -rf output
 mkdir output
 
+for DIRECTORY in Arabidopsis_thaliana ; do
+    echo "Running $DIRECTORY --with-tss"
+    dart run bin/pipeline.dart $DIRECTORY --with-tss > output/${DIRECTORY}-with-tss.info.txt
+    zip output/${DIRECTORY}-with-tss.fasta.zip output/${DIRECTORY}-with-tss.fasta
+        echo "Running $DIRECTORY"
+        dart run bin/pipeline.dart $DIRECTORY > output/${DIRECTORY}.info.txt
+        zip output/${DIRECTORY}.fasta.zip output/${DIRECTORY}.fasta
+done
+
+exit 0
+
 # Run organisms with TSS
-for DIRECTORY in Physcomitrella_patens Marchantia_polymorpha Zea_mays Solanum_lycopersicum ; do
+for DIRECTORY in Arabidopsis_thaliana Physcomitrella_patens Marchantia_polymorpha Zea_mays Solanum_lycopersicum ; do
     echo "Running $DIRECTORY --with-tss"
     dart run bin/pipeline.dart $DIRECTORY --with-tss > output/${DIRECTORY}-with-tss.info.txt
     zip output/${DIRECTORY}-with-tss.fasta.zip output/${DIRECTORY}-with-tss.fasta

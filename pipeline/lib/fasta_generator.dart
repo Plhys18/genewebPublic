@@ -76,8 +76,8 @@ class FastaGenerator {
       final splitSequences = StringSplitter.chunk(sequence, 80);
 
       final markers = {
-        if (useAtg) '"atg":$atgPosition',
-        if (useTss) '"tss":$tssPosition',
+        if (useAtg) "atg": atgPosition,
+        if (useTss) "tss": tssPosition,
       };
 
       final List<String> result = [
@@ -85,7 +85,7 @@ class FastaGenerator {
         ';SOURCE $gene',
         ';DESCRIPTION ${geneTpm.values.firstOrNull?.description}',
         ';TRANSCRIPTION_RATES ${jsonEncode(geneTpmJson)}',
-        if (markers.isNotEmpty) ';MARKERS ${jsonEncode(markers)}}',
+        if (markers.isNotEmpty) ';MARKERS ${jsonEncode(markers)}',
         ...splitSequences
       ];
       yield result;

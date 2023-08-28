@@ -10,6 +10,7 @@ class Gff {
   static Future<Gff> fromFile(
     FileSystemEntity entity, {
     String? Function(Map<String, String> attributes)? nameTransformer,
+    String Function(String seqId)? seqIdTransformer,
     List<String> ignoredFeatures = const ['chromosome', 'gene', 'transcript'],
     List<String> triggerFeatures = const ['mRNA'],
   }) async {
@@ -18,7 +19,7 @@ class Gff {
     final List<GffFeature> genes = [];
     for (final line in lines) {
       if (line.startsWith('#')) continue;
-      final feature = GffFeature.fromLine(line, nameTransformer: nameTransformer);
+      final feature = GffFeature.fromLine(line, nameTransformer: nameTransformer, seqIdTransformer: seqIdTransformer);
       if (ignoredFeatures.contains(feature.type)) continue;
       if (triggerFeatures.contains(feature.type)) {
         genes.add(feature);
@@ -65,12 +66,15 @@ class GffFeature {
       this.attributes,
       required this.features});
 
-  factory GffFeature.fromLine(String line,
-      {required String? Function(Map<String, String> attributes)? nameTransformer}) {
+  factory GffFeature.fromLine(
+    String line, {
+    String? Function(Map<String, String> attributes)? nameTransformer,
+    String Function(String seqId)? seqIdTransformer,
+  }) {
     final parts = line.split('\t');
     final attributes = _parseAttributes(parts[8]);
     return GffFeature(
-      seqid: parts[0],
+      seqid: seqIdTransformer?.call(parts[0]) ?? parts[0],
       source: parts[1],
       type: parts[2],
       start: int.parse(parts[3]),
@@ -83,7 +87,7 @@ class GffFeature {
               : null,
       phase: int.tryParse(parts[7]),
       attributes: attributes,
-      name: nameTransformer != null ? nameTransformer(attributes) : attributes['Name'],
+      name: nameTransformer?.call(attributes) ?? attributes['Name'],
       features: [],
     );
   }

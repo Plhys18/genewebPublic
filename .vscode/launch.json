@@ -5,6 +5,22 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "pipeline Arabidopsis",
+            "cwd": "pipeline",
+            "request": "launch",
+            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
+            "args": ["Arabidopsis_thaliana"],
+            "type": "dart"
+        },
+        {
+            "name": "pipeline Arabidopsis TSS",
+            "cwd": "pipeline",
+            "request": "launch",
+            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
+            "args": ["Arabidopsis_thaliana", "--with-tss"],
+            "type": "dart"
+        },
+        {
             "name": "pipeline Small RNA",
             "cwd": "pipeline",
             "request": "launch",

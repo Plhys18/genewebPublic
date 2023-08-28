@@ -50,7 +50,18 @@ class SourcePanel extends StatefulWidget {
         name: 'Solanum lycopersicum',
         filename: 'Solanum_lycopersicum-with-tss.fasta.zip',
         description: 'ATG, TSS'),
-    Organism(public: true, name: 'Arabidopsis thaliana', filename: 'Arabidopsis.fasta.zip', description: 'ATG, TSS'),
+    Organism(
+        public: true,
+        name: 'Arabidopsis thaliana (ATG)',
+        filename: 'Arabidopsis_thaliana.fasta.zip',
+        description: 'ATG'),
+    Organism(
+        public: true,
+        name: 'Arabidopsis thaliana (TSS)',
+        filename: 'Arabidopsis_thaliana-with-tss.fasta.zip',
+        description: 'ATG, TSS'),
+    Organism(
+        public: true, name: 'Arabidopsis thaliana (OLD)', filename: 'Arabidopsis.fasta.zip', description: 'ATG, TSS'),
     Organism(
         name: 'Arabidopsis thaliana',
         filename: 'Arabidopsis-variants.fasta.zip',
