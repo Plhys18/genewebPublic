@@ -265,12 +265,13 @@ class _SourcePanelState extends State<SourcePanel> {
     }
   }
 
-  Future<void> _handleDownloadFasta(String filename) async {
-    setState(() => _loadingMessage = 'Downloading $filename…');
-    setState(() => _progress = null);
-    await Future.delayed(const Duration(milliseconds: 100));
+  Future<Archive> _downloadAndUnarchive(String filename) async {
     try {
+      setState(() => _loadingMessage = 'Downloading $filename…');
+      setState(() => _progress = null);
       debugPrint('Preparing download of $filename');
+      await Future.delayed(const Duration(milliseconds: 100));
+
       final bytes =
           await _downloadFile(Uri.https(kIsWeb ? Uri.base.authority : 'golem-dev.ncbr.muni.cz', 'datasets/$filename'));
       debugPrint('Downloaded ${bytes.length ~/ (1024 * 1024)} MB');
@@ -279,14 +280,28 @@ class _SourcePanelState extends State<SourcePanel> {
       await Future.delayed(const Duration(milliseconds: 100));
       final archive = ZipDecoder().decodeBytes(bytes);
       debugPrint('Decoded $archive');
+      return archive;
+    } catch (_) {
+      rethrow;
+    }
+  }
+
+  String _fileContent(ArchiveFile file) {
+    return const Utf8Decoder().convert(file.content);
+  }
+
+  Future<void> _handleDownloadFasta(String filename) async {
+    try {
+      Archive? archive = await _downloadAndUnarchive(filename);
       final file = archive.firstWhere((f) => f.isFile); //StateError if not found
       final name = file.name.split('/').last;
       if (!name.endsWith('.fasta') && !name.endsWith('.fa')) {
         throw StateError('Expected .fasta file, got $name');
       }
       debugPrint('Found $file');
-      final content = const Utf8Decoder().convert(file.content);
+      final content = _fileContent(file);
       debugPrint('Decoded ${content.length ~/ (1024 * 1024)} MB of data');
+      archive = null; // unload from memory
       if (mounted) setState(() => _loadingMessage = 'Analyzing $name (${content.length ~/ (1024 * 1024)} MB)…');
       if (mounted) setState(() => _progress = 0.9);
       await Future.delayed(const Duration(milliseconds: 100));
