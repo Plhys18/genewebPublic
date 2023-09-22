@@ -15,7 +15,14 @@ class AnalysisScreen extends StatelessWidget {
     final stageName = stages.length == 1 ? stages.first : '${stages.length} stages';
     final motifName = motifs.length == 1 ? motifs.first.name : '${motifs.length} motifs';
     return Scaffold(
-      appBar: AppBar(title: Text('$name ($motifName, $stageName)')),
+      appBar: AppBar(
+          title: Wrap(
+        spacing: 8,
+        children: [
+          Text('$name', style: const TextStyle(fontStyle: FontStyle.italic)),
+          Text('($motifName, $stageName)'),
+        ],
+      )),
       body: const ResultsPanel(),
     );
   }

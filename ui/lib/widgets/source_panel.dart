@@ -20,64 +20,100 @@ class SourceSubtitle extends StatelessWidget {
     return sourceGenes == null
         ? const Text(
             'Motif positions are mapped relative to the transcription start sites (TSS) or translation start site (ATG)')
-        : Text(
-            '$name, ${sourceGenes.genes.length} genes${sourceGenes.firstTranscriptOnly == true ? ' (first transcript only)' : ''}, ${sourceGenes.stageKeys.length} stages');
+        : Wrap(
+            children: [
+              Text('$name', style: const TextStyle(fontStyle: FontStyle.italic)),
+              Text(
+                  ', ${sourceGenes.genes.length} genes${sourceGenes.firstTranscriptOnly == true ? ' (first transcript only)' : ''}, ${sourceGenes.stageKeys.length} stages'),
+            ],
+          );
   }
 }
 
 class SourcePanel extends StatefulWidget {
   static const List<Organism> kOrganisms = [
-    Organism(name: 'Marchantia polymorpha', filename: 'Marchantia_polymorpha.fasta.zip', description: 'ATG'),
     Organism(
-        public: true,
-        name: 'Marchantia polymorpha',
-        filename: 'Marchantia_polymorpha-with-tss.fasta.zip',
-        description: 'ATG, TSS'),
-    Organism(name: 'Physcomitrella patens', filename: 'Physcomitrella_patens.fasta.zip', description: 'ATG'),
+      name: 'Marchantia polymorpha',
+      filename: 'Marchantia_polymorpha.fasta.zip',
+      description: 'ATG',
+    ),
+    Organism(
+      public: true,
+      name: 'Marchantia polymorpha',
+      filename: 'Marchantia_polymorpha-with-tss.fasta.zip',
+      description: 'ATG, TSS',
+    ),
+    Organism(
+      name: 'Physcomitrella patens',
+      filename: 'Physcomitrella_patens.fasta.zip',
+      description: 'ATG',
+    ),
     Organism(
         public: true,
         name: 'Physcomitrella patens',
         filename: 'Physcomitrella_patens-with-tss.fasta.zip',
         description: 'ATG, TSS'),
     Organism(
-        public: true, name: 'Amborella trichopoda', filename: 'Amborella_trichopoda.fasta.zip', description: 'ATG'),
-    Organism(public: true, name: 'Oryza sativa', filename: 'Oryza_sativa.fasta.zip', description: 'ATG'),
+      public: true,
+      name: 'Amborella trichopoda',
+      filename: 'Amborella_trichopoda.fasta.zip',
+      description: 'ATG',
+    ),
+    Organism(
+      public: true,
+      name: 'Oryza sativa',
+      filename: 'Oryza_sativa.fasta.zip',
+      description: 'ATG',
+    ),
     Organism(name: 'Zea mays', filename: 'Zea_mays.fasta.zip', description: 'ATG'),
-    Organism(public: true, name: 'Zea mays', filename: 'Zea_mays-with-tss.fasta.zip', description: 'ATG, TSS'),
-    Organism(name: 'Solanum lycopersicum', filename: 'Solanum_lycopersicum.fasta.zip', description: 'ATG'),
     Organism(
-        public: true,
-        name: 'Solanum lycopersicum',
-        filename: 'Solanum_lycopersicum-with-tss.fasta.zip',
-        description: 'ATG, TSS'),
+      public: true,
+      name: 'Zea mays',
+      filename: 'Zea_mays-with-tss.fasta.zip',
+      description: 'ATG, TSS',
+    ),
     Organism(
-        public: true,
-        name: 'Arabidopsis thaliana (ATG)',
-        filename: 'Arabidopsis_thaliana.fasta.zip',
-        description: 'ATG'),
+      name: 'Solanum lycopersicum',
+      filename: 'Solanum_lycopersicum.fasta.zip',
+      description: 'ATG',
+    ),
     Organism(
-        public: true,
-        name: 'Arabidopsis thaliana (TSS)',
-        filename: 'Arabidopsis_thaliana-with-tss.fasta.zip',
-        description: 'ATG, TSS'),
+      public: true,
+      name: 'Solanum lycopersicum',
+      filename: 'Solanum_lycopersicum-with-tss.fasta.zip',
+      description: 'ATG, TSS',
+    ),
     Organism(
-        public: true, name: 'Arabidopsis thaliana (OLD)', filename: 'Arabidopsis.fasta.zip', description: 'ATG, TSS'),
+      name: 'Arabidopsis thaliana (ATG)',
+      filename: 'Arabidopsis_thaliana.fasta.zip',
+      description: 'ATG',
+    ),
     Organism(
-        name: 'Arabidopsis thaliana',
-        filename: 'Arabidopsis-variants.fasta.zip',
-        description: 'TSS, ATG, all splicing variants'),
+      public: true,
+      name: 'Arabidopsis thaliana (TSS)',
+      filename: 'Arabidopsis_thaliana-with-tss.fasta.zip',
+      description: 'ATG, TSS',
+    ),
     Organism(
-        name: 'Arabidopsis thaliana',
-        filename: 'Arabidopsis_thaliana_mitochondrion.fasta.zip',
-        description: 'Mitochondrion dataset'),
+      name: 'Arabidopsis thaliana',
+      filename: 'Arabidopsis-variants.fasta.zip',
+      description: 'TSS, ATG, all splicing variants',
+    ),
     Organism(
-        name: 'Arabidopsis thaliana',
-        filename: 'Arabidopsis_thaliana_chloroplast.fasta.zip',
-        description: 'Chloroplast dataset'),
+      name: 'Arabidopsis thaliana',
+      filename: 'Arabidopsis_thaliana_mitochondrion.fasta.zip',
+      description: 'Mitochondrion dataset',
+    ),
     Organism(
-        name: 'Arabidopsis thaliana',
-        filename: 'Arabidopsis_thaliana_small_rna.fasta.zip',
-        description: 'Small RNA dataset'),
+      name: 'Arabidopsis thaliana',
+      filename: 'Arabidopsis_thaliana_chloroplast.fasta.zip',
+      description: 'Chloroplast dataset',
+    ),
+    Organism(
+      name: 'Arabidopsis thaliana',
+      filename: 'Arabidopsis_thaliana_small_rna.fasta.zip',
+      description: 'Small RNA dataset',
+    ),
   ];
 
   const SourcePanel({super.key, required this.onShouldClose});

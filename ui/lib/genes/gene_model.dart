@@ -119,7 +119,7 @@ class GeneModel extends ChangeNotifier {
   Future<void> loadFastaFromString(String data, {String? name, required bool firstTranscriptOnly}) async {
     _reset();
 
-    this.name = RegExp(r'([A-Za-z0-9]+).*').firstMatch(name ?? '')?.group(1);
+    this.name = RegExp(r'([A-Za-z0-9_]+).*').firstMatch(name ?? '')?.group(1)?.replaceAll('_', ' ');
     sourceGenes = GeneList.fromFasta(data: data, firstTranscriptOnly: firstTranscriptOnly, organism: this.name);
     resetAnalysisOptions();
     resetFilter();

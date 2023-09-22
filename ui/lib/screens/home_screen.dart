@@ -36,7 +36,10 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ),
-            Expanded(child: Align(alignment: Alignment.center, child: Text(name ?? ''))),
+            Expanded(
+                child: Align(
+                    alignment: Alignment.center,
+                    child: Text(name ?? '', style: const TextStyle(fontStyle: FontStyle.italic)))),
             Expanded(
               child: Align(
                 alignment: Alignment.centerRight,
