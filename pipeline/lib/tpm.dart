@@ -6,7 +6,10 @@ class Tpm {
 
   Tpm({required this.genes});
 
-  static Future<Tpm> fromFile(FileSystemEntity entity, {String Function(List<String> line)? sequenceIdentifier}) async {
+  static Future<Tpm> fromFile(
+    FileSystemEntity entity, {
+    required String Function(List<String> line) sequenceIdentifier,
+  }) async {
     final file = File(entity.path);
     List<String> lines;
     try {
@@ -54,11 +57,11 @@ class TpmFeature {
   });
 
   factory TpmFeature.fromLine(String line,
-      {required String Function(List<String> line)? sequenceIdentifier, required TPMFileFormat format}) {
+      {required String Function(List<String> line) sequenceIdentifier, required TPMFileFormat format}) {
     if (format == TPMFileFormat.short) {
       final parts = line.split(RegExp(r'[\s,]'));
       if (parts.length < 2) throw StateError('Expected 2+ columns, got ${parts.length}: $line');
-      final sequence = sequenceIdentifier != null ? sequenceIdentifier(parts) : parts[0];
+      final sequence = sequenceIdentifier(parts);
       return TpmFeature(
         sequence: sequence,
         avg: double.parse(parts[1]),
@@ -66,7 +69,7 @@ class TpmFeature {
     } else if (format == TPMFileFormat.long) {
       final parts = line.split('\t');
       if (parts.length != 6) throw StateError('Expected 6 columns, got ${parts.length}: $line');
-      final sequence = sequenceIdentifier != null ? sequenceIdentifier(parts) : parts[0];
+      final sequence = sequenceIdentifier(parts);
       return TpmFeature(
         sequence: sequence,
         aliases: parts[1],

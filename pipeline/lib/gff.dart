@@ -9,8 +9,8 @@ class Gff {
 
   static Future<Gff> fromFile(
     FileSystemEntity entity, {
-    String? Function(Map<String, String> attributes)? nameTransformer,
-    String Function(String seqId)? seqIdTransformer,
+    required String? Function(Map<String, String> attributes) nameTransformer,
+    required String Function(String seqId) seqIdTransformer,
     List<String> ignoredFeatures = const ['chromosome', 'gene', 'transcript'],
     List<String> triggerFeatures = const ['mRNA'],
   }) async {
@@ -68,13 +68,13 @@ class GffFeature {
 
   factory GffFeature.fromLine(
     String line, {
-    String? Function(Map<String, String> attributes)? nameTransformer,
-    String Function(String seqId)? seqIdTransformer,
+    required String? Function(Map<String, String> attributes) nameTransformer,
+    required String Function(String seqId) seqIdTransformer,
   }) {
     final parts = line.split('\t');
     final attributes = _parseAttributes(parts[8]);
     return GffFeature(
-      seqid: seqIdTransformer?.call(parts[0]) ?? parts[0],
+      seqid: seqIdTransformer(parts[0]),
       source: parts[1],
       type: parts[2],
       start: int.parse(parts[3]),
@@ -87,7 +87,7 @@ class GffFeature {
               : null,
       phase: int.tryParse(parts[7]),
       attributes: attributes,
-      name: nameTransformer?.call(attributes) ?? attributes['Name'],
+      name: nameTransformer(attributes),
       features: [],
     );
   }

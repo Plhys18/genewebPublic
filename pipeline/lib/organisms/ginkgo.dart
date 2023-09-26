@@ -1,0 +1,18 @@
+import 'package:pipeline/organisms/base_organism.dart';
+
+class Ginkgo extends BaseOrganism {
+  Ginkgo() : super(name: 'Ginkgo biloba');
+
+  @override
+  String? tmpKeyFromPath(String path) {
+    final filename = path.split('/').last;
+    final key = RegExp(r'^[0-9]+\.\s*Ginkgo_([^.]*)').firstMatch(filename)?.group(1);
+    return key;
+  }
+
+  @override
+  String? nameTransformer(Map<String, String> attributes) {
+    // We use ID instead of Name
+    return attributes['ID'];
+  }
+}

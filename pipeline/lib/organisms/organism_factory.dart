@@ -1,0 +1,41 @@
+import 'package:pipeline/organisms/amborella.dart';
+import 'package:pipeline/organisms/arabidopsis.dart';
+import 'package:pipeline/organisms/base_organism.dart';
+import 'package:pipeline/organisms/ginkgo.dart';
+import 'package:pipeline/organisms/marchantia.dart';
+import 'package:pipeline/organisms/oryza.dart';
+import 'package:pipeline/organisms/physcomitrella.dart';
+import 'package:pipeline/organisms/solanum.dart';
+import 'package:pipeline/organisms/zea.dart';
+
+class OrganismFactory {
+  static BaseOrganism getOrganism(String organism) {
+    switch (organism) {
+      case 'Amborella_trichopoda':
+        return Amborella();
+      case 'Arabidopsis_small_rna':
+        return ArabidopsisSmallRna();
+      case 'Arabidopsis_thaliana':
+        return ArabidopsisThaliana();
+      case 'Arabidopsis_thaliana_chloroplast':
+        return ArabidopsisChloroplast();
+      case 'Arabidopsis_thaliana_mitochondrion':
+        return ArabidopsisMitochondrion();
+      case 'Ginkgo_biloba':
+        return Ginkgo();
+      case 'Marchantia_polymorpha':
+        return Marchantia();
+      case 'Oryza_sativa':
+        return Oryza();
+      case 'Physcomitrella_patens':
+        return Physcomitrella();
+      case 'Solanum_lycopersicum':
+        return Solanum();
+      case 'Zea_mays':
+        return Zea();
+
+      default:
+        throw ArgumentError('Unknown organism: $organism');
+    }
+  }
+}

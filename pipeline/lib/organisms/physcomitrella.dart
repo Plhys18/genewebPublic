@@ -1,0 +1,12 @@
+import 'package:pipeline/organisms/base_organism.dart';
+
+class Physcomitrella extends BaseOrganism {
+  Physcomitrella() : super(name: 'Physcomitrella patens');
+
+  @override
+  String? tmpKeyFromPath(String path) {
+    final filename = path.split('/').last;
+    final key = RegExp(r'^[0-9]+\.\s*Physcomitrium_([^.]*)').firstMatch(filename)?.group(1);
+    return key;
+  }
+}

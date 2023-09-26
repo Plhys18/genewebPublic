@@ -5,21 +5,23 @@ import 'package:pipeline/fasta.dart';
 import 'package:pipeline/fasta_generator.dart';
 import 'package:pipeline/fasta_validator.dart';
 import 'package:pipeline/gff.dart';
+import 'package:pipeline/organisms/organism_factory.dart';
 import 'package:pipeline/tpm.dart';
 
 void main(List<String> arguments) async {
   if (arguments.isEmpty || arguments.length > 2) {
     throw ArgumentError('Invalid number of arguments.\n\nUsage: dart pipeline.dart <directory> [--with-tss]');
   }
-  final organism = arguments[0];
+  final organismFolderName = arguments[0];
+  final organism = OrganismFactory.getOrganism(organismFolderName);
   final useTss = arguments.contains('--with-tss');
 
   // Find files
-  print('Searching input data for `$organism`. TSS: $useTss');
-  final configuration = await BatchConfiguration.fromPath('source_data/$organism');
-  print(' - fasta file: `${configuration.fastaFile.path}`');
-  print(' - gff file: `${configuration.gffFile.path}`');
-  for (final tpmFile in configuration.tpmFiles) {
+  print('Searching input data for `${organism.name}`. TSS: $useTss');
+  final inputFilesConfiguration = await BatchConfiguration.fromPath('source_data/$organismFolderName');
+  print(' - fasta file: `${inputFilesConfiguration.fastaFile.path}`');
+  print(' - gff file: `${inputFilesConfiguration.gffFile.path}`');
+  for (final tpmFile in inputFilesConfiguration.tpmFiles) {
     print(' - tpm file: `${tpmFile.path}`');
   }
 
@@ -28,81 +30,37 @@ void main(List<String> arguments) async {
   Directory(outputPath).createSync();
 
   // Load gff file
-  final ignoredFeatures =
-      organism == 'Arabidopsis_small_rna' ? const ['chromosome', 'gene'] : const ['chromosome', 'gene', 'transcript'];
-  final triggerFeatures = organism == 'Arabidopsis_small_rna' ? const ['transcript'] : const ['mRNA'];
-
-  final seqIdTransformer = switch (organism) {
-    'Arabidopsis_thaliana' => (String seqId) => seqId.replaceAll('Chr', ''),
-    _ => null,
-  };
 
   final gff = await Gff.fromFile(
-    configuration.gffFile,
-    ignoredFeatures: ignoredFeatures,
-    triggerFeatures: triggerFeatures,
-    nameTransformer: (attributes) {
-      // Some source files mismatch gene names in GFF and TPM tables
-      switch (organism) {
-        case 'Amborella_trichopoda':
-          // Convert `evm_27.model.AmTr_v1.0_scaffold00001.1` to `evm_27.TU.AmTr_v1.0_scaffold00001.1`
-          final original = attributes['Name'];
-          if (original == null) return null;
-          final parts = original.split('.');
-          return [parts[0], 'TU', ...parts.sublist(2)].join('.');
-        case 'Zea_mays':
-          // We use transcript_id instead of Name
-          return attributes['transcript_id'];
-        case 'Ginkgo_biloba':
-          // We use ID instead of Name
-          return attributes['ID'];
-        case 'Arabidopsis_small_rna':
-          return attributes['transcript_id'];
-        default:
-          return attributes['Name'];
-      }
-    },
-    seqIdTransformer: seqIdTransformer,
+    inputFilesConfiguration.gffFile,
+    ignoredFeatures: organism.ignoredFeatures,
+    triggerFeatures: organism.triggerFeatures,
+    nameTransformer: organism.nameTransformer,
+    seqIdTransformer: organism.seqIdTransformer,
   );
-  print('Loaded `${configuration.gffFile.path}` with ${gff.genes.length} genes');
+  print('Loaded `${inputFilesConfiguration.gffFile.path}` with ${gff.genes.length} genes');
   print(' - ${gff.genes.where((g) => g.startCodon() != null).length} with start_codon');
   print(' - ${gff.genes.where((g) => g.fivePrimeUtr() != null).length} with five_prime_UTR');
   print(' - ${gff.genes.where((g) => g.threePrimeUtr() != null).length} with three_prime_UTR');
 
   // Load fasta file
-  print('Loading `${configuration.fastaFile.path}`. This may take a while...');
-  final fasta = await Fasta.load(configuration.fastaFile);
-  print('Loaded fasta file `${configuration.fastaFile.path}` with ${fasta.availableSequences.length} sequences');
+  print('Loading `${inputFilesConfiguration.fastaFile.path}`. This may take a while...');
+  final fasta = await Fasta.load(inputFilesConfiguration.fastaFile);
+  print(
+      'Loaded fasta file `${inputFilesConfiguration.fastaFile.path}` with ${fasta.availableSequences.length} sequences');
 
   // Load tpm files
   Map<String, Tpm> tpm = {};
-  for (final tpmFile in configuration.tpmFiles) {
-    final tpmKey = RegExp(r'^.*\/[0-9]+\.\s*([^.]*)').firstMatch(tpmFile.path)?.group(1) ??
-        RegExp(r'^.*\/([^.]*)').firstMatch(tpmFile.path)?.group(1) ??
-        tpmFile.path;
+  for (final tpmFile in inputFilesConfiguration.tpmFiles) {
+    final tpmKey = organism.tmpKeyFromPath(tpmFile.path);
+    if (tpmKey == null) {
+      print(' - Ignoring file `${tpmFile.path}`');
+      continue;
+    }
     try {
       final tpmData = await Tpm.fromFile(
         tpmFile,
-        sequenceIdentifier: (line) {
-          // Some organisms define the gene as an alias instead as a sequence
-          switch (organism) {
-            case 'Amborella_trichopoda': // It's in the Alias field
-              return line[1];
-            case 'Zea_mays':
-              // We need to convert `Zm00001e000001_P001` to `Zm00001e000001_T001` used in GFF
-              return line[0].replaceAll('_P', '_T');
-            case 'Arabidopsis_thaliana':
-            case 'Arabidopsis_thaliana_mitochondrion':
-            case 'Arabidopsis_thaliana_chloroplast':
-              // All names in GFF have .1, but TPM files do not have it
-              return '${line[0]}.1';
-            case 'Arabidopsis_small_rna':
-              // Add .1 to TPM
-              return '${line[0]}.1';
-            default:
-              return line[0];
-          }
-        },
+        sequenceIdentifier: organism.sequenceIdentifier,
       );
       tpm[tpmKey] = tpmData;
       print('Loaded tpm file `${tpmFile.path}` as `$tpmKey` with ${tpmData.genes.length} genes');
@@ -117,7 +75,7 @@ void main(List<String> arguments) async {
 
   // Validate data
   final validator =
-      FastaValidator(gff, fasta, tpm, useTss: useTss, allowMissingStartCodon: organism == 'Arabidopsis_small_rna');
+      FastaValidator(gff, fasta, tpm, useTss: useTss, allowMissingStartCodon: organism.allowMissingStartCodon);
   await validator.validate();
 
   // Print validation results
@@ -130,7 +88,7 @@ void main(List<String> arguments) async {
   }
 
   // Save validation results
-  final validationOutputFile = File('$outputPath/$organism${useTss ? '-with-tss' : ''}.errors.csv');
+  final validationOutputFile = File('$outputPath/$organismFolderName${useTss ? '-with-tss' : ''}.errors.csv');
   final errors = [
     ['gene_id', 'errors'],
     for (final gene in gff.genes)
@@ -140,14 +98,17 @@ void main(List<String> arguments) async {
   print('Wrote errors to `${validationOutputFile.path}`');
 
   // Save resulting fasta file
-  final fastaOutputFile = File('$outputPath/$organism${useTss ? '-with-tss' : ''}.fasta');
+  final fastaOutputFile = File('$outputPath/$organismFolderName${useTss ? '-with-tss' : ''}.fasta');
   final fastaSink = fastaOutputFile.openWrite(mode: FileMode.writeOnly);
-  final generator = FastaGenerator(gff, fasta, tpm,
-      useTss: useTss,
-      useSelfInsteadOfStartCodon: organism == 'Arabidopsis_small_rna',
-      useAtg: organism != 'Arabidopsis_small_rna');
-  final deltaBases = organism == 'Arabidopsis_small_rna' ? 0 : 1000;
-  await for (final gene in generator.toFasta(deltaBases)) {
+  final generator = FastaGenerator(
+    gff,
+    fasta,
+    tpm,
+    useTss: useTss,
+    useSelfInsteadOfStartCodon: organism.useSelfInsteadOfStartCodon,
+    useAtg: organism.useAtg,
+  );
+  await for (final gene in generator.toFasta(organism.deltaBases)) {
     fastaSink.writeln(gene.join("\n"));
   }
   await fastaSink.flush();
