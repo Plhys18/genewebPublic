@@ -5,6 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "pipeline Physco",
+            "cwd": "pipeline",
+            "request": "launch",
+            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
+            "args": ["Physcomitrella_patens"],
+            "type": "dart"
+        },
+        {
             "name": "pipeline Arabidopsis",
             "cwd": "pipeline",
             "request": "launch",

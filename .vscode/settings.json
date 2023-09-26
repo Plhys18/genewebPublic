@@ -1,3 +1,14 @@
 {
-    "cmake.configureOnOpen": false
+    "cmake.configureOnOpen": false,
+    "cSpell.words": [
+        "Amborella",
+        "biloba",
+        "lycopersicum",
+        "Marchantia",
+        "Oryza",
+        "Physcomitrella",
+        "polymorpha",
+        "thaliana",
+        "trichopoda"
+    ]
 }

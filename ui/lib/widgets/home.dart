@@ -78,7 +78,7 @@ class _HomeState extends State<Home> {
                   : StepState.complete,
         ),
         Step(
-          title: const Text('Development stages'),
+          title: const Text('Developmental stages'),
           subtitle: const StageSubtitle(),
           content: StagePanel(key: ValueKey(organismAndStages), onChanged: _handleStageSelectionChanged),
           state:

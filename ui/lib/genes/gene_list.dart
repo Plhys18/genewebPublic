@@ -1,184 +1,16 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:geneweb/analysis/organism_presets.dart';
 import 'package:geneweb/genes/stage_selection.dart';
 import 'package:geneweb/genes/gene.dart';
 import 'package:geneweb/statistics/series.dart';
 
 /// Holds a list of genes
 class GeneList extends Equatable {
-  static final Map<String, List<StageAndColor>> _kStages = {
-    'marchantia': [
-      StageAndColor('Marchantia_Antheridium', const Color(0xff0085B4)),
-      StageAndColor('Marchantia_Sperm', const Color(0xffFFC002)),
-      StageAndColor('Marchantia_Thallus', const Color(0xff548236)),
-    ],
-    'physcomitrella': [
-      StageAndColor('Physcomitrella_Antheridia_9DAI', const Color(0xff21C5FF)),
-      StageAndColor('Physcomitrella_Antheridia_11DAI', const Color(0xff009ED6)),
-      StageAndColor('Physcomitrella_14', const Color(0xff009AD0)),
-      StageAndColor('Physcomitrella_Antheridia', const Color(0xff0085B4)),
-      StageAndColor('Physcomitrella_Sperm_cell_packages', const Color(0xffFFDB69)),
-      StageAndColor('Physcomitrella_Leaflets', const Color(0xff548236)),
-    ],
-    'amborella': [
-      StageAndColor('Amborella_UNM', const Color(0xffFF6D6D)),
-      StageAndColor('Amborella_Polen', const Color(0xff0085B4)),
-      StageAndColor('Amborella_PT_bicellular', const Color(0xffE9A5D2)),
-      StageAndColor('Amborella_PT_tricellular', const Color(0xff77175C)),
-      StageAndColor('Amborella_generative_cell', const Color(0xffB48502)),
-      StageAndColor('Amborella_Sperm_cell', const Color(0xffFFC002)),
-      StageAndColor('Amborella_Leaves', const Color(0xff92D050)),
-    ],
-    'oryza': [
-      StageAndColor('Oryza_TCP', const Color(0xff21C5FF)),
-      StageAndColor('Oryza_Pollen', const Color(0xff0085B4)),
-      StageAndColor('Oryza_Sperm', const Color(0xffFFC002)),
-      StageAndColor('Oryza_Leaves', const Color(0xff92D050)),
-    ],
-    'zea': [
-      StageAndColor('Zea_Microspore', const Color(0xffFF6D6D)),
-      //BCP missing
-      StageAndColor('Zea_Pollen', const Color(0xff0085B4)),
-      StageAndColor('Zea_PT', const Color(0xffE9A5D2)),
-      StageAndColor('Zea_Sperm', const Color(0xffFFC002)),
-      StageAndColor('Zea_Leaves', const Color(0xff92D050)),
-    ],
-    'solanum': [
-      StageAndColor('Solanum_Microspore', const Color(0xffFF6D6D)),
-      StageAndColor('Solanum_Pollen', const Color(0xff0085B4)),
-      StageAndColor('Solanum_Pollen_grain', const Color(0xff305496)),
-      StageAndColor('Solanum_PT', const Color(0xffE9A5D2)),
-      StageAndColor('Solanum_PT_1', const Color(0xffD75BAE)),
-      StageAndColor('Solanum_PT_3h', const Color(0xffAC2A81)),
-      StageAndColor('Solanum_PT_9h', const Color(0xff471234)),
-      StageAndColor('Solanum_Generative_cell', const Color(0xffB48502)),
-      StageAndColor('Solanum_Sperm', const Color(0xffFFC002)),
-      StageAndColor('Solanum_Leaves', const Color(0xff92D050)),
-    ],
-    'arabidopsis': [
-      StageAndColor('tapetum_C', const Color(0xff993300)),
-      StageAndColor('EarlyPollen_C', const Color(0xffB71C1C), stroke: 4),
-      StageAndColor('UNM_C', const Color(0xffFF6D6D)),
-      StageAndColor('BCP_C', const Color(0xffC80002)),
-      StageAndColor('LatePollen_C', const Color(0xff0D47A1), stroke: 4),
-      StageAndColor('TCP_C', const Color(0xff21C5FF)),
-      StageAndColor('MPG_C', const Color(0xff305496)),
-      StageAndColor('SIV_C', const Color(0xffFF6600)),
-      StageAndColor('sperm_C', const Color(0xffFFC002)),
-      StageAndColor('leaves_C', const Color(0xff92D050)),
-      StageAndColor('seedling_C', const Color(0xffC6E0B4)),
-      StageAndColor('egg_C', const Color(0xff607D8B)),
-
-      StageAndColor('EarlyPollen_L', const Color(0xffB71C1C), stroke: 4),
-      StageAndColor('UNM_L', const Color(0xffFF6D6D)),
-      StageAndColor('BCP_L', const Color(0xffC80002)),
-      StageAndColor('LatePollen_L', const Color(0xff0D47A1), stroke: 4),
-      StageAndColor('TCP_L', const Color(0xff21C5FF)),
-      StageAndColor('MPG_L', const Color(0xff305496)),
-
-      StageAndColor('col_tapetum', const Color(0xff993300)),
-      StageAndColor('col_EarlyPollen', const Color(0xffB71C1C), stroke: 4),
-      StageAndColor('col_UNM', const Color(0xffFF6D6D)),
-      StageAndColor('col_BCP', const Color(0xffC80002)),
-      StageAndColor('col_LatePollen', const Color(0xff0D47A1), stroke: 4),
-      StageAndColor('col_TCP', const Color(0xff21C5FF)),
-      StageAndColor('col_MPG', const Color(0xff305496)),
-      StageAndColor('col_SIV_PT', const Color(0xffFF6600)),
-      StageAndColor('col_sperm', const Color(0xffFFC002)),
-      StageAndColor('col_leaves', const Color(0xff92D050)),
-      StageAndColor('col_Seedlings', const Color(0xffC6E0B4)),
-      StageAndColor('col_Egg', const Color(0xff607D8B)),
-
-      StageAndColor('ler_EarlyPollen', const Color(0xffB71C1C), stroke: 4),
-      StageAndColor('ler_UNM', const Color(0xffFF6D6D)),
-      StageAndColor('ler_BCP', const Color(0xffC80002)),
-      StageAndColor('ler_LatePollen', const Color(0xff0D47A1), stroke: 4),
-      StageAndColor('ler_TCP', const Color(0xff21C5FF)),
-      StageAndColor('ler_MPG', const Color(0xff305496)),
-
-      StageAndColor('Arabidopsis_Tapetum', const Color(0xff993300)),
-      StageAndColor('Arabidopsis_EarlyPollen', const Color(0xffB71C1C), stroke: 4),
-      StageAndColor('Arabidopsis_UNM', const Color(0xffFF6D6D)),
-      StageAndColor('Arabidopsis_BCP', const Color(0xffC80002)),
-      StageAndColor('Arabidopsis_LatePollen', const Color(0xff0D47A1), stroke: 4),
-      StageAndColor('Arabidopsis_TCP', const Color(0xff21C5FF)),
-      StageAndColor('Arabidopsis_MPG', const Color(0xff305496)),
-      StageAndColor('Arabidopsis_SIV_PT', const Color(0xffFF6600)),
-      StageAndColor('Arabidopsis_Sperm', const Color(0xffFFC002)),
-      StageAndColor('Arabidopsis_Leaves', const Color(0xff92D050)),
-      StageAndColor('Arabidopsis_Seedlings', const Color(0xffC6E0B4)),
-      StageAndColor('Arabidopsis_Egg', const Color(0xff607D8B)),
-
-//      StageAndColor('PMI_C', const Color(0xff000000)),
-    ],
-  };
-
-  GeneList._({
-    required this.organism,
-    required List<Gene> genes,
-    required this.stages,
-    required Map<String, Color>? colors,
-    required this.errors,
-    required this.firstTranscriptOnly,
-  })  : _genes = genes,
-        transcriptionRates = _transcriptionRates(genes),
-        _colors = colors;
-
-  factory GeneList.fromFasta({required String data, String? organism, bool firstTranscriptOnly = false}) {
-    final chunks = data.split('>');
-    final genes = <Gene>[];
-    final errors = <dynamic>[];
-    for (final chunk in chunks) {
-      if (chunk.isEmpty) {
-        continue;
-      }
-      final lines = '>$chunk'.split('\n');
-      try {
-        final gene = Gene.fromFasta(lines);
-        genes.add(gene);
-      } catch (error) {
-        errors.add(error);
-      }
-    }
-
-    if (firstTranscriptOnly) {
-      Map<String, List<String>> keys = {};
-
-      for (final gene in genes) {
-        final geneCode = gene.geneCode;
-        keys[geneCode] = [...(keys[geneCode] ?? []), gene.geneId];
-      }
-
-      List<Gene> merged = [];
-      for (final key in keys.keys) {
-        keys[key]!.sort();
-        final first = keys[key]!.first;
-        merged.add(genes.where((gene) => gene.geneId == first).first);
-      }
-      return GeneList._(
-        organism: organism,
-        genes: merged,
-        errors: errors,
-        firstTranscriptOnly: firstTranscriptOnly,
-        stages: null,
-        colors: null,
-      );
-    }
-
-    return GeneList._(
-      organism: organism,
-      genes: genes,
-      errors: errors,
-      firstTranscriptOnly: firstTranscriptOnly,
-      stages: null,
-      colors: null,
-    );
-  }
-
   /// Name of the organism. This is used for auto detecting colors and stage order
-  final String? organism;
+  final Organism? organism;
+
   final List<dynamic> errors;
-  final bool firstTranscriptOnly;
 
   /// List of stages. Key is stage name, value is a list of Gene.ids for that stage (unvalidated) This can be `null` if not supplied
   final Map<String, Set<String>>? stages;
@@ -200,8 +32,67 @@ class GeneList extends Equatable {
   /// Stroke width for stages
   Map<String, int> get stroke => _strokeFromStages();
 
+  GeneList._({
+    required this.organism,
+    required List<Gene> genes,
+    required this.stages,
+    required Map<String, Color>? colors,
+    required this.errors,
+  })  : _genes = genes,
+        transcriptionRates = _transcriptionRates(genes),
+        _colors = colors;
+
+  factory GeneList.fromFasta({required String data, Organism? organism}) {
+    final chunks = data.split('>');
+    final genes = <Gene>[];
+    final errors = <dynamic>[];
+    for (final chunk in chunks) {
+      if (chunk.isEmpty) {
+        continue;
+      }
+      final lines = '>$chunk'.split('\n');
+      try {
+        final gene = Gene.fromFasta(lines);
+        genes.add(gene);
+      } catch (error) {
+        errors.add(error);
+      }
+    }
+
+    if (organism?.takeFirstTranscriptOnly != false) {
+      Map<String, List<String>> keys = {};
+
+      for (final gene in genes) {
+        final geneCode = gene.geneCode;
+        keys[geneCode] = [...(keys[geneCode] ?? []), gene.geneId];
+      }
+
+      List<Gene> merged = [];
+      for (final key in keys.keys) {
+        keys[key]!.sort();
+        final first = keys[key]!.first;
+        merged.add(genes.where((gene) => gene.geneId == first).first);
+      }
+      return GeneList._(
+        organism: organism,
+        genes: merged,
+        errors: errors,
+        stages: null,
+        colors: null,
+      );
+    }
+
+    return GeneList._(
+      organism: organism,
+      genes: genes,
+      errors: errors,
+      stages: null,
+      colors: null,
+    );
+  }
+
   GeneList copyWith({
-    String? organism,
+    Organism? organism,
     List<Gene>? genes,
     Map<String, Set<String>>? stages,
     Map<String, Color>? colors,
@@ -213,7 +104,6 @@ class GeneList extends Equatable {
       stages: stages ?? this.stages,
       colors: colors ?? this.colors,
       errors: errors ?? this.errors,
-      firstTranscriptOnly: firstTranscriptOnly,
     );
   }
 
@@ -224,9 +114,8 @@ class GeneList extends Equatable {
   List<String> get stageKeys {
     final detected = stages != null ? stages!.keys.toList() : transcriptionRates.keys.toList();
     final List<String> result = [];
-    final o = organism?.toLowerCase();
-    if (_kStages.containsKey(o)) {
-      for (final stage in _kStages[o]!) {
+    if (organism?.stages.isNotEmpty == true) {
+      for (final stage in organism!.stages) {
         if (detected.contains(stage.stage)) {
           result.add(stage.stage);
         }
@@ -332,11 +221,9 @@ class GeneList extends Equatable {
   }
 
   Map<String, Color> _colorsFromStages() {
-    final o = organism?.toLowerCase();
-
-    if (_kStages.containsKey(o)) {
+    if (organism?.stages.isNotEmpty == true) {
       final result = <String, Color>{};
-      for (final stage in _kStages[o]!) {
+      for (final stage in organism!.stages) {
         result[stage.stage] = stage.color;
       }
       return result;
@@ -345,11 +232,9 @@ class GeneList extends Equatable {
   }
 
   Map<String, int> _strokeFromStages() {
-    final o = organism?.toLowerCase();
-
-    if (_kStages.containsKey(o)) {
+    if (organism?.stages.isNotEmpty == true) {
       final result = <String, int>{};
-      for (final stage in _kStages[o]!) {
+      for (final stage in organism!.stages) {
         result[stage.stage] = stage.stroke;
       }
       return result;

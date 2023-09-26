@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/analysis.dart';
 import 'package:geneweb/analysis/analysis_options.dart';
 import 'package:geneweb/analysis/motif.dart';
+import 'package:geneweb/analysis/organism_presets.dart';
 import 'package:geneweb/genes/gene.dart';
 import 'package:geneweb/genes/stage_selection.dart';
 import 'package:geneweb/genes/gene_list.dart';
@@ -116,19 +117,18 @@ class GeneModel extends ChangeNotifier {
   }
 
   /// Loads genes and transcript rates from .fasta data
-  Future<void> loadFastaFromString(String data, {String? name, required bool firstTranscriptOnly}) async {
+  Future<void> loadFastaFromString(String data, {Organism? organism}) async {
     _reset();
-
-    this.name = RegExp(r'([A-Za-z0-9_]+).*').firstMatch(name ?? '')?.group(1)?.replaceAll('_', ' ');
-    sourceGenes = GeneList.fromFasta(data: data, firstTranscriptOnly: firstTranscriptOnly, organism: this.name);
+    name = organism?.name;
+    sourceGenes = GeneList.fromFasta(data: data, organism: organism);
     resetAnalysisOptions();
     resetFilter();
     notifyListeners();
   }
 
-  Future<void> loadFastaFromFile(String path, {String? filename, required bool merge}) async {
+  Future<void> loadFastaFromFile(String path, {String? filename, Organism? organism}) async {
     final data = await File(path).readAsString();
-    return await loadFastaFromString(data, name: filename, firstTranscriptOnly: merge);
+    return await loadFastaFromString(data, organism: organism);
   }
 
   /// Loads info about stages and colors from CSV file
