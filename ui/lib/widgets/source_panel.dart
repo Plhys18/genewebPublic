@@ -5,6 +5,7 @@ import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:geneweb/analysis/organism_presets.dart';
 import 'package:geneweb/genes/gene_list.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:http/http.dart' as http;
@@ -23,99 +24,13 @@ class SourceSubtitle extends StatelessWidget {
         : Wrap(
             children: [
               Text('$name', style: const TextStyle(fontStyle: FontStyle.italic)),
-              Text(
-                  ', ${sourceGenes.genes.length} genes${sourceGenes.firstTranscriptOnly == true ? ' (first transcript only)' : ''}, ${sourceGenes.stageKeys.length} stages'),
+              Text(', ${sourceGenes.genes.length} genes, ${sourceGenes.stageKeys.length} stages'),
             ],
           );
   }
 }
 
 class SourcePanel extends StatefulWidget {
-  static const List<Organism> kOrganisms = [
-    Organism(
-      name: 'Marchantia polymorpha',
-      filename: 'Marchantia_polymorpha.fasta.zip',
-      description: 'ATG',
-    ),
-    Organism(
-      public: true,
-      name: 'Marchantia polymorpha',
-      filename: 'Marchantia_polymorpha-with-tss.fasta.zip',
-      description: 'ATG, TSS',
-    ),
-    Organism(
-      name: 'Physcomitrella patens',
-      filename: 'Physcomitrella_patens.fasta.zip',
-      description: 'ATG',
-    ),
-    Organism(
-        public: true,
-        name: 'Physcomitrella patens',
-        filename: 'Physcomitrella_patens-with-tss.fasta.zip',
-        description: 'ATG, TSS'),
-    Organism(
-      public: true,
-      name: 'Amborella trichopoda',
-      filename: 'Amborella_trichopoda.fasta.zip',
-      description: 'ATG',
-    ),
-    Organism(
-      public: true,
-      name: 'Oryza sativa',
-      filename: 'Oryza_sativa.fasta.zip',
-      description: 'ATG',
-    ),
-    Organism(name: 'Zea mays', filename: 'Zea_mays.fasta.zip', description: 'ATG'),
-    Organism(
-      public: true,
-      name: 'Zea mays',
-      filename: 'Zea_mays-with-tss.fasta.zip',
-      description: 'ATG, TSS',
-    ),
-    Organism(
-      name: 'Solanum lycopersicum',
-      filename: 'Solanum_lycopersicum.fasta.zip',
-      description: 'ATG',
-    ),
-    Organism(
-      public: true,
-      name: 'Solanum lycopersicum',
-      filename: 'Solanum_lycopersicum-with-tss.fasta.zip',
-      description: 'ATG, TSS',
-    ),
-    Organism(
-      name: 'Arabidopsis thaliana (ATG)',
-      filename: 'Arabidopsis_thaliana.fasta.zip',
-      description: 'ATG',
-    ),
-    Organism(
-      public: true,
-      name: 'Arabidopsis thaliana (TSS)',
-      filename: 'Arabidopsis_thaliana-with-tss.fasta.zip',
-      description: 'ATG, TSS',
-    ),
-    Organism(
-      name: 'Arabidopsis thaliana',
-      filename: 'Arabidopsis-variants.fasta.zip',
-      description: 'TSS, ATG, all splicing variants',
-    ),
-    Organism(
-      name: 'Arabidopsis thaliana',
-      filename: 'Arabidopsis_thaliana_mitochondrion.fasta.zip',
-      description: 'Mitochondrion dataset',
-    ),
-    Organism(
-      name: 'Arabidopsis thaliana',
-      filename: 'Arabidopsis_thaliana_chloroplast.fasta.zip',
-      description: 'Chloroplast dataset',
-    ),
-    Organism(
-      name: 'Arabidopsis thaliana',
-      filename: 'Arabidopsis_thaliana_small_rna.fasta.zip',
-      description: 'Small RNA dataset',
-    ),
-  ];
-
   const SourcePanel({super.key, required this.onShouldClose});
 
   final VoidCallback onShouldClose;
@@ -127,7 +42,6 @@ class SourcePanel extends StatefulWidget {
 class _SourcePanelState extends State<SourcePanel> {
   String? _loadingMessage;
   double? _progress;
-  bool _firstTranscriptOnly = true;
 
   late final _model = GeneModel.of(context);
   late final _scaffoldMessenger = ScaffoldMessenger.of(context);
@@ -160,26 +74,14 @@ class _SourcePanelState extends State<SourcePanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (!publicSite) ...[
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8.0,
-            children: [
-              Checkbox(
-                  value: _firstTranscriptOnly, onChanged: (value) => setState(() => _firstTranscriptOnly = value!)),
-              const Text('Include only the first transcript from each gene'),
-            ],
-          ),
-          const SizedBox(height: 16),
-        ],
         Wrap(
           spacing: 8.0,
           runSpacing: 8.0,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            ...SourcePanel.kOrganisms.where((o) => o.public || publicSite == false).map((organism) => _OrganismCard(
+            ...OrganismPresets.kOrganisms.where((o) => o.public || publicSite == false).map((organism) => _OrganismCard(
                 organism: organism,
-                onSelected: organism.filename == null ? null : () => _handleDownloadFasta(organism.filename!))),
+                onSelected: organism.filename == null ? null : () => _handleDownloadFasta(organism))),
             if (!publicSite) TextButton(onPressed: _handlePickFastaFile, child: const Text('Load custom .fasta file…')),
           ],
         ),
@@ -237,13 +139,14 @@ class _SourcePanelState extends State<SourcePanel> {
       final filename = result.files.single.name;
       setState(() => _loadingMessage = 'Loading $filename…');
       await Future.delayed(const Duration(milliseconds: 100));
+      final organism = OrganismPresets.organismByFileName(filename);
       if (kIsWeb) {
         final data = const Utf8Decoder().convert(result.files.single.bytes!);
         debugPrint('Loaded ${data.length} bytes');
-        await _model.loadFastaFromString(data, name: filename, firstTranscriptOnly: _firstTranscriptOnly);
+        await _model.loadFastaFromString(data, organism: organism);
       } else {
         final path = result.files.single.path!;
-        await _model.loadFastaFromFile(path, filename: filename, merge: _firstTranscriptOnly);
+        await _model.loadFastaFromFile(path, organism: organism, filename: filename);
       }
       if (_model.sourceGenes!.errors.isEmpty) {
         _scaffoldMessenger.showSnackBar(SnackBar(content: Text('Imported ${_model.sourceGenes?.genes.length} genes.')));
@@ -326,9 +229,9 @@ class _SourcePanelState extends State<SourcePanel> {
     return const Utf8Decoder().convert(file.content);
   }
 
-  Future<void> _handleDownloadFasta(String filename) async {
+  Future<void> _handleDownloadFasta(Organism organism) async {
     try {
-      Archive? archive = await _downloadAndUnarchive(filename);
+      Archive? archive = await _downloadAndUnarchive(organism.filename!);
       final file = archive.firstWhere((f) => f.isFile); //StateError if not found
       final name = file.name.split('/').last;
       if (!name.endsWith('.fasta') && !name.endsWith('.fa')) {
@@ -341,7 +244,7 @@ class _SourcePanelState extends State<SourcePanel> {
       if (mounted) setState(() => _loadingMessage = 'Analyzing $name (${content.length ~/ (1024 * 1024)} MB)…');
       if (mounted) setState(() => _progress = 0.9);
       await Future.delayed(const Duration(milliseconds: 100));
-      await _model.loadFastaFromString(content, name: name, firstTranscriptOnly: _firstTranscriptOnly);
+      await _model.loadFastaFromString(content, organism: organism);
       debugPrint('Finished loading');
       if (_model.sourceGenes!.errors.isEmpty) {
         _scaffoldMessenger.showSnackBar(SnackBar(content: Text('Imported ${_model.sourceGenes?.genes.length} genes.')));
@@ -430,15 +333,6 @@ class _SourcePanelState extends State<SourcePanel> {
       setState(() => _loadingMessage = null);
     }
   }
-}
-
-class Organism {
-  final String name;
-  final String? filename;
-  final String? description;
-  final bool public;
-
-  const Organism({required this.name, this.filename, this.description, this.public = false});
 }
 
 class _OrganismCard extends StatelessWidget {
