@@ -124,7 +124,6 @@ class _MotifPanelState extends State<MotifPanel> {
           width: 200,
           child: TextFormField(
             controller: _nameController,
-            validator: (value) => value != null && value.isNotEmpty ? null : 'Enter the motif name',
             onChanged: (value) {
               setState(() => _customMotifName = value);
             },
@@ -139,7 +138,7 @@ class _MotifPanelState extends State<MotifPanel> {
             controller: _definitionController,
             validator: _validateMotifDefinition,
             onChanged: (value) {
-              setState(() => _customMotifDefinition = value);
+              setState(() => _customMotifDefinition = value.toUpperCase());
               _updateReverseComplements();
             },
             textCapitalization: TextCapitalization.characters,
@@ -181,7 +180,7 @@ class _MotifPanelState extends State<MotifPanel> {
   }
 
   List<String> _getDefinitions(String raw) {
-    return raw.split('\n').map((line) => line.trim()).where((line) => line.isNotEmpty).toList();
+    return raw.toUpperCase().split('\n').map((line) => line.trim()).where((line) => line.isNotEmpty).toList();
   }
 
   String? _validateMotifDefinition(String? value) {
@@ -211,8 +210,9 @@ class _MotifPanelState extends State<MotifPanel> {
 
   void _handleAddMotif() {
     if (_formKey.currentState!.validate()) {
-      final motif = Motif(
-          name: _customMotifName ?? 'Unnamed motif', definitions: _customMotifDefinition!.split('\n'), isCustom: true);
+      final definitions = _customMotifDefinition!.toUpperCase().split('\n');
+      final name = (_customMotifName ?? '') != '' ? _customMotifName : definitions.first;
+      final motif = Motif(name: name!, definitions: definitions, isCustom: true);
       _model.setMotifs([motif, ..._model.motifs]);
     }
     setState(() => _showEditor = false);
