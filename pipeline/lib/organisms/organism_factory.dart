@@ -4,7 +4,7 @@ import 'package:pipeline/organisms/base_organism.dart';
 import 'package:pipeline/organisms/ginkgo.dart';
 import 'package:pipeline/organisms/marchantia.dart';
 import 'package:pipeline/organisms/oryza.dart';
-import 'package:pipeline/organisms/physcomitrella.dart';
+import 'package:pipeline/organisms/physcomitrium.dart';
 import 'package:pipeline/organisms/solanum.dart';
 import 'package:pipeline/organisms/zea.dart';
 
@@ -27,8 +27,8 @@ class OrganismFactory {
         return Marchantia();
       case 'Oryza_sativa':
         return Oryza();
-      case 'Physcomitrella_patens':
-        return Physcomitrella();
+      case 'Physcomitrium_patens':
+        return Physcomitrium();
       case 'Solanum_lycopersicum':
         return Solanum();
       case 'Zea_mays':

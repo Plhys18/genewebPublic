@@ -106,9 +106,9 @@ class GeneModel extends ChangeNotifier {
   }
 
   void resetFilter() {
-    final stages = sourceGenes?.stageKeys ?? [];
+    final selectedStages = sourceGenes?.defaultSelectedStageKeys ?? [];
     _stageSelection = StageSelection(
-      selectedStages: [kAllStages, ...stages],
+      selectedStages: [kAllStages, ...selectedStages],
       strategy: sourceGenes?.stages != null ? null : FilterStrategy.top,
       selection: sourceGenes?.stages != null ? null : FilterSelection.percentile,
       percentile: sourceGenes?.stages != null ? null : 0.9,

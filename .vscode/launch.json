@@ -9,7 +9,7 @@
             "cwd": "pipeline",
             "request": "launch",
             "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
-            "args": ["Physcomitrella_patens"],
+            "args": ["Physcomitrium_patens"],
             "type": "dart"
         },
         {

@@ -1,7 +1,7 @@
 import 'package:pipeline/organisms/base_organism.dart';
 
-class Physcomitrella extends BaseOrganism {
-  Physcomitrella() : super(name: 'Physcomitrella patens');
+class Physcomitrium extends BaseOrganism {
+  Physcomitrium() : super(name: 'Physcomitrella patens');
 
   @override
   String? tmpKeyFromPath(String path) {

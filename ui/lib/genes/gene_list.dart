@@ -131,6 +131,15 @@ class GeneList extends Equatable {
     return result;
   }
 
+  /// Get keys for stages that should be selected by default
+  List<String> get defaultSelectedStageKeys {
+    final keys = stageKeys;
+    if (organism?.stages.isNotEmpty == true) {
+      return organism!.stages.where((s) => s.isCheckedByDefault && keys.contains(s.stage)).map((s) => s.stage).toList();
+    }
+    return keys;
+  }
+
   /// Filters gene for given [stage]. Either uses [stages] or applies [stageSelection], if specified
   GeneList filter({required String stage, required StageSelection stageSelection}) {
     assert(stageKeys.contains(stage), 'Unknown stage $stage');
@@ -247,6 +256,7 @@ class StageAndColor {
   final String stage;
   final Color color;
   final int stroke;
+  final bool isCheckedByDefault;
 
-  StageAndColor(this.stage, this.color, {this.stroke = 2});
+  StageAndColor(this.stage, this.color, {this.stroke = 4, this.isCheckedByDefault = true});
 }
