@@ -86,7 +86,7 @@ class Analysis {
       motif: motif,
       name: name,
       color: color,
-      stroke: stroke ?? 2,
+      stroke: stroke ?? 4,
       result: results,
       distribution: distribution,
     );

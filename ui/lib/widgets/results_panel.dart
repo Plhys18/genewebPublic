@@ -397,7 +397,7 @@ class _ResultsPanelState extends State<ResultsPanel> {
 
   void _handleSetStroke(Analysis analysis, int? value) {
     final model = GeneModel.of(context);
-    _updateAnalysis(model, analysis.copyWith(stroke: value ?? 2));
+    _updateAnalysis(model, analysis.copyWith(stroke: value ?? 4));
   }
 
   void _handleSetVisibility(Analysis analysis, bool? value) {
