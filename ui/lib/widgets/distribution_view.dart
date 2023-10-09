@@ -58,8 +58,8 @@ class _DistributionViewState extends State<DistributionView> {
 
   @override
   Widget build(BuildContext context) {
-    final analyses =
-        context.select<GeneModel, List<Analysis>>((model) => model.analyses.where((a) => a.visible).toList());
+    final analyses = context.select<GeneModel, List<Analysis>>(
+        (model) => model.analyses.where((a) => a.visible).toList());
     if (analyses.isEmpty) {
       return const Center(child: Text('No series enabled'));
     }
@@ -92,40 +92,55 @@ class _DistributionViewState extends State<DistributionView> {
                       data: analysis.distribution!.dataPoints!,
                       domainFn: (DistributionDataPoint point, i) => point.min,
                       measureFn: _measureFn,
-                      labelAccessorFn: (DistributionDataPoint point, _) => '<${point.min}; ${point.max})',
+                      labelAccessorFn: (DistributionDataPoint point, _) =>
+                          '<${point.min}; ${point.max})',
                       strokeWidthPxFn: (_, __) => analysis.stroke,
                       seriesColor: widget.focus == null
                           ? charts.ColorUtil.fromDartColor(analysis.color)
                           : widget.focus == analysis.name
                               ? charts.ColorUtil.fromDartColor(analysis.color)
-                              : charts.ColorUtil.fromDartColor(Colors.grey.withOpacity(0.1)),
+                              : charts.ColorUtil.fromDartColor(
+                                  Colors.grey.withOpacity(0.1)),
                     ),
                 ],
                 animate: false,
                 primaryMeasureAxis: charts.NumericAxisSpec(
+                  renderSpec: const charts.SmallTickRendererSpec(
+                      labelStyle: charts.TextStyleSpec(fontSize: 14)),
                   tickProviderSpec: charts.BasicNumericTickProviderSpec(
                     desiredMinTickCount: 10,
                     zeroBound: false,
                     dataIsInWholeNumbers: !widget.usePercentages,
                   ),
                   tickFormatterSpec: charts.BasicNumericTickFormatterSpec(
-                      (value) => widget.usePercentages ? '$value%' : '${value?.floor()}'),
+                      (value) => widget.usePercentages
+                          ? '$value%'
+                          : '${value?.floor()}'),
                   viewport: charts.NumericExtents(
-                      widget.verticalAxisMin ?? defaultVerticalMin, widget.verticalAxisMax ?? defaultVerticalMax ?? 0),
+                      widget.verticalAxisMin ?? defaultVerticalMin,
+                      widget.verticalAxisMax ?? defaultVerticalMax ?? 0),
                 ),
                 domainAxis: charts.NumericAxisSpec(
-                    viewport: charts.NumericExtents(widget.horizontalAxisMin ?? defaultHorizontalMin,
+                    renderSpec: const charts.SmallTickRendererSpec(
+                        labelStyle: charts.TextStyleSpec(fontSize: 14)),
+                    viewport: charts.NumericExtents(
+                        widget.horizontalAxisMin ?? defaultHorizontalMin,
                         widget.horizontalAxisMax ?? defaultHorizontalMax)),
                 behaviors: [
-                  charts.ChartTitle(leftAxisTitle, behaviorPosition: charts.BehaviorPosition.start),
+                  charts.ChartTitle(leftAxisTitle,
+                      behaviorPosition: charts.BehaviorPosition.start),
                   charts.LinePointHighlighter(
                       selectionModelType: charts.SelectionModelType.info,
-                      showHorizontalFollowLine: charts.LinePointHighlighterFollowLineType.nearest,
-                      showVerticalFollowLine: charts.LinePointHighlighterFollowLineType.nearest),
+                      showHorizontalFollowLine:
+                          charts.LinePointHighlighterFollowLineType.nearest,
+                      showVerticalFollowLine:
+                          charts.LinePointHighlighterFollowLineType.nearest),
                   if (distributions.first.alignMarker != null)
                     charts.RangeAnnotation([
-                      charts.LineAnnotationSegment(0, charts.RangeAnnotationAxisType.domain,
-                          startLabel: distributions.first.alignMarker?.toUpperCase())
+                      charts.LineAnnotationSegment(
+                          0, charts.RangeAnnotationAxisType.domain,
+                          startLabel:
+                              distributions.first.alignMarker?.toUpperCase())
                     ]),
                   //              charts.SeriesLegend(position: charts.BehaviorPosition.end),
                 ],
@@ -136,7 +151,7 @@ class _DistributionViewState extends State<DistributionView> {
         if (label != null)
           Text(
             label!,
-            style: Theme.of(context).textTheme.caption,
+            style: Theme.of(context).textTheme.bodySmall,
           ),
       ],
     );
@@ -151,18 +166,23 @@ class _DistributionViewState extends State<DistributionView> {
     final slideImage = bytes.buffer.asUint8List();
     const filename = 'graph.png';
     debugPrint('Saving $filename (${slideImage.length} bytes)');
-    await FileSaver.instance.saveFile(filename, slideImage, 'png', mimeType: MimeType.PNG);
+    await FileSaver.instance
+        .saveFile(filename, slideImage, 'png', mimeType: MimeType.PNG);
   }
 
   void _onSelectionChanged(charts.SelectionModel<num> model) {
-    final key = model.selectedSeries[0].labelAccessorFn!.call(model.selectedDatum[0].index);
-    final value = model.selectedSeries[0].measureFn(model.selectedDatum[0].index);
+    final key = model.selectedSeries[0].labelAccessorFn!
+        .call(model.selectedDatum[0].index);
+    final value =
+        model.selectedSeries[0].measureFn(model.selectedDatum[0].index);
     setState(() => label = '$key: $value');
   }
 
   num? _measureFn(DistributionDataPoint point, int? index) {
     if (widget.groupByGenes) {
-      return widget.usePercentages ? (point.genesPercent * 100) : point.genesCount;
+      return widget.usePercentages
+          ? (point.genesPercent * 100)
+          : point.genesCount;
     } else {
       return widget.usePercentages ? (point.percent * 100) : point.count;
     }
