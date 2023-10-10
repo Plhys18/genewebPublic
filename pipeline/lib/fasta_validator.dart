@@ -177,5 +177,7 @@ enum ValidationErrorType {
   noTpmDataFound,
 
   /// Multiple TPM data was found for this gene.
+  /// 
+  /// i.e. TPM data for this gene is present multiple times in the TPM files
   multipleTpmDataFound,
 }
