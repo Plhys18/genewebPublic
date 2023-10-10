@@ -118,13 +118,6 @@ class FastaGenerator {
         ...splitSequences
       ];
 
-      if (gene.name == 'AT1G01020.1') {
-        print('Sequence: ${sequence.length}');
-        print('Before: ${before.length}');
-        print('Codon: ${codon.length} $codon');
-        print('After: ${after.length}');
-        print('Breakpoint');
-      }
       yield result;
     }
   }

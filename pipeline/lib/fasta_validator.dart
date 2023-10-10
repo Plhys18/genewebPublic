@@ -133,14 +133,49 @@ class ValidationError {
 }
 
 enum ValidationErrorType {
+  /// `seqid` defined in the GFF file was not found in the FASTA file.
+  ///
+  /// `seqid` is the contents of the first column in the GFF file.
   noSequenceFound,
+
+  /// Name of the gene was not found in the GFF file.
+  ///
+  /// See also [BaseOrganism.nameTransformer] interface which is responsible for extracting the name from the GFF file.
   noIdFound,
+
+  /// Strand defined in GFF is expected to be either `+` or `-`.
   invalidStrand,
+
+  /// Start codon was not found in the GFF file.
   noStartCodonFound,
+
+  /// Multiple start codons were found in the GFF file.
   multipleStartCodonsFound,
+
+  /// Start codon is invalid.
+  ///
+  /// It either:
+  ///  - points out of the bounds of the respective sequence
+  ///  - is not `ATG` (forward) or `CAT` (reverse)
   invalidStartCodon,
+
+  /// Five prime UTR was not found in the GFF file.
+  ///
+  /// This is only triggered when TSS processing is requested
   noFivePrimeUtrFound,
+
+  /// Five prime UTR is invalid.
+  ///
+  /// It either:
+  /// - points out of the bounds of the respective sequence
+  /// - has a length < 1
   invalidFivePrimeUtr,
+
+  /// TPM data was not found for this gene.
+  ///
+  /// i.e. TPM data for this gene is missing in the TPM files
   noTpmDataFound,
+
+  /// Multiple TPM data was found for this gene.
   multipleTpmDataFound,
 }
