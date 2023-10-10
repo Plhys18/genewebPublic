@@ -7,6 +7,7 @@ import 'package:pipeline/fasta_validator.dart';
 import 'package:pipeline/gff.dart';
 import 'package:pipeline/organisms/organism_factory.dart';
 import 'package:pipeline/tpm.dart';
+import 'package:pipeline/tpm_summary_generator.dart';
 
 void main(List<String> arguments) async {
   if (arguments.isEmpty || arguments.length > 2) {
@@ -97,6 +98,12 @@ void main(List<String> arguments) async {
   validationOutputFile.writeAsStringSync(ListToCsvConverter().convert(errors));
   print('Wrote errors to `${validationOutputFile.path}`');
 
+  // Save Gene TPM CSV
+  final geneTpm = TPMSummaryGenerator(gff, tpm).toCsv();
+  final geneTpmOutputFile = File('$outputPath/$organismFolderName${useTss ? '-with-tss' : ''}.validated-genes-tpm.csv');
+  geneTpmOutputFile.writeAsStringSync(ListToCsvConverter().convert(geneTpm));
+  print('Wrote validated genes TPM to `${geneTpmOutputFile.path}`');
+
   // Save resulting fasta file
   final fastaOutputFile = File('$outputPath/$organismFolderName${useTss ? '-with-tss' : ''}.fasta');
   final fastaSink = fastaOutputFile.openWrite(mode: FileMode.writeOnly);
@@ -116,6 +123,7 @@ void main(List<String> arguments) async {
   print('Wrote fasta to `${fastaOutputFile.path}`');
   await fasta.cleanup();
   print('Cleaned up temporary files');
+
   exit(0);
 }
 
