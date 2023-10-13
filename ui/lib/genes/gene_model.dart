@@ -117,18 +117,32 @@ class GeneModel extends ChangeNotifier {
   }
 
   /// Loads genes and transcript rates from .fasta data
-  Future<void> loadFastaFromString(String data, {Organism? organism}) async {
+  Future<void> loadFastaFromString(
+      {required String data, Organism? organism, required Function(double progress) progressCallback}) async {
     _reset();
     name = organism?.name;
-    sourceGenes = GeneList.fromFasta(data: data, organism: organism);
+    List<Gene> genes;
+    List<dynamic> errors;
+    final takeSingleTranscript = organism == null || organism.takeFirstTranscriptOnly;
+    (genes, errors) = await GeneList.parseFasta(
+        data, takeSingleTranscript ? (value) => progressCallback(value / 2) : progressCallback);
+    if (takeSingleTranscript) {
+      (genes, errors) =
+          await GeneList.takeSingleTranscript(genes, errors, (value) => progressCallback(0.5 + value / 2));
+    }
+    sourceGenes = GeneList.fromList(genes: genes, errors: errors, organism: organism);
     resetAnalysisOptions();
     resetFilter();
     notifyListeners();
   }
 
-  Future<void> loadFastaFromFile(String path, {String? filename, Organism? organism}) async {
+  Future<void> loadFastaFromFile(
+      {required String path,
+      String? filename,
+      Organism? organism,
+      required Function(double progress) progressCallback}) async {
     final data = await File(path).readAsString();
-    return await loadFastaFromString(data, organism: organism);
+    return await loadFastaFromString(data: data, organism: organism, progressCallback: progressCallback);
   }
 
   /// Loads info about stages and colors from CSV file

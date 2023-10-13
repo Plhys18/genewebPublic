@@ -142,11 +142,20 @@ class _SourcePanelState extends State<SourcePanel> {
       final organism = OrganismPresets.organismByFileName(filename);
       if (kIsWeb) {
         final data = const Utf8Decoder().convert(result.files.single.bytes!);
-        debugPrint('Loaded ${data.length} bytes');
-        await _model.loadFastaFromString(data, organism: organism);
+        debugPrint('Loaded ${data.length ~/ (1024 * 1024)} MB');
+        await _model.loadFastaFromString(
+          data: data,
+          organism: organism,
+          progressCallback: (value) => setState(() => _progress = value),
+        );
       } else {
         final path = result.files.single.path!;
-        await _model.loadFastaFromFile(path, organism: organism, filename: filename);
+        await _model.loadFastaFromFile(
+          path: path,
+          organism: organism,
+          filename: filename,
+          progressCallback: (value) => setState(() => _progress = value),
+        );
       }
       if (_model.sourceGenes!.errors.isEmpty) {
         _scaffoldMessenger.showSnackBar(SnackBar(content: Text('Imported ${_model.sourceGenes?.genes.length} genes.')));
@@ -215,7 +224,7 @@ class _SourcePanelState extends State<SourcePanel> {
           await _downloadFile(Uri.https(kIsWeb ? Uri.base.authority : 'golem-dev.ncbr.muni.cz', 'datasets/$filename'));
       debugPrint('Downloaded ${bytes.length ~/ (1024 * 1024)} MB');
       if (mounted) setState(() => _loadingMessage = 'Decompressing ${bytes.length ~/ (1024 * 1024)} MB…');
-      if (mounted) setState(() => _progress = 0.8);
+      if (mounted) setState(() => _progress = 0.7);
       await Future.delayed(const Duration(milliseconds: 100));
       final archive = ZipDecoder().decodeBytes(bytes);
       debugPrint('Decoded $archive');
@@ -242,9 +251,13 @@ class _SourcePanelState extends State<SourcePanel> {
       debugPrint('Decoded ${content.length ~/ (1024 * 1024)} MB of data');
       archive = null; // unload from memory
       if (mounted) setState(() => _loadingMessage = 'Analyzing $name (${content.length ~/ (1024 * 1024)} MB)…');
-      if (mounted) setState(() => _progress = 0.9);
+      if (mounted) setState(() => _progress = 0.8);
       await Future.delayed(const Duration(milliseconds: 100));
-      await _model.loadFastaFromString(content, organism: organism);
+      await _model.loadFastaFromString(
+        data: content,
+        organism: organism,
+        progressCallback: (value) => setState(() => _progress = 0.8 + value * 0.2),
+      );
       debugPrint('Finished loading');
       if (_model.sourceGenes!.errors.isEmpty) {
         _scaffoldMessenger.showSnackBar(SnackBar(content: Text('Imported ${_model.sourceGenes?.genes.length} genes.')));
@@ -273,14 +286,14 @@ class _SourcePanelState extends State<SourcePanel> {
     final http.StreamedResponse response = await http.Client().send(request);
     debugPrint('Got $response');
     final contentLength = response.contentLength;
-    debugPrint('Will download $contentLength bytes');
+    debugPrint('Will download ${(contentLength ?? 0) ~/ (1024 * 1024)} MB');
     int downloadedBytes = 0;
     List<int> bytes = [];
     await response.stream.listen(
       (List<int> newBytes) {
         bytes.addAll(newBytes);
         downloadedBytes += newBytes.length;
-        if (mounted) setState(() => _progress = contentLength == null ? null : (downloadedBytes / contentLength * 0.8));
+        if (mounted) setState(() => _progress = contentLength == null ? null : (downloadedBytes / contentLength * 0.7));
       },
       onDone: () async {
         debugPrint('Stream done');
@@ -312,7 +325,7 @@ class _SourcePanelState extends State<SourcePanel> {
       bool status;
       if (kIsWeb) {
         final data = const Utf8Decoder().convert(result.files.single.bytes!);
-        debugPrint('Loaded ${data.length} bytes');
+        debugPrint('Downloaded ${data.length ~/ (1024 * 1024)} MB');
         status = _model.loadTPMFromString(data);
       } else {
         final path = result.files.single.path!;

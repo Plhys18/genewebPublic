@@ -42,11 +42,20 @@ class GeneList extends Equatable {
         transcriptionRates = _transcriptionRates(genes),
         _colors = colors;
 
-  factory GeneList.fromFasta({required String data, Organism? organism}) {
+  /// Parse fasta file into list of genes.
+  ///
+  /// Feed the result to [GeneList.fromList]
+  static Future<(List<Gene>, List<dynamic>)> parseFasta(String data, Function(double progress) progressCallback) async {
     final chunks = data.split('>');
     final genes = <Gene>[];
     final errors = <dynamic>[];
+    int cnt = 0;
     for (final chunk in chunks) {
+      // Insert a delay so that we do not block the UI thread for too long
+      if (cnt++ % 1000 == 0) {
+        progressCallback(cnt / chunks.length);
+        await Future.delayed(const Duration(milliseconds: 20));
+      }
       if (chunk.isEmpty) {
         continue;
       }
@@ -58,37 +67,52 @@ class GeneList extends Equatable {
         errors.add(error);
       }
     }
+    debugPrint('.fasta parsing completed with ${genes.length} genes and ${errors.length} errors');
+    return (genes, errors);
+  }
 
-    if (organism?.takeFirstTranscriptOnly != false) {
-      Map<String, List<String>> keys = {};
+  /// Takes the first transcript from each gene only
+  ///
+  /// Feed the result to [GeneList.fromList]
+  static Future<(List<Gene>, List<dynamic>)> takeSingleTranscript(
+      List<Gene> genes, List<dynamic> errors, Function(double progress) progressCallback) async {
+    Map<String, List<String>> keys = {};
 
-      for (final gene in genes) {
-        final geneCode = gene.geneCode;
-        keys[geneCode] = [...(keys[geneCode] ?? []), gene.geneId];
-      }
-
-      List<Gene> merged = [];
-      for (final key in keys.keys) {
-        keys[key]!.sort();
-        final first = keys[key]!.first;
-        merged.add(genes.where((gene) => gene.geneId == first).first);
-      }
-      return GeneList._(
-        organism: organism,
-        genes: merged,
-        errors: errors,
-        stages: null,
-        colors: null,
-      );
+    for (final gene in genes) {
+      final geneCode = gene.geneCode;
+      keys[geneCode] = [...(keys[geneCode] ?? []), gene.geneId];
     }
 
-    return GeneList._(
+    List<Gene> merged = [];
+    int cnt = 0;
+    for (final key in keys.keys) {
+      // Insert a delay so that we do not block the UI thread for too long
+      if (cnt++ % 1000 == 0) {
+        progressCallback(cnt / keys.length);
+        await Future.delayed(const Duration(milliseconds: 20));
+      }
+      keys[key]!.sort();
+      final first = keys[key]!.first;
+      merged.add(genes.firstWhere((gene) => gene.geneId == first));
+    }
+    debugPrint('.fasta transcript filtering completed with ${merged.length} genes and ${errors.length} errors');
+    return (merged, errors);
+  }
+
+  /// Create a new GeneList from list of genes.
+  ///
+  /// Obtain the list by calling [parseFasta]
+  factory GeneList.fromList({required List<Gene> genes, required List<dynamic> errors, Organism? organism}) {
+    GeneList result;
+    result = GeneList._(
       organism: organism,
       genes: genes,
       errors: errors,
       stages: null,
       colors: null,
     );
+    debugPrint('.fasta analysis completed with ${result.genes.length} genes and ${result.errors.length} errors');
+    return result;
   }
 
   GeneList copyWith({
