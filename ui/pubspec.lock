@@ -129,6 +129,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
+  faabul_color_picker:
+    dependency: "direct main"
+    description:
+      name: faabul_color_picker
+      sha256: cff68afe9e8c5278b9aabca1917fa4c6031747b0ba300ae376c92a92f77796f5
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.2"
   fake_async:
     dependency: transitive
     description:
@@ -169,22 +177,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.1.1"
-  flex_color_picker:
-    dependency: "direct main"
-    description:
-      name: flex_color_picker
-      sha256: b5c6a51554e8adef6fb4239786b42af30202941d50625649afa75fc98b26bb70
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.6.1"
-  flex_seed_scheme:
-    dependency: transitive
-    description:
-      name: flex_seed_scheme
-      sha256: "29c12aba221eb8a368a119685371381f8035011d18de5ba277ad11d7dfb8657f"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.4.0"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -646,5 +638,5 @@ packages:
     source: hosted
     version: "3.1.2"
 sdks:
-  dart: ">=3.1.0-185.0.dev <4.0.0"
-  flutter: ">=3.10.0"
+  dart: ">=3.1.1 <4.0.0"
+  flutter: ">=3.3.0"

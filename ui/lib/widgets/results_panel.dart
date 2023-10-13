@@ -1,4 +1,4 @@
-import 'package:flex_color_picker/flex_color_picker.dart';
+import 'package:faabul_color_picker/faabul_color_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/analysis.dart';
@@ -365,7 +365,7 @@ class _ResultsPanelState extends State<ResultsPanel> {
             onChanged: (value) => _handleSetVisibility(analysis, value)),
         ListTile(
             title: const Text('Color'),
-            trailing: ColorIndicator(color: analysis.color),
+            trailing: FaabulColorSample(color: analysis.color),
             onTap: () => _handleSetColor(analysis)),
         ListTile(
             title: const Text('Stroke'),
@@ -391,7 +391,7 @@ class _ResultsPanelState extends State<ResultsPanel> {
 
   Future<void> _handleSetColor(Analysis analysis) async {
     final model = GeneModel.of(context);
-    final color = await showColorPickerDialog(context, analysis.color);
+    final color = await showColorPickerDialog(context: context, selected: analysis.color);
     _updateAnalysis(model, analysis.copyWith(color: color));
   }
 

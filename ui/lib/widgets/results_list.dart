@@ -1,4 +1,3 @@
-import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/analysis.dart';
 import 'package:geneweb/genes/gene_model.dart';
@@ -34,9 +33,12 @@ class _ResultsListState extends State<ResultsList> {
             leading: IconButton(
               onPressed: () => _handleSetVisibility(context, analysis),
               icon: analysis.visible
-                  ? ColorIndicator(
-                      color: analysis.color,
-                      borderRadius: 4,
+                  ? Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: colorScheme.outline),
+                        borderRadius: BorderRadius.circular(4),
+                        color: analysis.color,
+                      ),
                       width: 24,
                       height: 24,
                     )
