@@ -87,7 +87,6 @@ class _StagePanelState extends State<StagePanel> {
 
   @override
   Widget build(BuildContext context) {
-    final public = context.select<GeneModel, bool>((model) => model.publicSite);
     final textTheme = Theme.of(context).textTheme;
     final allStagesKeys = context.select<GeneModel, List<String>>((model) => model.sourceGenes?.stageKeys ?? []);
     final allowFilter = context.select<GeneModel, bool>((model) => model.sourceGenes?.stages == null);
@@ -102,7 +101,7 @@ class _StagePanelState extends State<StagePanel> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('GENOME', style: textTheme.titleSmall),
-            Text('Distribution of the motif across the genome.', style: textTheme.caption),
+            Text('Distribution of the motif across the genome.', style: textTheme.bodySmall),
             const SizedBox(height: 16),
             _StageCard(
               name: 'GENOME',
@@ -113,7 +112,7 @@ class _StagePanelState extends State<StagePanel> {
             const SizedBox(height: 16),
             Text('DEVELOPMENTAL STAGES', style: textTheme.titleSmall),
             Text('Distribution of the motif in genes with elevated transcript levels in certain developmental stage.',
-                style: textTheme.caption),
+                style: textTheme.bodySmall),
             const SizedBox(height: 16),
             Wrap(
               spacing: 8,
@@ -187,18 +186,17 @@ class _StagePanelState extends State<StagePanel> {
                         },
                       ),
                     ),
-                  if (!public)
-                    CupertinoSlidingSegmentedControl<FilterSelection>(
-                      children: const {
-                        FilterSelection.fixed: Text('Genes'),
-                        FilterSelection.percentile: Text('Percentile'),
-                      },
-                      onValueChanged: (value) {
-                        setState(() => _selection = value!);
-                        _handleChanged();
-                      },
-                      groupValue: _selection,
-                    ),
+                  CupertinoSlidingSegmentedControl<FilterSelection>(
+                    children: const {
+                      FilterSelection.fixed: Text('Genes'),
+                      FilterSelection.percentile: Text('Percentile'),
+                    },
+                    onValueChanged: (value) {
+                      setState(() => _selection = value!);
+                      _handleChanged();
+                    },
+                    groupValue: _selection,
+                  ),
                 ],
               ),
             ],
