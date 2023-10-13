@@ -56,15 +56,17 @@ class FastaGenerator {
       if (gene.errors!.isNotEmpty) continue;
 
       final geneTpm = {
-        for (final tpmKey in tpm.keys) tpmKey: tpm[tpmKey]!.genes[gene.name]!.first,
+        for (final tpmKey in tpm.keys) tpmKey: tpm[tpmKey]!.get(gene).first,
       };
       final geneTpmJson = {
         for (final tpmKey in geneTpm.keys) tpmKey: geneTpm[tpmKey]!.avg,
       };
 
       // Start and end of the sequence of interest
-      final startCodonBegin = (useSelfInsteadOfStartCodon ? gene.start : gene.startCodon()!.start) - 1;
-      final startCodonEnd = useSelfInsteadOfStartCodon ? gene.end : gene.startCodon()!.end;
+      final geneSequence = await fasta.sequence(gene.seqId);
+      final startCodon = gene.validStartCodons(geneSequence!, gene.strand!).firstOrNull;
+      final startCodonBegin = (useSelfInsteadOfStartCodon ? gene.start : startCodon!.start) - 1;
+      final startCodonEnd = useSelfInsteadOfStartCodon ? gene.end : startCodon!.end;
 
       // Where is the TSS relative to ATG
       final tssDelta = !useTss
@@ -75,7 +77,7 @@ class FastaGenerator {
       assert(tssDelta == null || tssDelta >= 0);
 
       // Get the whole sequence for the gene
-      final wholeSequence = (await fasta.sequence(gene.seqid))!.sequence; // shall not pass validation
+      final wholeSequence = (await fasta.sequence(gene.seqId))!.sequence; // shall not pass validation
 
       // bpbs to cut before and after ATG
       final basesBeforeAtg = deltaBases + (gene.strand == Strand.forward ? (tssDelta ?? 0) : 0);
@@ -97,7 +99,7 @@ class FastaGenerator {
               ? before.length + 1
               : after.length + 1;
       final tssPosition = useTss ? atgPosition! - tssDelta! : null;
-      assert(!useTss || tssPosition != null, 'TSS not found for gene ${gene.name}');
+      assert(!useTss || tssPosition != null, 'TSS not found for gene ${gene.transcriptId}');
       if (useAtg) {
         final validationCodon = sequence.substring(atgPosition! - 1, atgPosition - 1 + 3);
         assert(validationCodon == 'ATG', 'Unexpected codon: $codon');
@@ -110,7 +112,7 @@ class FastaGenerator {
       };
 
       final List<String> result = [
-        '>${gene.name} ${gene.strand!.name.toUpperCase()} LENGTH=${sequence.length}',
+        '>${gene.transcriptId} ${gene.strand!.name.toUpperCase()} LENGTH=${sequence.length}',
         ';SOURCE $gene',
         ';DESCRIPTION ${geneTpm.values.firstOrNull?.description}',
         ';TRANSCRIPTION_RATES ${jsonEncode(geneTpmJson)}',

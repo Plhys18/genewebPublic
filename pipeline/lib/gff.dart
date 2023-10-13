@@ -1,15 +1,20 @@
 import 'dart:io';
 import 'package:collection/collection.dart';
+import 'package:pipeline/fasta.dart';
 import 'package:pipeline/fasta_validator.dart';
 
+/// Contains parsed GFF data
 class Gff {
+  /// Genes found in GFF
   final List<GffFeature> genes;
 
   Gff({required this.genes});
 
+  /// Creates the object from GFF file
   static Future<Gff> fromFile(
     FileSystemEntity entity, {
-    required String? Function(Map<String, String> attributes) nameTransformer,
+    required String? Function(Map<String, String> attributes) transcriptParser,
+    String? Function(Map<String, String> attributes)? fallbackTranscriptParser,
     required String Function(String seqId) seqIdTransformer,
     List<String> ignoredFeatures = const ['chromosome', 'gene', 'transcript'],
     List<String> triggerFeatures = const ['mRNA'],
@@ -19,7 +24,12 @@ class Gff {
     final List<GffFeature> genes = [];
     for (final line in lines) {
       if (line.startsWith('#')) continue;
-      final feature = GffFeature.fromLine(line, nameTransformer: nameTransformer, seqIdTransformer: seqIdTransformer);
+      final feature = GffFeature.fromLine(
+        line,
+        transcriptParser: transcriptParser,
+        fallbackTranscriptParser: fallbackTranscriptParser,
+        seqIdTransformer: seqIdTransformer,
+      );
       if (ignoredFeatures.contains(feature.type)) continue;
       if (triggerFeatures.contains(feature.type)) {
         genes.add(feature);
@@ -37,10 +47,11 @@ class Gff {
   }
 }
 
+/// Single feature from GFF file
 class GffFeature {
   static final kGtfRegExp = RegExp(r'^\s*([^"]+)\s+"([^"]+)"\s*$');
 
-  final String seqid;
+  final String seqId;
   final String source;
   final String type;
   final int start;
@@ -48,13 +59,39 @@ class GffFeature {
   final int? score;
   final Strand? strand;
   final int? phase;
-  final String? name;
+
+  /// Transcript Id - usually Name, ID or transcript_id
+  ///
+  /// See also [geneId]
+  final String? transcriptId;
+
+  /// Fallback Transcript Id - set as the .1 variant of the transcriptId
+  final String? fallbackTranscriptId;
+
   final Map<String, String>? attributes;
   List<GffFeature> features;
   List<ValidationError>? errors;
 
+  /// GeneId - i.e. the gene without transcript number
+  ///
+  /// See also [transcriptId], [transcriptNumber]
+  String? get geneId {
+    if (transcriptId?.contains('.') != true) return transcriptId;
+    final parts = transcriptId?.split('.');
+    return '${parts?.take(parts.length - 1).join('.')}';
+  }
+
+  /// Transcript number - i.e. the number after the last dot in transcriptId
+  ///
+  /// See also [transcriptId]
+  int? get transcriptNumber {
+    if (transcriptId?.contains('.') != true) return null;
+    final parts = transcriptId!.split('.');
+    return int.tryParse(parts.last);
+  }
+
   GffFeature(
-      {required this.seqid,
+      {required this.seqId,
       required this.source,
       required this.type,
       required this.start,
@@ -62,19 +99,21 @@ class GffFeature {
       this.score,
       this.strand,
       this.phase,
-      this.name,
+      this.transcriptId,
+      this.fallbackTranscriptId,
       this.attributes,
       required this.features});
 
   factory GffFeature.fromLine(
     String line, {
-    required String? Function(Map<String, String> attributes) nameTransformer,
+    required String? Function(Map<String, String> attributes) transcriptParser,
+    String? Function(Map<String, String> attributes)? fallbackTranscriptParser,
     required String Function(String seqId) seqIdTransformer,
   }) {
     final parts = line.split('\t');
     final attributes = _parseAttributes(parts[8]);
     return GffFeature(
-      seqid: seqIdTransformer(parts[0]),
+      seqId: seqIdTransformer(parts[0]),
       source: parts[1],
       type: parts[2],
       start: int.parse(parts[3]),
@@ -87,7 +126,8 @@ class GffFeature {
               : null,
       phase: int.tryParse(parts[7]),
       attributes: attributes,
-      name: nameTransformer(attributes),
+      transcriptId: transcriptParser(attributes),
+      fallbackTranscriptId: fallbackTranscriptParser?.call(attributes),
       features: [],
     );
   }
@@ -115,11 +155,36 @@ class GffFeature {
 
   @override
   String toString() {
-    return '$name $seqid $type $start $end ${strand?.name} ${attributes?.entries.map((e) => '${e.key}=${e.value}').join(';')}';
+    return '$transcriptId $seqId $type $start $end ${strand?.name} ${attributes?.entries.map((e) => '${e.key}=${e.value}').join(';')}';
   }
 
+  /// Lists all start codons defined in the GFF feature
+  ///
+  /// See also [validStartCodons] that will filter out invalid start codons
   List<GffFeature> startCodons() {
     return features.where((element) => element.type == 'start_codon').toList();
+  }
+
+  /// Lists all valid start codons defined in the GFF feature
+  ///
+  /// See also [startCodons] that will list all start codons
+  List<GffFeature> validStartCodons(FastaGene sequence, Strand strand) {
+    final allStartCodons = startCodons();
+    final List<GffFeature> validStartCodons = [];
+    for (final startCodon in allStartCodons) {
+      // check that we get either ATG (forward) or CAT (reverse)
+      if (startCodon.start - 1 < 0 || startCodon.end > sequence.sequence.length) {
+        continue;
+      } else {
+        final startCodonSequence = sequence.sequence.substring(startCodon.start - 1, startCodon.end);
+        if (strand == Strand.forward && startCodonSequence == 'ATG') {
+          validStartCodons.add(startCodon);
+        } else if (strand == Strand.reverse && startCodonSequence == 'CAT') {
+          validStartCodons.add(startCodon);
+        }
+      }
+    }
+    return validStartCodons;
   }
 
   GffFeature? startCodon() {

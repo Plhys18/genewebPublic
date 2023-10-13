@@ -11,7 +11,7 @@ class Zea extends BaseOrganism {
   }
 
   @override
-  String? nameTransformer(Map<String, String> attributes) {
+  String? transcriptParser(Map<String, String> attributes) {
     // We use transcript_id instead of Name
     return attributes['transcript_id'];
   }

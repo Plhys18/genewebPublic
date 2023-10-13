@@ -31,12 +31,12 @@ void main(List<String> arguments) async {
   Directory(outputPath).createSync();
 
   // Load gff file
-
   final gff = await Gff.fromFile(
     inputFilesConfiguration.gffFile,
     ignoredFeatures: organism.ignoredFeatures,
     triggerFeatures: organism.triggerFeatures,
-    nameTransformer: organism.nameTransformer,
+    transcriptParser: organism.transcriptParser,
+    fallbackTranscriptParser: organism.fallbackTranscriptParser,
     seqIdTransformer: organism.seqIdTransformer,
   );
   print('Loaded `${inputFilesConfiguration.gffFile.path}` with ${gff.genes.length} genes');
@@ -60,8 +60,8 @@ void main(List<String> arguments) async {
     }
     try {
       final tpmData = await Tpm.fromFile(
-        tpmFile,
-        sequenceIdentifier: organism.sequenceIdentifier,
+        entity: tpmFile,
+        geneIdParser: organism.sequenceIdentifier,
       );
       tpm[tpmKey] = tpmData;
       print('Loaded tpm file `${tpmFile.path}` as `$tpmKey` with ${tpmData.genes.length} genes');
@@ -93,7 +93,7 @@ void main(List<String> arguments) async {
   final errors = [
     ['gene_id', 'errors'],
     for (final gene in gff.genes)
-      if (gene.errors!.isNotEmpty) [gene.name, gene.errors!.map((e) => e.message).join(' | ')],
+      if (gene.errors!.isNotEmpty) [gene.transcriptId, gene.errors!.map((e) => e.message).join(' | ')],
   ];
   validationOutputFile.writeAsStringSync(ListToCsvConverter().convert(errors));
   print('Wrote errors to `${validationOutputFile.path}`');

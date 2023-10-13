@@ -2,48 +2,56 @@ import 'package:pipeline/fasta.dart';
 import 'package:pipeline/gff.dart';
 import 'package:pipeline/tpm.dart';
 
+/// Validates individual genes
 class FastaValidator {
+  /// Gff data
   final Gff gff;
-  final Map<String, Tpm> tpm;
+
+  /// TPM data
+  ///
+  /// Key: Stage
+  final Map<String, Tpm> stagesTpm;
+
+  /// Fasta source
   final Fasta fasta;
+
+  /// Use TSS marker (must be along ATG)
   final bool useTss;
+
+  /// Allow missing start codon
   final bool allowMissingStartCodon;
 
-  FastaValidator(this.gff, this.fasta, this.tpm, {this.useTss = false, this.allowMissingStartCodon = false});
+  FastaValidator(this.gff, this.fasta, this.stagesTpm, {this.useTss = false, this.allowMissingStartCodon = false});
 
+  /// Validates individual genes
+  ///
+  /// Errors from validation are save at the gene level (`gff.genes[i].errors`)
   Future<void> validate() async {
+    Map<String, GffFeature> uniqueTranscripts = {};
+
     for (final gene in gff.genes) {
       List<ValidationError> errors = [];
 
-      // check that there is a corresponding sequence
-      final sequence = (await fasta.sequence(gene.seqid));
+      // Check that there is a corresponding sequence
+      final sequence = (await fasta.sequence(gene.seqId));
       if (sequence == null) {
-        errors.add(ValidationError.noSequenceFound('Sequence `${gene.seqid}` not found in fasta file.'));
+        errors.add(ValidationError.noSequenceFound('Sequence `${gene.seqId}` not found in fasta file.'));
+      }
+
+      // Check that the strand is defined
+      if (gene.strand == null) {
+        errors.add(ValidationError.invalidStrand('Strand is not defined'));
       }
 
       // Start codon validation
-      final startCodons = gene.startCodons();
-      if (!allowMissingStartCodon) {
-        if (startCodons.isEmpty) {
-          errors.add(ValidationError.noStartCodonFound('Start codon is missing'));
-        } else if (startCodons.length > 1) {
-          errors.add(ValidationError.multipleStartCodonsFound('Multiple start codons found (${startCodons.length}).'));
-        }
-      }
-      final startCodon = startCodons.isEmpty ? null : startCodons.first;
-      if (startCodon != null && sequence != null) {
-        // check that we get either ATG (forward) or CAT (reverse)
-        if (startCodon.start - 1 < 0 || startCodon.end > sequence.sequence.length) {
-          errors.add(ValidationError.invalidStartCodon(
-              'Start codon is out of bounds. Start: ${startCodon.start}, end: ${startCodon.end}, sequence ${sequence.seqId} length: ${sequence.sequence.length}'));
-        } else {
-          final startCodonSequence = sequence.sequence.substring(startCodon.start - 1, startCodon.end);
-          if (gene.strand == Strand.forward && startCodonSequence != 'ATG') {
-            errors.add(ValidationError.invalidStartCodon('Expected start codon `ATG`, got `$startCodonSequence`'));
-          } else if (gene.strand == Strand.reverse && startCodonSequence != 'CAT') {
-            errors.add(ValidationError.invalidStartCodon('Expected start codon `CAT`, got `$startCodonSequence`'));
-          } else if (gene.strand == null) {
-            errors.add(ValidationError.invalidStrand('Strand is not defined'));
+      if (sequence != null && gene.strand != null) {
+        final startCodons = gene.validStartCodons(sequence, gene.strand!);
+        if (!allowMissingStartCodon) {
+          if (startCodons.isEmpty) {
+            errors.add(ValidationError.noStartCodonFound('Start codon is missing'));
+          } else if (startCodons.length > 1) {
+            errors
+                .add(ValidationError.multipleStartCodonsFound('Multiple start codons found (${startCodons.length}).'));
           }
         }
       }
@@ -66,22 +74,38 @@ class FastaValidator {
         }
       }
 
-      // check that we get data in TPM
-      final id = gene.name;
-      if (id == null) {
+      // Check that we get data in TPM
+      final transcriptId = gene.transcriptId;
+      if (transcriptId == null) {
         errors.add(ValidationError.noIdFound('Gene name not found'));
       } else {
-        for (final tpmKey in tpm.keys) {
-          final genes = tpm[tpmKey]!.genes;
-          if (!genes.containsKey(id)) {
+        for (final tpmKey in stagesTpm.keys) {
+          final tpm = stagesTpm[tpmKey]!;
+          final features = tpm.get(gene);
+          if (features.isEmpty) {
             errors.add(ValidationError.noTpmDataFound('TPM data missing for stage $tpmKey'));
-          } else if (genes[id]!.length != 1) {
-            errors.add(ValidationError.multipleTpmDataFound(
-                'Multiple TPM data (${genes[id]!.length}) found for stage $tpmKey'));
+          } else if (features.length > 1) {
+            errors.add(
+                ValidationError.multipleTpmDataFound('Multiple TPM data (${features.length}) found for stage $tpmKey'));
           }
         }
       }
       gene.errors = errors;
+
+      if (gene.errors!.isEmpty) {
+        final existingTranscript = uniqueTranscripts[gene.geneId!];
+        if (existingTranscript == null || (existingTranscript.transcriptNumber ?? 0) > (gene.transcriptNumber ?? 0)) {
+          uniqueTranscripts[gene.geneId!] = gene;
+        }
+      }
+    }
+
+    // iterate again and add redundant transcript error to all genes that are not in uniqueTranscripts
+    for (final gene in gff.genes) {
+      if (uniqueTranscripts[gene.geneId!] != null && uniqueTranscripts[gene.geneId!] != gene) {
+        gene.errors!.add(ValidationError.redundantTranscript(
+            'Gene is already represented by transcript ${uniqueTranscripts[gene.geneId!]!.transcriptId}'));
+      }
     }
   }
 }
@@ -119,8 +143,8 @@ class ValidationError {
     return ValidationError(ValidationErrorType.multipleTpmDataFound, message);
   }
 
-  factory ValidationError.invalidStartCodon(String? message) {
-    return ValidationError(ValidationErrorType.invalidStartCodon, message);
+  factory ValidationError.redundantTranscript(String? message) {
+    return ValidationError(ValidationErrorType.redundantTranscript, message);
   }
 
   factory ValidationError.noIdFound(String? message) {
@@ -152,12 +176,10 @@ enum ValidationErrorType {
   /// Multiple start codons were found in the GFF file.
   multipleStartCodonsFound,
 
-  /// Start codon is invalid.
+  /// This transcript is redundant
   ///
-  /// It either:
-  ///  - points out of the bounds of the respective sequence
-  ///  - is not `ATG` (forward) or `CAT` (reverse)
-  invalidStartCodon,
+  /// This gene is already represented by another transcript with lower number
+  redundantTranscript,
 
   /// Five prime UTR was not found in the GFF file.
   ///
@@ -177,7 +199,7 @@ enum ValidationErrorType {
   noTpmDataFound,
 
   /// Multiple TPM data was found for this gene.
-  /// 
+  ///
   /// i.e. TPM data for this gene is present multiple times in the TPM files
   multipleTpmDataFound,
 }

@@ -1,14 +1,24 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:pipeline/gff.dart';
+
+/// Contains parsed TPM data
 class Tpm {
+  /// TPM data for each gene. Key is the transcriptId, value is a list of features (should be just one)
   final Map<String, List<TpmFeature>> genes;
 
-  Tpm({required this.genes});
+  Tpm._({required this.genes});
 
-  static Future<Tpm> fromFile(
-    FileSystemEntity entity, {
-    required String Function(List<String> line) sequenceIdentifier,
+  List<TpmFeature> get(GffFeature gene) {
+    final result = genes[gene.transcriptId] ?? genes[gene.fallbackTranscriptId] ?? [];
+    return result;
+  }
+
+  /// Creates the Tpm object from a file
+  static Future<Tpm> fromFile({
+    required FileSystemEntity entity,
+    required String Function(List<String> line) geneIdParser,
   }) async {
     final file = File(entity.path);
     List<String> lines;
@@ -16,9 +26,9 @@ class Tpm {
       lines = await file.readAsLines(encoding: Utf8Codec(allowMalformed: true));
     } on FileSystemException catch (_) {
       lines = await file.readAsLines(encoding: ascii); //UTF-8 causes problems with some files
-      // if it throws again, its not a valid file
+      // if it throws again, it's not a valid file
     }
-    final Map<String, List<TpmFeature>> sequences = {};
+    final Map<String, List<TpmFeature>> result = {};
     TPMFileFormat format;
     final firstLine = lines.first;
     if (firstLine == 'Sequence	Aliases	Description	Avg.Expression	Min.Expression	Max.Expression') {
@@ -28,19 +38,20 @@ class Tpm {
     }
 
     for (final line in lines.skip(1)) {
-      final feature = TpmFeature.fromLine(line, sequenceIdentifier: sequenceIdentifier, format: format);
-      if (sequences.containsKey(feature.sequence)) {
-        sequences[feature.sequence]!.add(feature);
+      final feature = TpmFeature.fromLine(line, geneIdParser: geneIdParser, format: format);
+      if (result.containsKey(feature.geneId)) {
+        result[feature.geneId]!.add(feature);
       } else {
-        sequences[feature.sequence] = [feature];
+        result[feature.geneId] = [feature];
       }
     }
-    return Tpm(genes: sequences);
+    return Tpm._(genes: result);
   }
 }
 
+/// Single line from TPM file
 class TpmFeature {
-  final String sequence;
+  final String geneId;
   final String? aliases;
   final String? description;
   final double avg;
@@ -48,7 +59,7 @@ class TpmFeature {
   final double? max;
 
   TpmFeature({
-    required this.sequence,
+    required this.geneId,
     this.aliases,
     this.description,
     required this.avg,
@@ -56,22 +67,26 @@ class TpmFeature {
     this.max,
   });
 
-  factory TpmFeature.fromLine(String line,
-      {required String Function(List<String> line) sequenceIdentifier, required TPMFileFormat format}) {
+  /// Parses a single line from TPM file
+  factory TpmFeature.fromLine(
+    String line, {
+    required String Function(List<String> line) geneIdParser,
+    required TPMFileFormat format,
+  }) {
     if (format == TPMFileFormat.short) {
       final parts = line.split(RegExp(r'[\s,]'));
       if (parts.length < 2) throw StateError('Expected 2+ columns, got ${parts.length}: $line');
-      final sequence = sequenceIdentifier(parts);
+      final geneId = geneIdParser(parts);
       return TpmFeature(
-        sequence: sequence,
+        geneId: geneId,
         avg: double.parse(parts[1]),
       );
     } else if (format == TPMFileFormat.long) {
       final parts = line.split('\t');
       if (parts.length != 6) throw StateError('Expected 6 columns, got ${parts.length}: $line');
-      final sequence = sequenceIdentifier(parts);
+      final geneId = geneIdParser(parts);
       return TpmFeature(
-        sequence: sequence,
+        geneId: geneId,
         aliases: parts[1],
         description: parts[2],
         avg: double.parse(parts[3]),
@@ -84,7 +99,7 @@ class TpmFeature {
 
   @override
   String toString() {
-    return '$sequence $min $avg $max';
+    return '$geneId $min $avg $max';
   }
 }
 

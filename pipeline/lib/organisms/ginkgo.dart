@@ -11,7 +11,7 @@ class Ginkgo extends BaseOrganism {
   }
 
   @override
-  String? nameTransformer(Map<String, String> attributes) {
+  String? transcriptParser(Map<String, String> attributes) {
     // We use ID instead of Name
     return attributes['ID'];
   }

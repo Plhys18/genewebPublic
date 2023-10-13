@@ -23,10 +23,10 @@ class TPMSummaryGenerator {
       if (gene.errors!.isNotEmpty) continue;
 
       final geneTpm = [
-        for (final tpmKey in tpm.keys) tpm[tpmKey]!.genes[gene.name]!.first.avg.toString(),
+        for (final tpmKey in tpm.keys) tpm[tpmKey]!.get(gene).first.avg.toString(),
       ];
 
-      result.add([gene.name!, ...geneTpm]);
+      result.add([gene.transcriptId!, ...geneTpm]);
     }
     return result;
   }

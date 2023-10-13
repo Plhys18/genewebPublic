@@ -48,7 +48,7 @@ class ArabidopsisSmallRna extends Arabidopsis {
   }
 
   @override
-  String? nameTransformer(Map<String, String> attributes) {
+  String? transcriptParser(Map<String, String> attributes) {
     return attributes['transcript_id'];
   }
 }

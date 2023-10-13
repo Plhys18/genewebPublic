@@ -11,7 +11,7 @@ class Amborella extends BaseOrganism {
   }
 
   @override
-  String? nameTransformer(Map<String, String> attributes) {
+  String? transcriptParser(Map<String, String> attributes) {
     // Convert `evm_27.model.AmTr_v1.0_scaffold00001.1` to `evm_27.TU.AmTr_v1.0_scaffold00001.1`
     final original = attributes['Name'];
     if (original == null) return null;

@@ -1,3 +1,4 @@
+/// Defines behavior for preset organisms.
 abstract class BaseOrganism {
   static const kDefaultDeltaBases = 1000;
 
@@ -23,7 +24,20 @@ abstract class BaseOrganism {
 
   String seqIdTransformer(String seqId) => seqId;
 
-  String? nameTransformer(Map<String, String> attributes) => attributes['Name'];
+  String? transcriptParser(Map<String, String> attributes) => attributes['Name'];
+
+  String? fallbackTranscriptParser(Map<String, String> attributes) {
+    final transcriptId = transcriptParser(attributes);
+    if (transcriptId?.contains('.') != true) return null;
+    final parts = transcriptId?.split('.');
+    final candidate = '${parts?.take(parts.length - 1).join('.')}.1';
+
+    if (candidate == transcriptId) {
+      return null;
+    } else {
+      return candidate;
+    }
+  }
 
   String sequenceIdentifier(List<String> line) => line[0];
 }
