@@ -12,7 +12,7 @@ abstract class Arabidopsis extends BaseOrganism {
   });
 
   @override
-  String? tmpKeyFromPath(String path) {
+  String? stageNameFromTpmFilePath(String path) {
     final filename = path.split('/').last;
     final key = RegExp(r'^[0-9]+\.\s*Arabidopsis_([^.]*)').firstMatch(filename)?.group(1);
     return key;
@@ -41,7 +41,7 @@ class ArabidopsisSmallRna extends Arabidopsis {
         );
 
   @override
-  String tmpKeyFromPath(String path) {
+  String stageNameFromTpmFilePath(String path) {
     final filename = path.split('/').last;
     final key = RegExp(r'^([^.]*)').firstMatch(filename)!.group(1)!;
     return key;
@@ -56,7 +56,7 @@ class ArabidopsisSmallRna extends Arabidopsis {
 class ArabidopsisThaliana extends Arabidopsis {
   ArabidopsisThaliana() : super(name: 'Arabidopsis thaliana');
   @override
-  String tmpKeyFromPath(String path) {
+  String stageNameFromTpmFilePath(String path) {
     final filename = path.split('/').last;
     final key = RegExp(r'^Arabidopsis_([^.]*)').firstMatch(filename)!.group(1)!;
     return key;

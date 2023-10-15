@@ -4,7 +4,7 @@ class Zea extends BaseOrganism {
   Zea() : super(name: 'Zea mays');
 
   @override
-  String? tmpKeyFromPath(String path) {
+  String? stageNameFromTpmFilePath(String path) {
     final filename = path.split('/').last;
     final key = RegExp(r'^[0-9]+\.\s*Zea_([^.]*)').firstMatch(filename)?.group(1);
     return key;

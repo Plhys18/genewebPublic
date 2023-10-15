@@ -51,9 +51,9 @@ void main(List<String> arguments) async {
       'Loaded fasta file `${inputFilesConfiguration.fastaFile.path}` with ${fasta.availableSequences.length} sequences');
 
   // Load tpm files
-  Map<String, Tpm> tpm = {};
+  Map<String, Tpm> stagesTpm = {};
   for (final tpmFile in inputFilesConfiguration.tpmFiles) {
-    final tpmKey = organism.tmpKeyFromPath(tpmFile.path);
+    final tpmKey = organism.stageNameFromTpmFilePath(tpmFile.path);
     if (tpmKey == null) {
       print(' - Ignoring file `${tpmFile.path}`');
       continue;
@@ -63,7 +63,7 @@ void main(List<String> arguments) async {
         entity: tpmFile,
         geneIdParser: organism.sequenceIdentifier,
       );
-      tpm[tpmKey] = tpmData;
+      stagesTpm[tpmKey] = tpmData;
       print('Loaded tpm file `${tpmFile.path}` as `$tpmKey` with ${tpmData.genes.length} genes');
     } on FormatException catch (error) {
       print('Error loading tpm file `${tpmFile.path}`: ${error.message}');
@@ -75,8 +75,14 @@ void main(List<String> arguments) async {
   }
 
   // Validate data
-  final validator =
-      FastaValidator(gff, fasta, tpm, useTss: useTss, allowMissingStartCodon: organism.allowMissingStartCodon);
+  final validator = FastaValidator(
+    gff: gff,
+    fasta: fasta,
+    stagesTpm: stagesTpm,
+    useTss: useTss,
+    allowMissingStartCodon: organism.allowMissingStartCodon,
+    oneTranscriptPerGene: organism.oneTranscriptPerGene,
+  );
   await validator.validate();
 
   // Print validation results
@@ -99,7 +105,7 @@ void main(List<String> arguments) async {
   print('Wrote errors to `${validationOutputFile.path}`');
 
   // Save Gene TPM CSV
-  final geneTpm = TPMSummaryGenerator(gff, tpm).toCsv();
+  final geneTpm = TPMSummaryGenerator(gff, stagesTpm).toCsv();
   final geneTpmOutputFile = File('$outputPath/$organismFolderName${useTss ? '-with-tss' : ''}.validated-genes-tpm.csv');
   geneTpmOutputFile.writeAsStringSync(ListToCsvConverter().convert(geneTpm));
   print('Wrote validated genes TPM to `${geneTpmOutputFile.path}`');
@@ -110,7 +116,7 @@ void main(List<String> arguments) async {
   final generator = FastaGenerator(
     gff,
     fasta,
-    tpm,
+    stagesTpm,
     useTss: useTss,
     useSelfInsteadOfStartCodon: organism.useSelfInsteadOfStartCodon,
     useAtg: organism.useAtg,

@@ -5,6 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "pipeline Amborella",
+            "cwd": "pipeline",
+            "request": "launch",
+            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
+            "args": ["Amborella_trichopoda"],
+            "type": "dart"
+        },
+        {
             "name": "pipeline Physco",
             "cwd": "pipeline",
             "request": "launch",

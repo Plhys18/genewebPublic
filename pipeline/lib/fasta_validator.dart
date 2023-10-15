@@ -21,7 +21,16 @@ class FastaValidator {
   /// Allow missing start codon
   final bool allowMissingStartCodon;
 
-  FastaValidator(this.gff, this.fasta, this.stagesTpm, {this.useTss = false, this.allowMissingStartCodon = false});
+  /// Keep only one transcript per gene (the first valid), all others will be marked as redundant
+  final bool oneTranscriptPerGene;
+  FastaValidator({
+    required this.gff,
+    required this.fasta,
+    required this.stagesTpm,
+    this.useTss = false,
+    this.allowMissingStartCodon = false,
+    this.oneTranscriptPerGene = true,
+  });
 
   /// Validates individual genes
   ///
@@ -92,6 +101,7 @@ class FastaValidator {
       }
       gene.errors = errors;
 
+      // Save a reference to the first valid transcript of each gene
       if (gene.errors!.isEmpty) {
         final existingTranscript = uniqueTranscripts[gene.geneId!];
         if (existingTranscript == null || (existingTranscript.transcriptNumber ?? 0) > (gene.transcriptNumber ?? 0)) {
@@ -101,10 +111,12 @@ class FastaValidator {
     }
 
     // iterate again and add redundant transcript error to all genes that are not in uniqueTranscripts
-    for (final gene in gff.genes) {
-      if (uniqueTranscripts[gene.geneId!] != null && uniqueTranscripts[gene.geneId!] != gene) {
-        gene.errors!.add(ValidationError.redundantTranscript(
-            'Gene is already represented by transcript ${uniqueTranscripts[gene.geneId!]!.transcriptId}'));
+    if (oneTranscriptPerGene) {
+      for (final gene in gff.genes) {
+        if (uniqueTranscripts[gene.geneId!] != null && uniqueTranscripts[gene.geneId!] != gene) {
+          gene.errors!.add(ValidationError.redundantTranscript(
+              'Gene is already represented by transcript ${uniqueTranscripts[gene.geneId!]!.transcriptId}'));
+        }
       }
     }
   }

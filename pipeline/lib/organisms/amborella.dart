@@ -1,10 +1,16 @@
 import 'package:pipeline/organisms/base_organism.dart';
 
 class Amborella extends BaseOrganism {
-  Amborella() : super(name: 'Amborella trichopoda');
+  Amborella()
+      : super(
+          name: 'Amborella trichopoda',
+
+          /// Turn off removing other "transcripts", Amborella does not use dot notation.
+          oneTranscriptPerGene: false,
+        );
 
   @override
-  String? tmpKeyFromPath(String path) {
+  String? stageNameFromTpmFilePath(String path) {
     final filename = path.split('/').last;
     final key = RegExp(r'^[0-9]+\.\s*Amborella_([^.]*)').firstMatch(filename)?.group(1);
     return key;
@@ -24,4 +30,9 @@ class Amborella extends BaseOrganism {
     // It's in the Alias field
     return line[1];
   }
+
+  @override
+
+  /// In case of Amborella, the dot notation does not mean transcripts
+  String? fallbackTranscriptParser(Map<String, String> attributes) => null;
 }
