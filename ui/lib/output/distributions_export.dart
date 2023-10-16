@@ -1,12 +1,14 @@
 import 'package:excel/excel.dart';
 import 'package:geneweb/analysis/distribution.dart';
 
-class DistributionsOutput {
+/// Responsible for exporting the [distributions]
+class DistributionsExport {
   final List<Distribution> distributions;
 
-  DistributionsOutput(this.distributions);
+  DistributionsExport(this.distributions);
 
-  List<int>? toExcel(String fileName) {
+  /// Exports the distributions to Excel
+  Future<List<int>?> toExcel(String fileName, Function(double progress) progressCallback) async {
     assert(distributions.isNotEmpty);
     var excel = Excel.createExcel();
     final originalSheets = excel.sheets.keys;
@@ -14,8 +16,9 @@ class DistributionsOutput {
     final dataPoints = distributions.map((distribution) => distribution.dataPoints!).toList();
     final first = dataPoints.first;
 
-    // Motif counts
+    // Motifs sheet
     Sheet motifSheet = excel['motifs'];
+    // header row
     motifSheet.appendRow([
       'Interval',
       'Min',
@@ -23,7 +26,12 @@ class DistributionsOutput {
       '',
       ...distributions.map((distribution) => '${distribution.name} [%]'),
     ]);
+    // data rows
     for (var i = 0; i < first.length; i++) {
+      if (i % 1000 == 0) {
+        progressCallback(i / first.length * 0.5);
+        await Future.delayed(const Duration(milliseconds: 20));
+      }
       final dataPoint = first[i];
       motifSheet.appendRow([
         dataPoint.label,
@@ -41,8 +49,9 @@ class DistributionsOutput {
       motifSheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: i)).cellStyle = headerCellStyle;
     }
 
-    // Gene counts
+    // Genes sheet
     Sheet genesSheet = excel['genes'];
+    // header row
     genesSheet.appendRow([
       'Interval',
       'Min',
@@ -50,7 +59,12 @@ class DistributionsOutput {
       '',
       ...distributions.map((distribution) => '${distribution.name} [%]'),
     ]);
+    // data rows
     for (var i = 0; i < first.length; i++) {
+      if (i % 1000 == 0) {
+        progressCallback(0.5 + i / first.length * 0.5);
+        await Future.delayed(const Duration(milliseconds: 20));
+      }
       final dataPoint = first[i];
       genesSheet.appendRow([
         dataPoint.label,

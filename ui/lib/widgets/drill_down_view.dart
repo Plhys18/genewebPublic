@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:geneweb/analysis/analysis.dart';
+import 'package:geneweb/analysis/analysis_series.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:collection/collection.dart';
 
@@ -116,7 +116,7 @@ class _DrillDownViewState extends State<DrillDownView> {
 }
 
 List<DrillDownResult> runDrillDown(Map<String, dynamic> params) {
-  final analysis = params['analysis'] as Analysis;
+  final analysis = params['analysis'] as AnalysisSeries;
   final pattern = params['pattern'] as String?;
   final result = analysis.drillDown(pattern);
   return result;

@@ -5,48 +5,51 @@ import 'package:geneweb/analysis/motif.dart';
 import 'package:geneweb/genes/gene.dart';
 import 'package:geneweb/genes/gene_list.dart';
 
-class Analysis {
+/// One series in the analysis
+class AnalysisSeries {
+  /// The [GeneList] analysis was run on
   final GeneList geneList;
-  final int min;
-  final int max;
-  final int interval;
-  final String? alignMarker;
+
+  /// The name of the series
   final String name;
+
+  /// The [Motif] that was searched
   final Motif motif;
+
+  /// The color of the series
   final Color color;
+
+  /// The stroke width of the series
   final int stroke;
+
+  /// Whether the series is visible
   final bool visible;
 
   /// When `true`, analysis will filter overlapping matches
   final bool noOverlaps;
 
+  /// The results of the analysis (i.e. the motifs found in the genes)
   final List<AnalysisResult>? result;
+
+  /// The distribution of the analysis
   final Distribution? distribution;
 
-  Analysis({
+  AnalysisSeries._({
     required this.geneList,
     required this.noOverlaps,
-    required this.min,
-    required this.max,
-    required this.interval,
     required this.motif,
     required this.name,
     required this.color,
     required this.stroke,
-    this.alignMarker,
     this.visible = true,
     required this.result,
     required this.distribution,
   });
 
-  Analysis copyWith({Color? color, int? stroke, bool? visible}) {
-    return Analysis(
+  AnalysisSeries copyWith({Color? color, int? stroke, bool? visible}) {
+    return AnalysisSeries._(
       geneList: geneList,
       noOverlaps: noOverlaps,
-      min: min,
-      max: max,
-      interval: interval,
-      alignMarker: alignMarker,
       name: name,
       motif: motif,
       color: color ?? this.color,
@@ -57,32 +60,60 @@ class Analysis {
     );
   }
 
-  factory Analysis.run({
+  /// Runs the analysis on the given [geneList]
+  factory AnalysisSeries.run({
+    /// The [GeneList] to run the analysis on
     required GeneList geneList,
+
+    /// When `true`, analysis will filter overlapping matches
     noOverlaps = true,
+
+    /// The minimum position to include in the distribution
     required int min,
+
+    /// The maximum position to include in the distribution
     required int max,
-    required int interval,
+
+    /// The bucket size to use for the distribution
+    required int bucketSize,
+
+    /// The [Motif] to search for
     required Motif motif,
+
+    /// The name of the series
     required String name,
+
+    /// The color of the series
     required Color color,
+
+    /// What alignment market to use (normally ATG or TSS)
     String? alignMarker,
+
+    /// The stroke width of the series
     int? stroke,
+
+    /// Whether the series is visible
     bool visible = true,
   }) {
+    /// find the matches
     List<AnalysisResult> results = [];
     for (var gene in geneList.genes) {
       results.addAll(_findMatches(gene, motif, noOverlaps));
     }
-    final distribution =
-        Distribution(min: min, max: max, interval: interval, alignMarker: alignMarker, name: name, color: color)
-          ..run(results, geneList.genes.length);
-    return Analysis(
-      geneList: geneList,
-      noOverlaps: noOverlaps,
+
+    /// calculate the distribution
+    final distribution = Distribution(
       min: min,
       max: max,
-      interval: interval,
+      bucketSize: bucketSize,
+      alignMarker: alignMarker,
+      name: name,
+      color: color,
+    )..run(results, geneList.genes.length);
+
+    return AnalysisSeries._(
+      geneList: geneList,
+      noOverlaps: noOverlaps,
       motif: motif,
       name: name,
       color: color,
@@ -90,6 +121,17 @@ class Analysis {
       result: results,
       distribution: distribution,
     );
+  }
+
+  Map<String, List<AnalysisResult>> get resultsMap {
+    Map<String, List<AnalysisResult>> map = {};
+    for (final result in result!) {
+      if (!map.containsKey(result.gene.geneId)) {
+        map[result.gene.geneId] = [];
+      }
+      map[result.gene.geneId]!.add(result);
+    }
+    return map;
   }
 
   static List<AnalysisResult> _findMatches(Gene gene, Motif motif, bool noOverlaps) {

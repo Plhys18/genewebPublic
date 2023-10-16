@@ -1,14 +1,27 @@
 import 'package:geneweb/analysis/motif.dart';
 import 'package:geneweb/genes/gene.dart';
 
+/// Holds the result of a single motif position in the gene
 class AnalysisResult {
+  /// The gene the motif was found in
   final Gene gene;
+
+  /// The motif that was found
   final Motif motif;
+
+  /// The position of the motif midpoint (in the string, starting from 0)
   final num position;
+
+  /// The raw position of the motif (in the string, starting from 0)
   final num rawPosition;
+
+  /// The concrete motif definition that matched (e.g. 'ACTN')
   final String match;
+
+  /// The actual sequence that matched (e.g. 'ACTA')
   final String matchedSequence;
 
+  /// returns a broader matched sequence
   String get broadMatch {
     final safeSequence = '          ${gene.data}          ';
     return safeSequence.substring(rawPosition.toInt() + 2, rawPosition.toInt() + match.length + 18);

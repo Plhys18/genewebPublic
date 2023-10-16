@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:geneweb/analysis/analysis.dart';
+import 'package:geneweb/analysis/analysis_series.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:provider/provider.dart';
 
@@ -18,7 +18,7 @@ class _ResultsListState extends State<ResultsList> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final analyses = context.select<GeneModel, List<Analysis>>((model) => model.analyses);
+    final analyses = context.select<GeneModel, List<AnalysisSeries>>((model) => model.analyses);
     return ReorderableListView(
       onReorder: (oldIndex, newIndex) => _handleReorder(context, oldIndex, newIndex),
       children: [
@@ -54,7 +54,7 @@ class _ResultsListState extends State<ResultsList> {
   }
 
   void _handleReorder(BuildContext context, int oldIndex, int newIndex) {
-    final analyses = List<Analysis>.from(GeneModel.of(context).analyses);
+    final analyses = List<AnalysisSeries>.from(GeneModel.of(context).analyses);
     if (oldIndex < newIndex) {
       newIndex -= 1;
     }
@@ -68,7 +68,7 @@ class _ResultsListState extends State<ResultsList> {
     widget.onSelected(_selected);
   }
 
-  void _handleSetVisibility(BuildContext context, Analysis analysis) {
+  void _handleSetVisibility(BuildContext context, AnalysisSeries analysis) {
     final model = GeneModel.of(context);
     model.setAnalyses([
       for (final a in model.analyses)

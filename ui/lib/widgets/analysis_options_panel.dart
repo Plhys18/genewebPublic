@@ -10,7 +10,7 @@ class AnalysisOptionsSubtitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final analysisOptions = context.select<GeneModel, AnalysisOptions>((model) => model.analysisOptions);
     return Text(
-        'Analyzing interval <${analysisOptions.min}; ${analysisOptions.max}> bp relative to ${(analysisOptions.alignMarker?.toUpperCase() ?? 'sequence start')}, bucket size ${analysisOptions.interval} bp');
+        'Analyzing interval <${analysisOptions.min}; ${analysisOptions.max}> bp relative to ${(analysisOptions.alignMarker?.toUpperCase() ?? 'sequence start')}, bucket size ${analysisOptions.bucketSize} bp');
   }
 }
 
@@ -61,7 +61,7 @@ class _AnalysisOptionsPanelState extends State<AnalysisOptionsPanel> {
     final options = GeneModel.of(context).analysisOptions;
     _min = options.min;
     _max = options.max;
-    _interval = options.interval;
+    _interval = options.bucketSize;
     _alignMarker = options.alignMarker;
     _minController.text = '$_min';
     _maxController.text = '$_max';
@@ -172,7 +172,7 @@ class _AnalysisOptionsPanelState extends State<AnalysisOptionsPanel> {
   void _handleChanged() {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      widget.onChanged(AnalysisOptions(min: _min, max: _max, interval: _interval, alignMarker: _alignMarker));
+      widget.onChanged(AnalysisOptions(min: _min, max: _max, bucketSize: _interval, alignMarker: _alignMarker));
     }
   }
 }

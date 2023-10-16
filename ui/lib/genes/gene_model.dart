@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:geneweb/analysis/analysis.dart';
+import 'package:geneweb/analysis/analysis_series.dart';
 import 'package:geneweb/analysis/analysis_options.dart';
 import 'package:geneweb/analysis/motif.dart';
 import 'package:geneweb/analysis/organism_presets.dart';
@@ -24,7 +24,7 @@ class GeneModel extends ChangeNotifier {
   bool _analysisCancelled = false;
   String? name;
   GeneList? sourceGenes;
-  List<Analysis> analyses = [];
+  List<AnalysisSeries> analyses = [];
   double? analysisProgress;
   AnalysisOptions analysisOptions = AnalysisOptions();
   StageSelection? _stageSelection;
@@ -63,7 +63,7 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setAnalyses(List<Analysis> analyses) {
+  void setAnalyses(List<AnalysisSeries> analyses) {
     this.analyses = analyses;
     notifyListeners();
   }
@@ -99,7 +99,7 @@ class GeneModel extends ChangeNotifier {
     final alignMarkers = sourceGenes?.genes.first.markers.keys.toList();
     alignMarkers?.sort();
     if (alignMarkers != null && alignMarkers.isNotEmpty) {
-      analysisOptions = AnalysisOptions(alignMarker: alignMarkers.first, min: -1000, max: 1000, interval: 30);
+      analysisOptions = AnalysisOptions(alignMarker: alignMarkers.first, min: -1000, max: 1000, bucketSize: 30);
     } else {
       analysisOptions = AnalysisOptions();
     }
@@ -250,7 +250,7 @@ class GeneModel extends ChangeNotifier {
           'name': name,
           'min': analysisOptions.min,
           'max': analysisOptions.max,
-          'interval': analysisOptions.interval,
+          'interval': analysisOptions.bucketSize,
           'alignMarker': analysisOptions.alignMarker,
           'color': color.value,
           'stroke': stroke,
@@ -280,7 +280,7 @@ class GeneModel extends ChangeNotifier {
   }
 }
 
-Future<Analysis> runAnalysis(Map<String, dynamic> params) async {
+Future<AnalysisSeries> runAnalysis(Map<String, dynamic> params) async {
   final list = params['genes'] as GeneList;
   final motif = params['motif'] as Motif;
   final name = params['name'] as String;
@@ -290,12 +290,12 @@ Future<Analysis> runAnalysis(Map<String, dynamic> params) async {
   final alignMarker = params['alignMarker'] as String?;
   final color = Color(params['color'] as int);
   final stroke = params['stroke'] as int?;
-  final analysis = Analysis.run(
+  final analysis = AnalysisSeries.run(
     geneList: list,
     noOverlaps: true,
     min: min,
     max: max,
-    interval: interval,
+    bucketSize: interval,
     alignMarker: alignMarker,
     motif: motif,
     name: name,

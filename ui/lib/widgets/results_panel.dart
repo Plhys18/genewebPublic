@@ -1,13 +1,13 @@
 import 'package:faabul_color_picker/faabul_color_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:geneweb/analysis/analysis.dart';
+import 'package:geneweb/analysis/analysis_series.dart';
 import 'package:geneweb/analysis/motif.dart';
 import 'package:geneweb/genes/gene_list.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:geneweb/genes/stage_selection.dart';
-import 'package:geneweb/output/distributions_output.dart';
-import 'package:geneweb/output/genes_output.dart';
+import 'package:geneweb/output/distributions_export.dart';
+import 'package:geneweb/output/analysis_series_export.dart';
 import 'package:geneweb/widgets/distribution_view.dart';
 import 'package:geneweb/widgets/drill_down_view.dart';
 import 'package:geneweb/widgets/results_list.dart';
@@ -46,7 +46,7 @@ class _ResultsPanelState extends State<ResultsPanel> {
 
   String? _selectedAnalysisName;
 
-  bool _exportInProgress = false;
+  double? _exportProgress;
 
   late final _verticalAxisMinController = TextEditingController()..addListener(_axisListener);
   late final _verticalAxisMaxController = TextEditingController()..addListener(_axisListener);
@@ -67,13 +67,13 @@ class _ResultsPanelState extends State<ResultsPanel> {
     final sourceGenes = context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
     final motifs = context.select<GeneModel, List<Motif>>((model) => model.motifs);
     final filter = context.select<GeneModel, StageSelection?>((model) => model.stageSelection);
-    final analyses = context.select<GeneModel, List<Analysis>>((model) => model.analyses);
+    final analyses = context.select<GeneModel, List<AnalysisSeries>>((model) => model.analyses);
     final visibleAnalyses =
-        context.select<GeneModel, List<Analysis>>((model) => model.analyses.where((a) => a.visible).toList());
+        context.select<GeneModel, List<AnalysisSeries>>((model) => model.analyses.where((a) => a.visible).toList());
     final analysisProgress = context.select<GeneModel, double?>((model) => model.analysisProgress);
     final analysisCancelled = context.select<GeneModel, bool>((model) => model.analysisCancelled);
     final expectedResults = context.select<GeneModel, int>((model) => model.expectedResults);
-    final analysis = context.select<GeneModel, Analysis?>(
+    final analysis = context.select<GeneModel, AnalysisSeries?>(
         (model) => model.analyses.firstWhereOrNull((a) => a.name == _selectedAnalysisName));
     final canAnalyzeErrors = [
       if (sourceGenes == null) 'no source genes selected',
@@ -136,9 +136,12 @@ class _ResultsPanelState extends State<ResultsPanel> {
                     children: [
                       Icon(Icons.check_box, color: colorScheme.outline),
                       Text(analysis.name, style: textTheme.titleMedium),
-                      TextButton(
-                          onPressed: !_exportInProgress ? () => _handleExportSingleSeries(analysis) : null,
-                          child: const Text('Export this series')),
+                      if (_exportProgress != null)
+                        _ExportIndicator(exportProgress: _exportProgress)
+                      else
+                        TextButton(
+                            onPressed: () => _handleExportSingleSeries(analysis),
+                            child: const Text('Export this series')),
                       TextButton(onPressed: () => _handleAnalysisSelected(null), child: const Text('Deselect')),
                     ],
                   )
@@ -147,11 +150,12 @@ class _ResultsPanelState extends State<ResultsPanel> {
                     spacing: 8,
                     children: [
                       if (visibleAnalyses.isNotEmpty)
-                        TextButton(
-                            onPressed: analysisProgress == null && !_exportInProgress
-                                ? () => _handleExportAllSeries(context)
-                                : null,
-                            child: Text('Export ${visibleAnalyses.length} series')),
+                        if (_exportProgress != null)
+                          _ExportIndicator(exportProgress: _exportProgress)
+                        else
+                          TextButton(
+                              onPressed: analysisProgress == null ? () => _handleExportAllSeries(context) : null,
+                              child: Text('Export ${visibleAnalyses.length} series')),
                     ],
                   ),
                 TextButton(onPressed: _handleResetAnalyses, child: const Text('Close analysis')),
@@ -167,9 +171,9 @@ class _ResultsPanelState extends State<ResultsPanel> {
   }
 
   Widget _buildResults(BuildContext context) {
-    final analyses = context.select<GeneModel, List<Analysis>>((model) => model.analyses);
+    final analyses = context.select<GeneModel, List<AnalysisSeries>>((model) => model.analyses);
     assert(analyses.isNotEmpty);
-    final analysis = context.select<GeneModel, Analysis?>(
+    final analysis = context.select<GeneModel, AnalysisSeries?>(
         (model) => model.analyses.firstWhereOrNull((a) => a.name == _selectedAnalysisName));
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,17 +322,17 @@ class _ResultsPanelState extends State<ResultsPanel> {
   }
 
   Future<void> _handleExportAllSeries(BuildContext context) async {
-    setState(() => _exportInProgress = true);
-    final output = DistributionsOutput(_model.analyses.where((a) => a.visible).map((e) => e.distribution!).toList());
+    setState(() => _exportProgress = 0);
+    final output = DistributionsExport(_model.analyses.where((a) => a.visible).map((e) => e.distribution!).toList());
     final stageName = _model.stageSelection!.selectedStages.length == 1
         ? _model.stageSelection!.selectedStages.first
         : '${_model.stageSelection!.selectedStages.length} stages';
     final motifName = _model.motifs.length == 1 ? _model.motifs.first : '${_model.motifs.length} motifs';
     final filename = 'distributions_${_model.name}_${motifName}_$stageName.xlsx';
-    final data = output.toExcel(filename);
+    final data = await output.toExcel(filename, (progress) => setState(() => _exportProgress = progress));
     if (data == null) return;
     debugPrint('Saving $filename (${data.length} bytes)');
-    setState(() => _exportInProgress = false);
+    setState(() => _exportProgress = null);
   }
 
   void _setAxis(bool? value) {
@@ -356,7 +360,7 @@ class _ResultsPanelState extends State<ResultsPanel> {
     setState(() => _selectedAnalysisName = selected);
   }
 
-  Widget _buildAnalysisRowSettings(Analysis analysis) {
+  Widget _buildAnalysisRowSettings(AnalysisSeries analysis) {
     return ListView(
       children: [
         CheckboxListTile(
@@ -382,40 +386,57 @@ class _ResultsPanelState extends State<ResultsPanel> {
     );
   }
 
-  void _updateAnalysis(GeneModel model, Analysis analysis) {
+  void _updateAnalysis(GeneModel model, AnalysisSeries analysis) {
     model.setAnalyses([
       for (final a in model.analyses)
         if (a.name == analysis.name) analysis else a
     ]);
   }
 
-  Future<void> _handleSetColor(Analysis analysis) async {
+  Future<void> _handleSetColor(AnalysisSeries analysis) async {
     final model = GeneModel.of(context);
     final color = await showColorPickerDialog(context: context, selected: analysis.color);
     _updateAnalysis(model, analysis.copyWith(color: color));
   }
 
-  void _handleSetStroke(Analysis analysis, int? value) {
+  void _handleSetStroke(AnalysisSeries analysis, int? value) {
     final model = GeneModel.of(context);
     _updateAnalysis(model, analysis.copyWith(stroke: value ?? 4));
   }
 
-  void _handleSetVisibility(Analysis analysis, bool? value) {
+  void _handleSetVisibility(AnalysisSeries analysis, bool? value) {
     final model = GeneModel.of(context);
     _updateAnalysis(model, analysis.copyWith(visible: value ?? true));
   }
 
-  Future<void> _handleExportSingleSeries(Analysis analysis) async {
-    setState(() => _exportInProgress = true);
-    final output = AnalysisOutput(analysis);
+  Future<void> _handleExportSingleSeries(AnalysisSeries analysis) async {
+    setState(() => _exportProgress = 0);
+    final output = AnalysisSeriesExport(analysis);
     final filename = sanitizeFilename('${analysis.name}.xlsx');
-    final data = output.toExcel(filename);
+
+    final data = await output.toExcel(filename, (progress) => setState(() => _exportProgress = progress));
     if (data == null) return;
     debugPrint('Saving $filename (${data.length} bytes)');
-    setState(() => _exportInProgress = false);
+    setState(() => _exportProgress = null);
   }
 
   void _handleStopAnalysis() {
     _model.cancelAnalysis();
+  }
+}
+
+class _ExportIndicator extends StatelessWidget {
+  const _ExportIndicator({
+    required double? exportProgress,
+  }) : _exportProgress = exportProgress;
+
+  final double? _exportProgress;
+
+  @override
+  Widget build(BuildContext context) {
+    return Chip(
+      avatar: CircularProgressIndicator(value: _exportProgress!),
+      label: const Text('Preparing export…'),
+    );
   }
 }
