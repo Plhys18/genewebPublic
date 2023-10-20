@@ -110,7 +110,7 @@ void main(List<String> arguments) async {
   geneTpmOutputFile.writeAsStringSync(ListToCsvConverter().convert(geneTpm));
   print('Wrote validated genes TPM to `${geneTpmOutputFile.path}`');
 
-  // Save resulting fasta file
+  // Save the output fasta file
   final fastaOutputFile = File('$outputPath/$organismFolderName${useTss ? '-with-tss' : ''}.fasta');
   final fastaSink = fastaOutputFile.openWrite(mode: FileMode.writeOnly);
   final generator = FastaGenerator(
@@ -133,24 +133,35 @@ void main(List<String> arguments) async {
   exit(0);
 }
 
+/// Holds the paths to the source files
+///
+/// expect on .fa or .fasta file, one .gff or .gff3 file
+/// TPM files should be located in a `TPM` folder inside the given path.
 class BatchConfiguration {
   final FileSystemEntity fastaFile;
   final FileSystemEntity gffFile;
   final List<FileSystemEntity> tpmFiles;
   BatchConfiguration({required this.fastaFile, required this.gffFile, required this.tpmFiles});
 
+  /// Scans the given path and creates the configuration object
   static Future<BatchConfiguration> fromPath(String path) async {
     final dir = Directory(path);
     final List<FileSystemEntity> dirEntities = await dir.list().toList();
     final fastaFiles = dirEntities.where((e) => e.path.endsWith('.fa') || e.path.endsWith('.fasta'));
-    if (fastaFiles.length != 1) throw StateError('Expected exactly one FASTA file, ${fastaFiles.length} files found.');
+    if (fastaFiles.length != 1) {
+      throw StateError('Expected exactly one FASTA file, ${fastaFiles.length} files found.');
+    }
     final fastaFile = fastaFiles.first;
     final gffFiles = dirEntities.where((e) => e.path.endsWith('.gff') || e.path.endsWith('.gff3'));
-    if (gffFiles.length != 1) throw StateError('Expected exactly one GFF file, ${gffFiles.length} files found.');
+    if (gffFiles.length != 1) {
+      throw StateError('Expected exactly one GFF file, ${gffFiles.length} files found.');
+    }
     final gffFile = gffFiles.first;
     final tpmDir = Directory('$path/TPM');
     final List<FileSystemEntity> tpmFiles = await tpmDir.list().toList();
-    if (tpmFiles.isEmpty) throw StateError('Expected at least one TPM file, ${tpmFiles.length} files found.');
+    if (tpmFiles.isEmpty) {
+      throw StateError('Expected at least one TPM file, ${tpmFiles.length} files found.');
+    }
     tpmFiles.sort((a, b) => a.path.compareTo(b.path));
     return BatchConfiguration(fastaFile: fastaFile, gffFile: gffFile, tpmFiles: tpmFiles);
   }
