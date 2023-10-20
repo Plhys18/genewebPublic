@@ -3,30 +3,13 @@ import 'dart:math';
 
 import 'package:pipeline/fasta.dart';
 import 'package:pipeline/gff.dart';
+import 'package:pipeline/sequence_tools.dart';
 import 'package:pipeline/tpm.dart';
 import 'package:string_splitter/string_splitter.dart';
 import 'package:collection/collection.dart';
 
+/// Class responsible for generating the resulting fasta file
 class FastaGenerator {
-  static const reverseComplements = {
-    'A': 'T',
-    'G': 'C',
-    'C': 'G',
-    'T': 'A',
-    'U': 'A',
-    'R': 'Y',
-    'Y': 'R',
-    'N': 'N',
-    'W': 'W',
-    'S': 'S',
-    'M': 'K',
-    'K': 'M',
-    'B': 'V',
-    'H': 'D',
-    'D': 'H',
-    'V': 'B',
-  };
-
   /// Gff data
   final Gff gff;
 
@@ -44,6 +27,8 @@ class FastaGenerator {
 
   /// Will use the whole sequence instead of start codon
   final bool useSelfInsteadOfStartCodon;
+
+  late final tools = SequenceTools();
 
   FastaGenerator(this.gff, this.fasta, this.tpm,
       {this.useTss = false, this.useAtg = true, this.useSelfInsteadOfStartCodon = false})
@@ -90,7 +75,7 @@ class FastaGenerator {
       // (reversed) sequence with area before, codon and after the codon
       final sequence = gene.strand == Strand.forward
           ? '$before$codon$after'
-          : '${_reverse(after)}${_reverse(codon)}${_reverse(before)}';
+          : '${tools.reverse(after)}${tools.reverse(codon)}${tools.reverse(before)}';
 
       /// ATG and TSS positions
       final atgPosition = !useAtg
@@ -122,17 +107,5 @@ class FastaGenerator {
 
       yield result;
     }
-  }
-
-  String _reverse(String sequence) {
-    for (int i = sequence.length - 1; i >= 0; i--) {
-      if (!reverseComplements.containsKey(sequence[i])) {
-        throw (StateError('No reverse complement for `${sequence[i]}`'));
-      }
-    }
-    final result = [
-      for (int i = sequence.length - 1; i >= 0; i--) reverseComplements[sequence[i]]!,
-    ].join();
-    return result;
   }
 }

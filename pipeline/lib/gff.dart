@@ -8,7 +8,7 @@ class Gff {
   /// Genes found in GFF
   final List<GffFeature> genes;
 
-  Gff({required this.genes});
+  Gff._({required this.genes});
 
   /// Creates the object from GFF file
   static Future<Gff> fromFile(
@@ -43,7 +43,7 @@ class Gff {
         parent.features.add(feature);
       }
     }
-    return Gff(genes: genes);
+    return Gff._(genes: genes);
   }
 }
 
@@ -90,7 +90,7 @@ class GffFeature {
     return int.tryParse(parts.last);
   }
 
-  GffFeature(
+  GffFeature._(
       {required this.seqId,
       required this.source,
       required this.type,
@@ -104,6 +104,7 @@ class GffFeature {
       this.attributes,
       required this.features});
 
+  /// Creates the object from GFF line
   factory GffFeature.fromLine(
     String line, {
     required String? Function(Map<String, String> attributes) transcriptParser,
@@ -112,7 +113,7 @@ class GffFeature {
   }) {
     final parts = line.split('\t');
     final attributes = _parseAttributes(parts[8]);
-    return GffFeature(
+    return GffFeature._(
       seqId: seqIdTransformer(parts[0]),
       source: parts[1],
       type: parts[2],

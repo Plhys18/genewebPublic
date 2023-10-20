@@ -1,6 +1,7 @@
 import 'package:pipeline/gff.dart';
 import 'package:pipeline/tpm.dart';
 
+/// Generates a file with the summary of all (valid) genes and their TPM values
 class TPMSummaryGenerator {
   /// Gff data
   final Gff gff;
@@ -10,6 +11,7 @@ class TPMSummaryGenerator {
 
   TPMSummaryGenerator(this.gff, this.tpm);
 
+  /// Generates a CSV file contents with the summary of all (valid) genes and their TPM values
   List<List<String>> toCsv() {
     List<List<String>> result = [];
 

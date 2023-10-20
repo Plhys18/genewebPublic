@@ -122,9 +122,14 @@ class FastaValidator {
   }
 }
 
+/// Individual validation error
 class ValidationError {
+  /// Type of the error
   final ValidationErrorType type;
+
+  /// Error message
   final String? message;
+
   ValidationError(this.type, this.message);
 
   factory ValidationError.noSequenceFound(String? message) {
@@ -168,6 +173,7 @@ class ValidationError {
   }
 }
 
+/// Type of validation error
 enum ValidationErrorType {
   /// `seqid` defined in the GFF file was not found in the FASTA file.
   ///

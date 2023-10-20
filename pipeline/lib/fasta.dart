@@ -1,18 +1,28 @@
 import 'dart:convert';
 import 'dart:io';
 
+/// Holds the contents of the FASTA file
+///
+/// Use [load] to load the file from disk
 class Fasta {
+  /// Map of available sequences
+  ///
+  /// Key is the sequence ID, value is the path to the file
   final Map<String, String> availableSequences;
+
+  /// Temporary directory where the files are stored
   final Directory tempDir;
 
   FastaGene? _sequence;
 
-  Fasta({required this.availableSequences, required this.tempDir});
+  Fasta._({required this.availableSequences, required this.tempDir});
 
+  /// Loads the FASTA file from disk
+  ///
+  /// The file is split into multiple files, one per sequence
   static Future<Fasta> load(FileSystemEntity entity) async {
     Map<String, String> sequences = {};
     final tempDir = Directory.systemTemp.createTempSync(entity.path.split('/').last);
-//    final tempDir = Directory.current.createTempSync(entity.path.split('/').last);
     final file = File(entity.path);
     final stream = file.openRead();
     List<String> buffer = [];
@@ -39,7 +49,7 @@ class Fasta {
       completions.add(_writeFasta(path!, buffer));
     }
     Future.wait(completions);
-    return Fasta(availableSequences: sequences, tempDir: tempDir);
+    return Fasta._(availableSequences: sequences, tempDir: tempDir);
   }
 
   static Future<void> _writeFasta(String path, List<String> lines) async {
@@ -47,6 +57,7 @@ class Fasta {
     outputFile.writeAsString(lines.join("\n"), flush: true);
   }
 
+  /// Returns the sequence with the given ID
   Future<FastaGene?> sequence(String seqId) async {
     if (_sequence == null || _sequence!.seqId != seqId) {
       if (availableSequences[seqId] == null) {
@@ -57,6 +68,7 @@ class Fasta {
     return _sequence!;
   }
 
+  /// Cleans up the temporary files
   Future<void> cleanup() async {
     for (final path in availableSequences.values) {
       final file = File(path);
@@ -66,12 +78,17 @@ class Fasta {
   }
 }
 
+/// Holds the contents of a single FASTA sequence
 class FastaGene {
+  /// Sequence ID
   final String seqId;
+
+  /// Sequence
   final String sequence;
 
-  FastaGene({required this.seqId, required this.sequence});
+  FastaGene._({required this.seqId, required this.sequence});
 
+  /// Loads the sequence from a file
   static Future<FastaGene> fromFile(String path) async {
     final file = File(path);
     final lines = await file.readAsLines();
@@ -93,6 +110,6 @@ class FastaGene {
     if (seqId == null || current.isEmpty) {
       throw StateError('No sequence found in $path.');
     }
-    return FastaGene(seqId: seqId, sequence: current.join().toUpperCase());
+    return FastaGene._(seqId: seqId, sequence: current.join().toUpperCase());
   }
 }

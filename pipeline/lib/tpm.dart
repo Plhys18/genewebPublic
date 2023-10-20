@@ -10,6 +10,7 @@ class Tpm {
 
   Tpm._({required this.genes});
 
+  /// Gets the TPM data for a given gene
   List<TpmFeature> get(GffFeature gene) {
     final result = genes[gene.transcriptId] ?? genes[gene.fallbackTranscriptId] ?? [];
     return result;
