@@ -3,16 +3,17 @@ import 'package:geneweb/analysis/analysis_series.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:provider/provider.dart';
 
-class ResultsList extends StatefulWidget {
-  const ResultsList({super.key, required this.onSelected});
+/// Widget that builds the series and allows hide/show etc.
+class ResultSeriesList extends StatefulWidget {
+  const ResultSeriesList({super.key, required this.onSelected});
 
   final Function(String? selected) onSelected;
 
   @override
-  State<ResultsList> createState() => _ResultsListState();
+  State<ResultSeriesList> createState() => _ResultSeriesListState();
 }
 
-class _ResultsListState extends State<ResultsList> {
+class _ResultSeriesListState extends State<ResultSeriesList> {
   String? _selected;
 
   @override

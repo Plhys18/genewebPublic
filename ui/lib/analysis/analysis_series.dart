@@ -123,13 +123,14 @@ class AnalysisSeries {
     );
   }
 
+  /// Get [result] as a map of geneId to list of [AnalysisResult] instead of a List.
   Map<String, List<AnalysisResult>> get resultsMap {
     Map<String, List<AnalysisResult>> map = {};
-    for (final result in result!) {
-      if (!map.containsKey(result.gene.geneId)) {
-        map[result.gene.geneId] = [];
+    for (final item in result!) {
+      if (!map.containsKey(item.gene.geneId)) {
+        map[item.gene.geneId] = [];
       }
-      map[result.gene.geneId]!.add(result);
+      map[item.gene.geneId]!.add(item);
     }
     return map;
   }
@@ -180,6 +181,7 @@ class AnalysisSeries {
     return includedResults;
   }
 
+  /// Get a list of patterns that can be used drill down on the analysis
   List<DrillDownResult> drillDown(String? pattern) {
     final filteredResult = pattern == null
         ? result!
@@ -216,6 +218,7 @@ class AnalysisSeries {
   }
 }
 
+/// The result of a drill down
 class DrillDownResult {
   final String pattern;
   final int count;

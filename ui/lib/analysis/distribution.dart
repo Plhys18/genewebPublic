@@ -22,13 +22,22 @@ class Distribution {
   final Color? color;
 
   Map<int, int>? _counts;
+
   late int _totalCount;
+
+  /// Total count of motifs
   int get totalCount => _totalCount;
 
   Map<int, Set<String>>? _genes;
+
   late int _totalGenesCount;
+
+  /// Total count of genes
   int get totalGenesCount => _totalGenesCount;
+
   late int _totalGenesWithMotifCount;
+
+  /// Total count of genes with motif
   int get totalGenesWithMotifCount => _totalGenesWithMotifCount;
 
   Distribution({

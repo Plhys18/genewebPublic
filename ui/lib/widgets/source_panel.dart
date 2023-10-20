@@ -5,12 +5,14 @@ import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:geneweb/analysis/organism.dart';
 import 'package:geneweb/analysis/organism_presets.dart';
 import 'package:geneweb/genes/gene_list.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
+/// Widget shown just below the panel headline
 class SourceSubtitle extends StatelessWidget {
   const SourceSubtitle({super.key});
 
@@ -30,6 +32,7 @@ class SourceSubtitle extends StatelessWidget {
   }
 }
 
+/// Widget that builds the panel with organism selection
 class SourcePanel extends StatefulWidget {
   const SourcePanel({super.key, required this.onShouldClose});
 

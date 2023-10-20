@@ -10,29 +10,20 @@ import 'package:geneweb/output/distributions_export.dart';
 import 'package:geneweb/output/analysis_series_export.dart';
 import 'package:geneweb/widgets/distribution_view.dart';
 import 'package:geneweb/widgets/drill_down_view.dart';
-import 'package:geneweb/widgets/results_list.dart';
+import 'package:geneweb/widgets/result_series_list.dart';
 import 'package:provider/provider.dart';
 import 'package:collection/collection.dart';
 import 'package:sanitize_filename/sanitize_filename.dart';
 
-class ResultsSubtitle extends StatelessWidget {
-  const ResultsSubtitle({super.key});
+/// Widget that builds the results panel
+class AnalysisResultsPanel extends StatefulWidget {
+  const AnalysisResultsPanel({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final analysesCount = context.select<GeneModel, int>((model) => model.analyses.length);
-    return Text('$analysesCount result${analysesCount == 1 ? '' : 's'}');
-  }
+  State<AnalysisResultsPanel> createState() => _AnalysisResultsPanelState();
 }
 
-class ResultsPanel extends StatefulWidget {
-  const ResultsPanel({Key? key}) : super(key: key);
-
-  @override
-  State<ResultsPanel> createState() => _ResultsPanelState();
-}
-
-class _ResultsPanelState extends State<ResultsPanel> {
+class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
   late final _scaffoldMessenger = ScaffoldMessenger.of(context);
   late final _model = GeneModel.of(context);
 
@@ -72,7 +63,7 @@ class _ResultsPanelState extends State<ResultsPanel> {
         context.select<GeneModel, List<AnalysisSeries>>((model) => model.analyses.where((a) => a.visible).toList());
     final analysisProgress = context.select<GeneModel, double?>((model) => model.analysisProgress);
     final analysisCancelled = context.select<GeneModel, bool>((model) => model.analysisCancelled);
-    final expectedResults = context.select<GeneModel, int>((model) => model.expectedResults);
+    final expectedResults = context.select<GeneModel, int>((model) => model.expectedSeriesCount);
     final analysis = context.select<GeneModel, AnalysisSeries?>(
         (model) => model.analyses.firstWhereOrNull((a) => a.name == _selectedAnalysisName));
     final canAnalyzeErrors = [
@@ -178,7 +169,7 @@ class _ResultsPanelState extends State<ResultsPanel> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(width: 400, child: ResultsList(onSelected: _handleAnalysisSelected)),
+        SizedBox(width: 400, child: ResultSeriesList(onSelected: _handleAnalysisSelected)),
         const VerticalDivider(width: 16),
         Expanded(
           child: Column(

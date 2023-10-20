@@ -1,8 +1,13 @@
 import 'dart:ui';
 
 import 'package:collection/collection.dart';
-import 'package:geneweb/genes/gene_list.dart';
+import 'package:geneweb/analysis/organism.dart';
+import 'package:geneweb/analysis/stage_and_color.dart';
 
+/// Presets for organisms
+///
+/// See [Organism]
+/// TODO private
 class OrganismPresets {
   static final _arabidopsisStages = [
     // StageAndColor('tapetum_C', const Color(0xff993300)),
@@ -249,23 +254,4 @@ class OrganismPresets {
       stages: [],
     ),
   ];
-}
-
-class Organism {
-  final String name;
-  final String? filename;
-  final String? description;
-  final bool public;
-  final bool takeFirstTranscriptOnly;
-
-  final List<StageAndColor> stages;
-
-  Organism({
-    required this.name,
-    this.filename,
-    this.description,
-    this.public = false,
-    this.takeFirstTranscriptOnly = true,
-    this.stages = const [],
-  });
 }

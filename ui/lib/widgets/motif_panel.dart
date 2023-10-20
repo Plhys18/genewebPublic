@@ -6,13 +6,14 @@ import 'package:geneweb/genes/gene_model.dart';
 import 'package:provider/provider.dart';
 import 'package:truncate/truncate.dart';
 
+/// Widget shown below the Motif selection headline
 class MotifSubtitle extends StatelessWidget {
   const MotifSubtitle({super.key});
 
   @override
   Widget build(BuildContext context) {
     final motifs = context.select<GeneModel, List<Motif>>((model) => model.motifs);
-    final expectedResults = context.select<GeneModel, int>((model) => model.expectedResults);
+    final expectedResults = context.select<GeneModel, int>((model) => model.expectedSeriesCount);
     if (expectedResults > 60 && motifs.length > 5) {
       return Text('Analysis would result in $expectedResults series, reduce the number of selected motifs');
     }
@@ -24,6 +25,7 @@ class MotifSubtitle extends StatelessWidget {
   }
 }
 
+/// Widget that builds the panel with motif selection
 class MotifPanel extends StatefulWidget {
   final Function(List<Motif> motif) onChanged;
 

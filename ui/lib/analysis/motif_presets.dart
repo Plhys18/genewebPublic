@@ -1,7 +1,10 @@
 import 'package:geneweb/analysis/motif.dart';
 
+/// Presets for motifs that are used in the UI
+///
+/// See [Motif]
 class MotifPresets {
-  static List<Motif> presets = [
+  static final List<Motif> presets = [
     Motif(name: 'ABRE', definitions: ['ACGTG']),
     Motif(name: 'ARR10_core', definitions: ['GATY']),
     Motif(name: 'BR_response element', definitions: ['CGTGYG']),

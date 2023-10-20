@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'dart:math';
 
+/// Holds a single gene data
 class Gene {
-  Gene({
+  Gene._({
     required this.geneId,
     required this.data,
     required this.header,
@@ -11,6 +12,7 @@ class Gene {
     this.markers = const {},
   });
 
+  /// Loads the gene from FASTA file chunk
   factory Gene.fromFasta(List<String> lines) {
     String? header;
     String? geneId;
@@ -52,7 +54,7 @@ class Gene {
         throw StateError('$geneId: Expected `ATG`/`CAT` at ATG position of $atg, got `$codon` instead.');
       }
     }
-    return Gene(
+    return Gene._(
       geneId: geneId,
       data: sequence,
       header: header,
@@ -97,7 +99,7 @@ class Gene {
     Map<String, num>? transcriptionRates,
     Map<String, int>? markers,
   }) {
-    return Gene(
+    return Gene._(
       geneId: geneId ?? this.geneId,
       data: data ?? this.data,
       header: header ?? this.header,
@@ -107,11 +109,13 @@ class Gene {
     );
   }
 
+  /// Returns the gene name without the splicing variant
   String get geneCode {
     final items = geneId.split('.');
     _geneCode ??= items.sublist(0, max(items.length - 1, 1)).join('.');
     return _geneCode!;
   }
 
+  /// Returns the splicing variant of the gene
   String get geneSplicingVariant => geneId.split('.').last;
 }

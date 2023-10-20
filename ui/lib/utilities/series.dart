@@ -1,3 +1,4 @@
+/// Series of data points and some basic statistics on the series
 class Series {
   final List<num> data;
 

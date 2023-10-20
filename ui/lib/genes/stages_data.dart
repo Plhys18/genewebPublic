@@ -1,7 +1,7 @@
 import 'package:csv/csv.dart';
 import 'package:csv/csv_settings_autodetection.dart';
 import 'package:flutter/material.dart';
-import 'package:geneweb/genes/color_row_parser.dart';
+import 'package:geneweb/utilities/color_row_parser.dart';
 
 /// Parses a CSV file with the following format:
 /// ```

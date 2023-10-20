@@ -11,6 +11,7 @@ import 'package:geneweb/widgets/stage_panel.dart';
 import 'package:geneweb/widgets/source_panel.dart';
 import 'package:provider/provider.dart';
 
+/// Widget that builds the contents of the Home Screen
 class Home extends StatefulWidget {
   const Home({super.key});
 
@@ -43,7 +44,7 @@ class _HomeState extends State<Home> {
     final sourceGenes = context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
     final motifs = context.select<GeneModel, List<Motif>>((model) => model.motifs);
     final filter = context.select<GeneModel, StageSelection?>((model) => model.stageSelection);
-    final expectedResults = context.select<GeneModel, int>((model) => model.expectedResults);
+    final expectedResults = context.select<GeneModel, int>((model) => model.expectedSeriesCount);
 
     return Stepper(
       currentStep: _index,
@@ -102,7 +103,7 @@ class _HomeState extends State<Home> {
       case 3: // stage
         return model.sourceGenes != null;
       case 4: // analysis
-        return model.sourceGenes != null && model.expectedResults > 0 && model.expectedResults <= 60;
+        return model.sourceGenes != null && model.expectedSeriesCount > 0 && model.expectedSeriesCount <= 60;
       default:
         return false;
     }

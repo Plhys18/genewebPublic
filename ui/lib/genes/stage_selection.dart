@@ -1,9 +1,18 @@
-/// Holds data for selected [selectedStages] and TPM filtering to use (optional)
+/// Holds data for selected stages and TPM filtering to use (optional)
 class StageSelection {
+  /// List of selected stages
   final List<String> selectedStages;
+
+  /// Strategy to use for filtering genes
   final FilterStrategy? strategy;
+
+  /// Selection method to use for filtering
   final FilterSelection? selection;
+
+  /// Percentile to use for filtering
   final double? percentile;
+
+  /// Count to use for filtering
   final int? count;
 
   StageSelection({

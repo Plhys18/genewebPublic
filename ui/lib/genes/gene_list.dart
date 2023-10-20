@@ -1,9 +1,9 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
-import 'package:geneweb/analysis/organism_presets.dart';
+import 'package:geneweb/analysis/organism.dart';
 import 'package:geneweb/genes/stage_selection.dart';
 import 'package:geneweb/genes/gene.dart';
-import 'package:geneweb/statistics/series.dart';
+import 'package:geneweb/utilities/series.dart';
 
 /// Holds a list of genes
 class GeneList extends Equatable {
@@ -15,7 +15,10 @@ class GeneList extends Equatable {
   /// List of stages. Key is stage name, value is a list of Gene.ids for that stage (unvalidated) This can be `null` if not supplied
   final Map<String, Set<String>>? stages;
 
-  /// TODO what is this
+  /// Transcription rates for each stage
+  ///
+  /// Key is stage name, value is a [Series] of all transcription rates for that stage
+  /// Used in calculating percentiles.
   final Map<String, Series> transcriptionRates;
 
   final Map<String, Color>? _colors;
@@ -274,13 +277,4 @@ class GeneList extends Equatable {
     }
     return {};
   }
-}
-
-class StageAndColor {
-  final String stage;
-  final Color color;
-  final int stroke;
-  final bool isCheckedByDefault;
-
-  StageAndColor(this.stage, this.color, {this.stroke = 4, this.isCheckedByDefault = true});
 }

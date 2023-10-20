@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/analysis_series.dart';
 import 'package:geneweb/analysis/analysis_options.dart';
 import 'package:geneweb/analysis/motif.dart';
-import 'package:geneweb/analysis/organism_presets.dart';
+import 'package:geneweb/analysis/organism.dart';
 import 'package:geneweb/genes/gene.dart';
 import 'package:geneweb/genes/stage_selection.dart';
 import 'package:geneweb/genes/gene_list.dart';
@@ -13,28 +13,45 @@ import 'package:geneweb/my_app.dart';
 import 'package:provider/provider.dart';
 import 'package:universal_file/universal_file.dart';
 
+/// Main model for the UI app
 class GeneModel extends ChangeNotifier {
   static const kAllStages = '__ALL__';
 
   final DeploymentFlavor? deploymentFlavor;
 
+  //TODO private
   bool get publicSite => _publicSite;
   late bool _publicSite = deploymentFlavor == DeploymentFlavor.prod;
+
+  /// Flag that the analyis has been cancelled by the user
   bool get analysisCancelled => _analysisCancelled;
   bool _analysisCancelled = false;
+
+  /// Name of the organism
   String? name;
+
+  /// List of genes
   GeneList? sourceGenes;
+
+  /// List of analysis series
   List<AnalysisSeries> analyses = [];
+
+  /// Progress of the analysis
   double? analysisProgress;
+
+  /// Options for the analysis
   AnalysisOptions analysisOptions = AnalysisOptions();
   StageSelection? _stageSelection;
+
+  /// Selected stages
   StageSelection? get stageSelection => _stageSelection;
   List<Motif> _motifs = [];
 
   /// All motifs
   List<Motif> get motifs => _motifs;
 
-  int get expectedResults => motifs.length * (stageSelection?.selectedStages.length ?? 0);
+  /// Number of series the analysis will produce
+  int get expectedSeriesCount => motifs.length * (stageSelection?.selectedStages.length ?? 0);
 
   GeneModel(this.deploymentFlavor);
 
@@ -57,6 +74,7 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  //TODO private
   void setPublicSite(bool value) {
     if (deploymentFlavor != null) throw Exception('Flavor is defined by deployment');
     _publicSite = value;
@@ -136,11 +154,12 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadFastaFromFile(
-      {required String path,
-      String? filename,
-      Organism? organism,
-      required Function(double progress) progressCallback}) async {
+  Future<void> loadFastaFromFile({
+    required String path,
+    String? filename,
+    Organism? organism,
+    required Function(double progress) progressCallback,
+  }) async {
     final data = await File(path).readAsString();
     return await loadFastaFromString(data: data, organism: organism, progressCallback: progressCallback);
   }
@@ -218,6 +237,7 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Runs analysis for all selected stages and motifs
   Future<bool> analyze() async {
     assert(stageSelection != null);
     assert(stageSelection!.selectedStages.isNotEmpty);
@@ -280,6 +300,7 @@ class GeneModel extends ChangeNotifier {
   }
 }
 
+/// Runs the analysis (isolate)
 Future<AnalysisSeries> runAnalysis(Map<String, dynamic> params) async {
   final list = params['genes'] as GeneList;
   final motif = params['motif'] as Motif;

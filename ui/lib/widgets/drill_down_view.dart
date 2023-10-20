@@ -4,6 +4,7 @@ import 'package:geneweb/analysis/analysis_series.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:collection/collection.dart';
 
+/// Widget that builds the drill down view
 class DrillDownView extends StatefulWidget {
   const DrillDownView({super.key, required this.name});
 

@@ -3,6 +3,7 @@ import 'package:geneweb/analysis/analysis_options.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:provider/provider.dart';
 
+/// Widget shown below the panel header
 class AnalysisOptionsSubtitle extends StatelessWidget {
   const AnalysisOptionsSubtitle({super.key});
 
@@ -14,6 +15,7 @@ class AnalysisOptionsSubtitle extends StatelessWidget {
   }
 }
 
+/// Widget that builds the analysis options panel
 class AnalysisOptionsPanel extends StatefulWidget {
   final Function(AnalysisOptions options) onChanged;
 

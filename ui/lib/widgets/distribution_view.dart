@@ -9,6 +9,7 @@ import 'package:geneweb/analysis/distribution.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:provider/provider.dart';
 
+/// Widget that builds the analysis series distribution graph
 class DistributionView extends StatefulWidget {
   final String? focus;
   final bool usePercentages;

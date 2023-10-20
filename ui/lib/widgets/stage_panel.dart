@@ -6,6 +6,7 @@ import 'package:geneweb/genes/gene_model.dart';
 import 'package:provider/provider.dart';
 import 'package:truncate/truncate.dart';
 
+/// Widget that is shown just below the panel headline
 class StageSubtitle extends StatelessWidget {
   const StageSubtitle({super.key});
 
@@ -13,7 +14,7 @@ class StageSubtitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final selectedStages =
         context.select<GeneModel, List<String>>((model) => model.stageSelection?.selectedStages ?? []);
-    final expectedResults = context.select<GeneModel, int>((model) => model.expectedResults);
+    final expectedResults = context.select<GeneModel, int>((model) => model.expectedSeriesCount);
     if (expectedResults > 60 && selectedStages.length > 5) {
       return Text('Analysis would result in $expectedResults series, reduce the number of selected stages');
     }
@@ -31,6 +32,7 @@ class StageSubtitle extends StatelessWidget {
   }
 }
 
+/// Widgewt that builds the panel with stage selection
 class StagePanel extends StatefulWidget {
   final Function(StageSelection? selection) onChanged;
 
