@@ -6,12 +6,15 @@ remote_server=golemdevncbrmuni@147.251.6.69
 # specify the path to the custom key
 key_file=~/.ssh/id_rsa_golemdev
 
+# Port for SSH
+port=22202
+
 # BEWARE OF DIFFERENT DIR TO SOURCE DATASETS DEV vs PROD
 
 # Check if the --with-datasets argument was passed
 if [[ "$1" == "--with-datasets" ]]; then
     echo "Copying datasets..."
-    scp -i $key_file -r ../dev_datasets/. $remote_server:~/public_datasets/
+    scp -P $port -i $key_file -r ../dev_datasets/. $remote_server:~/public_datasets/
 fi
 
 # build
@@ -24,14 +27,14 @@ fi
 
 echo "Deploying..."
 # delete the existing files on the remote server
-ssh -i $key_file $remote_server "rm -rf ~/public_html/*"
+ssh -i $key_file -p $port $remote_server "rm -rf ~/public_html/*"
 if [ $? -ne 0 ]; then
     echo "Error: Failed to connect."
     exit 1
 fi
 
 # create symlink to datasets
-ssh -i $key_file $remote_server "cd public_html && ln -s ../public_datasets datasets"
+ssh -i $key_file -p $port $remote_server "cd public_html && ln -s ../public_datasets datasets"
 if [ $? -ne 0 ]; then
     echo "Error: Failed to create the symlink to datasets."
     exit 1
@@ -39,7 +42,7 @@ fi
 
 
 # copy the contents of the local build directory to the remote server
-scp -i $key_file -r build/web/. $remote_server:~/public_html/
+scp -P $port -i $key_file -r build/web/. $remote_server:~/public_html/
 if [ $? -ne 0 ]; then
     echo "Error: Failed to copy files."
     exit 1
