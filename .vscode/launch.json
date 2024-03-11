@@ -37,6 +37,14 @@
             "type": "dart"
         },
         {
+            "name": "pipeline Arabidopsis TSS Private",
+            "cwd": "pipeline",
+            "request": "launch",
+            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
+            "args": ["Arabidopsis_thaliana_private", "--with-tss"],
+            "type": "dart"
+        },
+        {
             "name": "pipeline Small RNA",
             "cwd": "pipeline",
             "request": "launch",
