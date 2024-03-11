@@ -1,3 +1,4 @@
+import 'package:pipeline/fasta_validator.dart';
 import 'package:pipeline/gff.dart';
 import 'package:pipeline/tpm.dart';
 
@@ -16,20 +17,41 @@ class TPMSummaryGenerator {
     List<List<String>> result = [];
 
     // Header
-    result.add(['Gene', ...tpm.keys]);
+    result.add([
+      'Gene',
+      'isValid',
+      ...tpm.keys,
+      'validationErrors',
+    ]);
 
     // Content
     for (final gene in gff.genes) {
       // Ignore genes with validation errors
       if (gene.errors == null) StateError('Validation must be run before generating fasta file');
-      if (gene.errors!.isNotEmpty) continue;
+      if (gene.errors!.any((e) => e.type == ValidationErrorType.redundantTranscript)) continue;
 
       final geneTpm = [
-        for (final tpmKey in tpm.keys) tpm[tpmKey]!.get(gene).first.avg.toString(),
+        for (final tpmKey in tpm.keys) _formatTpm(tpm[tpmKey]?.get(gene).firstOrNull?.avg),
       ];
 
-      result.add([gene.transcriptId!, ...geneTpm]);
+      // if (geneTpm.any((e) => e == '')) {
+      //   print('$gene ${[
+      //     for (final tpmKey in tpm.keys) '$tpmKey:${_formatTpm(tpm[tpmKey]?.get(gene).firstOrNull?.avg)}',
+      //   ].join()}');
+      // }
+
+      result.add([
+        gene.transcriptId!,
+        '${gene.errors!.isEmpty}',
+        ...geneTpm,
+        gene.errors!.map((e) => e.type.name).join('|'),
+      ]);
     }
     return result;
+  }
+
+  String _formatTpm(double? tpm) {
+    if (tpm == null) return '';
+    return tpm.toString();
   }
 }

@@ -101,12 +101,12 @@ class FastaValidator {
       }
       gene.errors = errors;
 
-      // Save a reference to the first valid transcript of each gene
-      if (gene.errors!.isEmpty) {
-        final existingTranscript = uniqueTranscripts[gene.geneId!];
-        if (existingTranscript == null || (existingTranscript.transcriptNumber ?? 0) > (gene.transcriptNumber ?? 0)) {
-          uniqueTranscripts[gene.geneId!] = gene;
-        }
+      // Save a reference to the first transcript of each gene
+      final existingTranscript = uniqueTranscripts[gene.geneId!];
+      if (existingTranscript == null ||
+          (existingTranscript.transcriptNumber ?? 0) > (gene.transcriptNumber ?? 0) ||
+          existingTranscript.errors!.isNotEmpty && gene.errors!.isEmpty) {
+        uniqueTranscripts[gene.geneId!] = gene;
       }
     }
 
