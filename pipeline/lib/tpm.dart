@@ -33,7 +33,7 @@ class Tpm {
     TPMFileFormat format;
     final firstLine = lines.first;
     if (firstLine == 'Sequence	Aliases	Description	Avg.Expression	Min.Expression	Max.Expression') {
-      format = TPMFileFormat.long;
+      format = TPMFileFormat.tab;
     } else {
       format = TPMFileFormat.short;
     }
@@ -82,7 +82,7 @@ class TpmFeature {
         geneId: geneId,
         avg: double.parse(parts[1]),
       );
-    } else if (format == TPMFileFormat.long) {
+    } else if (format == TPMFileFormat.tab) {
       final parts = line.split('\t');
       if (parts.length != 6) throw StateError('Expected 6 columns, got ${parts.length}: $line');
       final geneId = geneIdParser(parts);
@@ -104,4 +104,4 @@ class TpmFeature {
   }
 }
 
-enum TPMFileFormat { long, short }
+enum TPMFileFormat { tab, short }

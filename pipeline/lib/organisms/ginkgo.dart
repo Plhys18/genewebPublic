@@ -6,7 +6,7 @@ class Ginkgo extends BaseOrganism {
   @override
   String? stageNameFromTpmFilePath(String path) {
     final filename = path.split('/').last;
-    final key = RegExp(r'^[0-9]+\.\s*Ginkgo_([^.]*)').firstMatch(filename)?.group(1);
+    final key = RegExp(r'^([0-9]+\.)?\s*Ginkgo_([^.]*)').firstMatch(filename)?.group(2);
     return key;
   }
 

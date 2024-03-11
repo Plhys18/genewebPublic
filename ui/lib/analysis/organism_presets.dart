@@ -1,6 +1,5 @@
-import 'dart:ui';
-
 import 'package:collection/collection.dart';
+import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/organism.dart';
 import 'package:geneweb/analysis/stage_and_color.dart';
 
@@ -48,6 +47,10 @@ class OrganismPresets {
     StageAndColor('L_LatePollen', const Color(0xff0D47A1), isCheckedByDefault: false),
     StageAndColor('L_TCP', const Color(0xff21C5FF), isCheckedByDefault: false),
     StageAndColor('L_MPG', const Color(0xff305496), isCheckedByDefault: false),
+
+    StageAndColor('Egg cell_Julca', Colors.orange, isCheckedByDefault: false),
+    StageAndColor('Embryo', Colors.purpleAccent, isCheckedByDefault: false),
+    StageAndColor('Endosperm', Colors.purple, isCheckedByDefault: false),
 
     // Chloroplast & Mitochondrion
     StageAndColor('Tapetum', const Color(0xff993300)),
@@ -107,10 +110,12 @@ class OrganismPresets {
       stages: [
         StageAndColor('Antheridia_9DAI', const Color(0xff21C5FF)),
         StageAndColor('Antheridia_11DAI', const Color(0xff009ED6)),
-        StageAndColor('14-15DAI_(mature)', const Color(0xff009AD0)),
-        StageAndColor('Antheridia', const Color(0xff0085B4)),
+        StageAndColor('Antheridia_14-15DAI_(mature)', const Color(0xff009AD0)),
+//        StageAndColor('Antheridia', const Color(0xff0085B4)),
         StageAndColor('Sperm_cell_packages', const Color(0xffFFDB69)),
         StageAndColor('Leaflets', const Color(0xff548236)),
+        StageAndColor('Archegonia (mature)', Colors.orange),
+        StageAndColor('Sporophyte (9 DAF)', Colors.teal),
       ],
     ),
     Organism(
@@ -125,6 +130,8 @@ class OrganismPresets {
 //        StageAndColor('Antheridia', const Color(0xff0085B4)),
         StageAndColor('Sperm_cell_packages', const Color(0xffFFDB69)),
         StageAndColor('Leaflets', const Color(0xff548236)),
+        StageAndColor('Archegonia (mature)', Colors.orange),
+        StageAndColor('Sporophyte (9 DAF)', Colors.teal),
       ],
     ),
     Organism(

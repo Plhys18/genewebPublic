@@ -55,7 +55,7 @@ void main(List<String> arguments) async {
   for (final tpmFile in inputFilesConfiguration.tpmFiles) {
     final tpmKey = organism.stageNameFromTpmFilePath(tpmFile.path);
     if (tpmKey == null) {
-      print(' - Ignoring file `${tpmFile.path}`');
+      print(' - Ignoring file `${tpmFile.path}` (failed to parse stage name)');
       continue;
     }
     try {

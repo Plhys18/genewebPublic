@@ -16,6 +16,7 @@ class OrganismFactory {
       case 'Arabidopsis_small_rna':
         return ArabidopsisSmallRna();
       case 'Arabidopsis_thaliana':
+      case 'Arabidopsis_thaliana_private':
         return ArabidopsisThaliana();
       case 'Arabidopsis_thaliana_chloroplast':
         return ArabidopsisChloroplast();
