@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:geneweb/screens/home_screen.dart';
+import 'package:geneweb/screens/lock_screen.dart';
 import 'package:provider/provider.dart';
 
 class MyApp extends StatelessWidget {
@@ -33,7 +34,10 @@ class MyApp extends StatelessWidget {
           appBarTheme: const AppBarTheme(backgroundColor: Color(0xffA0CB85)),
           useMaterial3: true,
         ),
-        home: const HomeScreen(),
+        home: Builder(builder: (context) {
+          final isSignedIn = context.select<GeneModel, bool>((model) => model.isSignedIn);
+          return !isSignedIn ? const LockScreen() : const HomeScreen();
+        }),
       ),
     );
   }

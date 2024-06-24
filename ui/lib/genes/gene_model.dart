@@ -19,9 +19,15 @@ class GeneModel extends ChangeNotifier {
 
   final DeploymentFlavor? deploymentFlavor;
 
-  //TODO private
   bool get publicSite => _publicSite;
   late bool _publicSite = deploymentFlavor == DeploymentFlavor.prod;
+
+  bool get isSignedIn => _isSignedIn;
+  bool _isSignedIn = false;
+  set isSignedIn(bool value) {
+    _isSignedIn = value;
+    notifyListeners();
+  }
 
   /// Flag that the analyis has been cancelled by the user
   bool get analysisCancelled => _analysisCancelled;
