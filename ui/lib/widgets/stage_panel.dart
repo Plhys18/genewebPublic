@@ -201,6 +201,12 @@ class _StagePanelState extends State<StagePanel> {
                   ),
                 ],
               ),
+              if (_selection == FilterSelection.percentile) ...[
+                const SizedBox(height: 16),
+                Text(
+                    'The genes included in the analysis for each stage will represent ${((_percentile ?? 0) * 100).toStringAsFixed(2)}% of all transcripts from the total number of protein-coding genes used in the analysis.',
+                    style: textTheme.labelMedium),
+              ],
             ],
           ],
         ),
