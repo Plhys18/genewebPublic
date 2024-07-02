@@ -209,8 +209,8 @@ class AnalysisSeries {
         DrillDownResult(
           testPattern,
           counts[testPattern]!,
-          counts[testPattern]! / filteredResult.length,
-          counts[testPattern]! / result!.length,
+          filteredResult.isEmpty ? null : counts[testPattern]! / filteredResult.length,
+          result!.isEmpty ? null : counts[testPattern]! / result!.length,
         ),
     ];
     drillDownResults.sort((a, b) => b.count.compareTo(a.count));
@@ -222,8 +222,8 @@ class AnalysisSeries {
 class DrillDownResult {
   final String pattern;
   final int count;
-  final double share;
-  final double shareOfAll;
+  final double? share;
+  final double? shareOfAll;
 
   DrillDownResult(this.pattern, this.count, this.share, this.shareOfAll);
 }

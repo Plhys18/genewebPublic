@@ -87,8 +87,10 @@ class _DrillDownViewState extends State<DrillDownView> {
     return ListTile(
       dense: true,
       title: Text(_results![index].pattern),
-      subtitle: Text(
-          'matches ${(_results![index].share * 100).round()}% of selection, (${(_results![index].shareOfAll * 100).round()}% of all results)'),
+      subtitle: _results![index].share != null && _results![index].shareOfAll != null
+          ? Text(
+              'matches ${(_results![index].share! * 100).round()}% of selection, (${(_results![index].shareOfAll! * 100).round()}% of all results)')
+          : null,
       trailing: Text(_results![index].count.toString()),
       onTap: _running ? null : () => _handleDrillDownDeeper(_results![index].pattern),
     );
