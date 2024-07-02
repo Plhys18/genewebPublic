@@ -12,16 +12,16 @@ class AnalysisSeriesExport {
     assert(series.geneList.genes.isNotEmpty);
     var excel = Excel.createExcel();
     final originalSheets = excel.sheets.keys;
-    final headerCellStyle = CellStyle(backgroundColorHex: 'FFDDFFDD', bold: true);
+    final headerCellStyle = CellStyle(backgroundColorHex: ExcelColor.fromHexString('FFDDFFDD'), bold: true);
 
     // selected_genes sheet
     Sheet genesSheet = excel['selected_genes'];
     final stages = series.geneList.genes.first.transcriptionRates.keys.toList();
     // header row
     genesSheet.appendRow([
-      'Gene Id',
-      'Matches',
-      for (final stage in stages) stage,
+      const TextCellValue('Gene Id'),
+      const TextCellValue('Matches'),
+      for (final stage in stages) TextCellValue(stage),
     ]);
     // data rows
     final resultsMap = series.resultsMap;
@@ -32,14 +32,17 @@ class AnalysisSeriesExport {
       }
       final gene = series.geneList.genes[i];
       genesSheet.appendRow([
-        gene.geneId,
-        resultsMap[gene.geneId]?.length ?? 0,
+        TextCellValue(gene.geneId),
+        IntCellValue(resultsMap[gene.geneId]?.length ?? 0),
 //        series.result?.where((g) => g.gene.geneId == gene.geneId).length,
-        for (final stage in stages) gene.transcriptionRates[stage],
+        for (final stage in stages)
+          gene.transcriptionRates[stage] == null
+              ? const TextCellValue('')
+              : DoubleCellValue(gene.transcriptionRates[stage]!.toDouble()),
       ]);
     }
     // style the header and first two columns
-    for (int i = 0; i < genesSheet.maxCols; i++) {
+    for (int i = 0; i < genesSheet.maxColumns; i++) {
       genesSheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0)).cellStyle = headerCellStyle;
     }
     for (int i = 0; i < genesSheet.maxRows; i++) {
@@ -53,7 +56,7 @@ class AnalysisSeriesExport {
 
     // distribution sheet
     Sheet distributionSheet = excel['distribution'];
-    distributionSheet.appendRow(['Interval', 'Genes with motif']);
+    distributionSheet.appendRow([const TextCellValue('Interval'), const TextCellValue('Genes with motif')]);
     int i = 0;
     final datapoints = series.distribution!.dataPoints!;
     for (final dataPoint in datapoints) {
@@ -62,11 +65,11 @@ class AnalysisSeriesExport {
         await Future.delayed(const Duration(milliseconds: 20));
       }
       distributionSheet.appendRow([
-        dataPoint.label,
-        for (final gene in dataPoint.genes) gene,
+        TextCellValue(dataPoint.label),
+        for (final gene in dataPoint.genes) TextCellValue(gene),
       ]);
     }
-    for (int i = 0; i < distributionSheet.maxCols; i++) {
+    for (int i = 0; i < distributionSheet.maxColumns; i++) {
       distributionSheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0)).cellStyle = headerCellStyle;
     }
     for (int i = 0; i < distributionSheet.maxRows; i++) {
