@@ -153,7 +153,7 @@ class _DistributionViewState extends State<DistributionView> {
     final slideImage = bytes.buffer.asUint8List();
     const filename = 'graph.png';
     debugPrint('Saving $filename (${slideImage.length} bytes)');
-    await FileSaver.instance.saveFile(name: filename, bytes: slideImage, ext: 'png', mimeType: MimeType.png);
+    await FileSaver.instance.saveFile(name: filename, bytes: slideImage, mimeType: MimeType.png);
   }
 
   void _onSelectionChanged(charts.SelectionModel<num> model) {

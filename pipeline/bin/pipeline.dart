@@ -66,11 +66,11 @@ void main(List<String> arguments) async {
       stagesTpm[tpmKey] = tpmData;
       print('Loaded tpm file `${tpmFile.path}` as `$tpmKey` with ${tpmData.genes.length} genes');
     } on FormatException catch (error) {
-      print('Error loading tpm file `${tpmFile.path}`: ${error.message}');
+      print('Error loading tpm file `${tpmFile.path}`: $error');
     } on FileSystemException catch (error) {
-      print('Error loading tpm file `${tpmFile.path}`: ${error.message}');
+      print('Error loading tpm file `${tpmFile.path}`: $error');
     } on StateError catch (error) {
-      print('Error loading tpm file `${tpmFile.path}`: ${error.message}');
+      print('Error loading tpm file `${tpmFile.path}`: $error');
     }
   }
 
@@ -158,11 +158,17 @@ class BatchConfiguration {
     }
     final gffFile = gffFiles.first;
     final tpmDir = Directory('$path/TPM');
-    final List<FileSystemEntity> tpmFiles = await tpmDir.list().toList();
-    if (tpmFiles.isEmpty) {
-      throw StateError('Expected at least one TPM file, ${tpmFiles.length} files found.');
+
+    List<FileSystemEntity> tpmFiles;
+    if (tpmDir.existsSync()) {
+      tpmFiles = await tpmDir.list().toList();
+      if (tpmFiles.isEmpty) {
+        throw StateError('Expected at least one TPM file, ${tpmFiles.length} files found.');
+      }
+      tpmFiles.sort((a, b) => a.path.compareTo(b.path));
+    } else {
+      tpmFiles = [];
     }
-    tpmFiles.sort((a, b) => a.path.compareTo(b.path));
     return BatchConfiguration(fastaFile: fastaFile, gffFile: gffFile, tpmFiles: tpmFiles);
   }
 }

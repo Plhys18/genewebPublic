@@ -172,9 +172,10 @@ class GffFeature {
   List<GffFeature> validStartCodons(FastaGene sequence, Strand strand) {
     final allStartCodons = startCodons();
     final List<GffFeature> validStartCodons = [];
+    final sequenceLength = sequence.sequence.length;
     for (final startCodon in allStartCodons) {
       // check that we get either ATG (forward) or CAT (reverse)
-      if (startCodon.start - 1 < 0 || startCodon.end > sequence.sequence.length) {
+      if (startCodon.start - 1 < 0 || startCodon.end > sequenceLength) {
         continue;
       } else {
         final startCodonSequence = sequence.sequence.substring(startCodon.start - 1, startCodon.end);

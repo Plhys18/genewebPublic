@@ -5,6 +5,30 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "pipeline Silene",
+            "cwd": "pipeline",
+            "request": "launch",
+            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
+            "args": ["Silene_vulgaris"],
+            "type": "dart"
+        },
+        {
+            "name": "pipeline Silene (TSS)",
+            "cwd": "pipeline",
+            "request": "launch",
+            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
+            "args": ["Silene_vulgaris", "--with-tss"],
+            "type": "dart"
+        },
+        {
+            "name": "pipeline Allium",
+            "cwd": "pipeline",
+            "request": "launch",
+            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
+            "args": ["Allium_cepa"],
+            "type": "dart"
+        },
+        {
             "name": "pipeline Amborella",
             "cwd": "pipeline",
             "request": "launch",

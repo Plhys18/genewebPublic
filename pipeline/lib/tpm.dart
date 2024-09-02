@@ -78,9 +78,11 @@ class TpmFeature {
       final parts = line.split(RegExp(r'[\s,]'));
       if (parts.length < 2) throw StateError('Expected 2+ columns, got ${parts.length}: $line');
       final geneId = geneIdParser(parts);
+      final avg = parts[1] == "" ? 0.0 : double.tryParse(parts[1]);
+      if (avg == null) throw FormatException('Invalid number: $line');
       return TpmFeature(
         geneId: geneId,
-        avg: double.parse(parts[1]),
+        avg: avg,
       );
     } else if (format == TPMFileFormat.tab) {
       final parts = line.split('\t');
