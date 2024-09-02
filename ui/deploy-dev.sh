@@ -14,7 +14,7 @@ port=22202
 # Check if the --with-datasets argument was passed
 if [[ "$1" == "--with-datasets" ]]; then
     echo "Copying datasets..."
-    scp -P $port -i $key_file -r ../dev_datasets/. $remote_server:~/public_datasets/
+    scp -P $port -i $key_file -r ../datasets/upload-dev/. $remote_server:~/public_datasets/
 fi
 
 # build
