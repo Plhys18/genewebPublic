@@ -5,7 +5,7 @@ import 'package:geneweb/widgets/analysis_results_panel.dart';
 import 'package:provider/provider.dart';
 
 class AnalysisScreen extends StatelessWidget {
-  const AnalysisScreen({Key? key}) : super(key: key);
+  const AnalysisScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

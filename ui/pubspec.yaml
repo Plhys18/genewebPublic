@@ -11,12 +11,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  http: ^0.13.4
+  http: ^1.2.2
   provider: ^6.0.3
   community_charts_flutter: ^1.0.4
   crypto: ^3.0.1
   equatable: ^2.0.3
-  file_picker: ^5.2.3
+  file_picker: ^8.1.2
   excel: ^4.0.3
   universal_file: ^1.0.0
   faabul_color_picker: ^1.0.2
@@ -24,17 +24,17 @@ dependencies:
   truncate: ^3.0.1
   collection: ^1.16.0
   sanitize_filename: ^1.0.4
-  flutter_svg: ^1.0.0
-  file_saver: ^0.1.1
-  share_plus: ^6.3.0
+  flutter_svg: ^2.0.10+1
+  file_saver: ^0.2.14
+  share_plus: ^10.0.2
   flutter_native_splash: ^2.1.0
-  csv: ^5.0.1
+  csv: ^6.0.0
   url_launcher: ^6.2.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.0
+  flutter_lints: ^4.0.0
 
 flutter:
   uses-material-design: true

@@ -120,8 +120,7 @@ class _SourcePanelState extends State<SourcePanel> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ...sampleErrors
-                    .map((e) => Text('$e', style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer)))
-                    .toList(),
+                    .map((e) => Text('$e', style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer))),
                 if (sourceGenes.errors.length > sampleErrors.length)
                   Text('and ${sourceGenes.errors.length - sampleErrors.length} other errors.',
                       style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer)),

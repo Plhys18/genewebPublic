@@ -19,8 +19,8 @@ class AnalysisSeriesExport {
     final stages = series.geneList.genes.first.transcriptionRates.keys.toList();
     // header row
     genesSheet.appendRow([
-      const TextCellValue('Gene Id'),
-      const TextCellValue('Matches'),
+      TextCellValue('Gene Id'),
+      TextCellValue('Matches'),
       for (final stage in stages) TextCellValue(stage),
     ]);
     // data rows
@@ -37,7 +37,7 @@ class AnalysisSeriesExport {
 //        series.result?.where((g) => g.gene.geneId == gene.geneId).length,
         for (final stage in stages)
           gene.transcriptionRates[stage] == null
-              ? const TextCellValue('')
+              ? TextCellValue('')
               : DoubleCellValue(gene.transcriptionRates[stage]!.toDouble()),
       ]);
     }
@@ -56,7 +56,7 @@ class AnalysisSeriesExport {
 
     // distribution sheet
     Sheet distributionSheet = excel['distribution'];
-    distributionSheet.appendRow([const TextCellValue('Interval'), const TextCellValue('Genes with motif')]);
+    distributionSheet.appendRow([TextCellValue('Interval'), TextCellValue('Genes with motif')]);
     int i = 0;
     final datapoints = series.distribution!.dataPoints!;
     for (final dataPoint in datapoints) {

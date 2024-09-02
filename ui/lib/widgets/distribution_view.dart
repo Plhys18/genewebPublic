@@ -19,15 +19,14 @@ class DistributionView extends StatefulWidget {
   final double? horizontalAxisMin;
   final double? horizontalAxisMax;
   const DistributionView(
-      {Key? key,
+      {super.key,
       required this.focus,
       required this.usePercentages,
       required this.groupByGenes,
       required this.verticalAxisMin,
       required this.verticalAxisMax,
       required this.horizontalAxisMin,
-      required this.horizontalAxisMax})
-      : super(key: key);
+      required this.horizontalAxisMax});
 
   @override
   State<DistributionView> createState() => _DistributionViewState();
@@ -154,7 +153,7 @@ class _DistributionViewState extends State<DistributionView> {
     final slideImage = bytes.buffer.asUint8List();
     const filename = 'graph.png';
     debugPrint('Saving $filename (${slideImage.length} bytes)');
-    await FileSaver.instance.saveFile(filename, slideImage, 'png', mimeType: MimeType.PNG);
+    await FileSaver.instance.saveFile(name: filename, bytes: slideImage, ext: 'png', mimeType: MimeType.png);
   }
 
   void _onSelectionChanged(charts.SelectionModel<num> model) {

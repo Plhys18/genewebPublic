@@ -111,7 +111,7 @@ class _DrillDownViewState extends State<DrillDownView> {
       });
     } else {
       setState(() {
-        patterns = [...patterns.takeWhile((e) => e != pattern).toList(), pattern];
+        patterns = [...patterns.takeWhile((e) => e != pattern), pattern];
         _update(pattern);
       });
     }

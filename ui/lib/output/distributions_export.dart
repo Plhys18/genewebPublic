@@ -20,10 +20,10 @@ class DistributionsExport {
     Sheet motifSheet = excel['motifs'];
     // header row
     motifSheet.appendRow([
-      const TextCellValue('Interval'),
-      const TextCellValue('Min'),
+      TextCellValue('Interval'),
+      TextCellValue('Min'),
       ...distributions.map((distribution) => TextCellValue(distribution.name)),
-      const TextCellValue(''),
+      TextCellValue(''),
       ...distributions.map((distribution) => TextCellValue('${distribution.name} [%]')),
     ]);
     // data rows
@@ -37,7 +37,7 @@ class DistributionsExport {
         TextCellValue(dataPoint.label),
         IntCellValue(dataPoint.min),
         ...dataPoints.map((dp) => IntCellValue(dp[i].count)),
-        const TextCellValue(''),
+        TextCellValue(''),
         ...dataPoints.map((dp) => DoubleCellValue(dp[i].percent)),
       ]);
     }
@@ -53,10 +53,10 @@ class DistributionsExport {
     Sheet genesSheet = excel['genes'];
     // header row
     genesSheet.appendRow([
-      const TextCellValue('Interval'),
-      const TextCellValue('Min'),
+      TextCellValue('Interval'),
+      TextCellValue('Min'),
       ...distributions.map((distribution) => TextCellValue(distribution.name)),
-      const TextCellValue(''),
+      TextCellValue(''),
       ...distributions.map((distribution) => TextCellValue('${distribution.name} [%]')),
     ]);
     // data rows
@@ -70,7 +70,7 @@ class DistributionsExport {
         TextCellValue(dataPoint.label),
         IntCellValue(dataPoint.min),
         ...dataPoints.map((dp) => IntCellValue(dp[i].genesCount)),
-        const TextCellValue(''),
+        TextCellValue(''),
         ...dataPoints.map((dp) => DoubleCellValue(dp[i].genesPercent)),
       ]);
     }
