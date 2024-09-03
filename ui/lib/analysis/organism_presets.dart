@@ -83,6 +83,12 @@ class OrganismPresets {
 
   static final List<Organism> kOrganisms = [
     Organism(
+      name: 'Allium cepa',
+      filename: 'Allium_cepa.fasta.zip',
+      description: 'ATG',
+      stages: [],
+    ),
+    Organism(
       name: 'Marchantia polymorpha',
       filename: 'Marchantia_polymorpha.fasta.zip',
       description: 'ATG',

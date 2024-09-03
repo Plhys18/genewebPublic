@@ -36,7 +36,7 @@ class MyApp extends StatelessWidget {
         ),
         home: Builder(builder: (context) {
           final isSignedIn = context.select<GeneModel, bool>((model) => model.isSignedIn);
-          return !isSignedIn ? const LockScreen() : const HomeScreen();
+          return (deploymentFlavor == DeploymentFlavor.dev && !isSignedIn) ? const LockScreen() : const HomeScreen();
         }),
       ),
     );
