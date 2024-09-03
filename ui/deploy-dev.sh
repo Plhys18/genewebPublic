@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # specify the remote server address
-remote_server=golemdevncbrmuni@147.251.6.69
+remote_server=golemdevncbrmuni@golem-dev.ncbr.muni.cz
 
 # specify the path to the custom key
 key_file=~/.ssh/id_rsa_golemdev
 
 # Port for SSH
-port=22202
+port=22
 
 # BEWARE OF DIFFERENT DIR TO SOURCE DATASETS DEV vs PROD
 
@@ -19,7 +19,7 @@ fi
 
 # build
 echo "Running build..."
-flutter build web --release
+flutter build web --release --web-renderer canvaskit --pwa-strategy none
 if [ $? -ne 0 ]; then
     echo "Error: Flutter build failed."
     exit 1
