@@ -29,6 +29,7 @@ for FILE in $TARGET_DIR ; do
            [ "$DIRECTORY" = "Arabidopsis_thaliana" ] || \
            [ "$DIRECTORY" = "Physcomitrium_patens" ] || \
            [ "$DIRECTORY" = "Marchantia_polymorpha" ] || \
+           [ "$DIRECTORY" = "Silene_vulgaris" ] || \
            [ "$DIRECTORY" = "Zea_mays" ] || \
            [ "$DIRECTORY" = "Solanum_lycopersicum" ]; then
             echo "Running $DIRECTORY --with-tss"

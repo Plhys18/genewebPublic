@@ -89,6 +89,18 @@ class OrganismPresets {
       stages: [],
     ),
     Organism(
+      name: 'Silene vulgaris',
+      filename: 'Silene_vulgaris.fasta.zip',
+      description: 'ATG',
+      stages: [],
+    ),
+    Organism(
+      name: 'Silene vulgaris',
+      filename: 'Silene_vulgaris-with-tss.fasta.zip',
+      description: 'ATG, TSS',
+      stages: [],
+    ),
+    Organism(
       name: 'Marchantia polymorpha',
       filename: 'Marchantia_polymorpha.fasta.zip',
       description: 'ATG',
