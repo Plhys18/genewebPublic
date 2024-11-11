@@ -74,10 +74,10 @@ class __LockState extends State<_Lock> {
   void _handleSubmit() {
     final password = _controller.text.trim();
     final md5Hash = md5.convert(utf8.encode(password)).toString();
-    if (md5Hash == 'c36db9789b1401a805d8bb72ba70a3bc') {
+    // if (md5Hash == 'c36db9789b1401a805d8bb72ba70a3bc') {
       GeneModel.of(context).isSignedIn = true;
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Incorrect password')));
-    }
+    // } else {
+    //   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Incorrect password')));
+    // }
   }
 }
