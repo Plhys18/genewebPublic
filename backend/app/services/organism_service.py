@@ -36,8 +36,8 @@ class OrganismService:
         gene_count = 0
         errors = []
 
-        sequences = content.split('>')  # Split on FASTA header
-        for seq in sequences[1:]:  # Skip the first part, which is empty
+        sequences = content.split('>')
+        for seq in sequences[1:]:
             lines = seq.strip().splitlines()
             if not lines:
                 continue
@@ -52,8 +52,13 @@ class OrganismService:
                 errors.append(f"Empty sequence found for header: {header}")
                 continue
 
-            # if any(char not in 'ACGT' for char in sequence.upper()):
-            #     errors.append(f"Invalid characters found in sequence for header: {header}")
+            if any(char not in 'ACGT' for char in sequence.upper()):
+                errors.append(f"Invalid characters found in sequence for header: {header}")
 
             gene_count += 1  # Count the valid gene sequences
         return content.count('>'), errors
+
+    @staticmethod
+    def get_species():
+        # list species from database
+        pass

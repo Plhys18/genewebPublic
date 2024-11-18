@@ -19,3 +19,11 @@ async def process_organism(request: OrganismRequest):
         return {"message": "Processing complete", "result": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
+
+@router.get("/get/species")
+async def get_species(name: Optional[str] = None):
+    names_list = []
+    if name:
+        names_list = [name]
+    else:
+        names_list = OrganismService.get_species()

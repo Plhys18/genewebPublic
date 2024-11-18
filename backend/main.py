@@ -15,10 +15,8 @@ app.add_middleware(
 )
 
 app.include_router(organism.router, prefix="/api/organism")
-app.include_router(organism.router, prefix="/get/species")
-app.include_router(organism.router, prefix="/get/species/id(name?)")
-app.include_router(organism.router, prefix="/get/motifs")
-app.include_router(organism.router, prefix="/get/motifs/id(name?)")
+app.include_router(organism.router, prefix="/api/species")
+app.include_router(organism.router, prefix="/api/motifs")
 
 app.include_router(user.router, prefix="/api/user")
 app.include_router(auth.router, prefix="/api/auth")
