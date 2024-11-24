@@ -83,6 +83,30 @@ class OrganismPresets {
 
   static final List<Organism> kOrganisms = [
     Organism(
+      name: 'Ceratopteris richardii',
+      filename: 'Ceratopteris_richardii.fasta.zip',
+      description: 'ATG',
+      stages: [],
+    ),
+    Organism(
+      name: 'Ceratopteris richardii',
+      filename: 'Ceratopteris_richardii-with-tss.fasta.zip',
+      description: 'ATG, TSS',
+      stages: [],
+    ),
+    Organism(
+      name: 'Hordeum vulgare',
+      filename: 'Hordeum_vulgare.fasta.zip',
+      description: 'ATG',
+      stages: [],
+    ),
+    Organism(
+      name: 'Hordeum vulgare',
+      filename: 'Hordeum_vulgare-with-tss.fasta.zip',
+      description: 'ATG, TSS',
+      stages: [],
+    ),
+    Organism(
       name: 'Allium cepa',
       filename: 'Allium_cepa.fasta.zip',
       description: 'ATG',

@@ -19,7 +19,8 @@ void main(List<String> arguments) async {
 
   // Find files
   print('Searching input data for `${organism.name}`. TSS: $useTss');
-  final inputFilesConfiguration = await BatchConfiguration.fromPath('source_data/$organismFolderName');
+  final inputFilesConfiguration =
+      await BatchConfiguration.fromPath('/Volumes/LukasExt1/golem/source_data/$organismFolderName');
   print(' - fasta file: `${inputFilesConfiguration.fastaFile.path}`');
   print(' - gff file: `${inputFilesConfiguration.gffFile.path}`');
   for (final tpmFile in inputFilesConfiguration.tpmFiles) {
@@ -38,6 +39,7 @@ void main(List<String> arguments) async {
     transcriptParser: organism.transcriptParser,
     fallbackTranscriptParser: organism.fallbackTranscriptParser,
     seqIdTransformer: organism.seqIdTransformer,
+    linesPreprocessor: organism.gffLinesPreprocessor,
   );
   print('Loaded `${inputFilesConfiguration.gffFile.path}` with ${gff.genes.length} genes');
   print(' - ${gff.genes.where((g) => g.startCodon() != null).length} with start_codon');
@@ -147,7 +149,8 @@ class BatchConfiguration {
   static Future<BatchConfiguration> fromPath(String path) async {
     final dir = Directory(path);
     final List<FileSystemEntity> dirEntities = await dir.list().toList();
-    final fastaFiles = dirEntities.where((e) => e.path.endsWith('.fa') || e.path.endsWith('.fasta'));
+    final fastaFiles =
+        dirEntities.where((e) => e.path.endsWith('.fa') || e.path.endsWith('.faa') || e.path.endsWith('.fasta'));
     if (fastaFiles.length != 1) {
       throw StateError('Expected exactly one FASTA file, ${fastaFiles.length} files found.');
     }

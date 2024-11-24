@@ -1,7 +1,7 @@
 import 'package:pipeline/organisms/base_organism.dart';
 
-class Allium extends BaseOrganism {
-  Allium() : super(name: 'Allium cepa');
+class Azolla extends BaseOrganism {
+  Azolla() : super(name: 'Azolla filiculoides');
 
   @override
   String? transcriptParser(Map<String, String> attributes) {

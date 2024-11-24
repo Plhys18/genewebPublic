@@ -1,8 +1,11 @@
 import 'package:pipeline/organisms/allium.dart';
 import 'package:pipeline/organisms/amborella.dart';
 import 'package:pipeline/organisms/arabidopsis.dart';
+import 'package:pipeline/organisms/azolla.dart';
 import 'package:pipeline/organisms/base_organism.dart';
+import 'package:pipeline/organisms/ceratopteris.dart';
 import 'package:pipeline/organisms/ginkgo.dart';
+import 'package:pipeline/organisms/hordeum.dart';
 import 'package:pipeline/organisms/marchantia.dart';
 import 'package:pipeline/organisms/oryza.dart';
 import 'package:pipeline/organisms/physcomitrium.dart';
@@ -26,8 +29,14 @@ class OrganismFactory {
         return ArabidopsisChloroplast();
       case 'Arabidopsis_thaliana_mitochondrion':
         return ArabidopsisMitochondrion();
+      case 'Azolla_filiculoides':
+        return Azolla();
+      case 'Ceratopteris_richardii':
+        return Ceratopteris();
       case 'Ginkgo_biloba':
         return Ginkgo();
+      case 'Hordeum_vulgare':
+        return Hordeum();
       case 'Marchantia_polymorpha':
         return Marchantia();
       case 'Oryza_sativa':
