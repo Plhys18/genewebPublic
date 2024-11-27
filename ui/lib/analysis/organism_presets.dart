@@ -92,6 +92,7 @@ class OrganismPresets {
         StageAndColor('Hermaphrodite_gametophyte', const Color(0xff8E44AD)),
         StageAndColor('Sporophyte', const Color(0xff229954)),
       ],
+      public: true,
     ),
     Organism(
       name: 'Ceratopteris richardii',
@@ -103,6 +104,7 @@ class OrganismPresets {
         StageAndColor('Hermaphrodite_gametophyte', const Color(0xff8E44AD)),
         StageAndColor('Sporophyte', const Color(0xff229954)),
       ],
+      public: true,
     ),
     Organism(
       name: 'Hordeum vulgare',
@@ -124,6 +126,7 @@ class OrganismPresets {
         StageAndColor('Seed_maternal_tissues_24_DAP', const Color(0xff85C1E9)),
         StageAndColor('Leaf_non-infested_30_DAP', const Color(0xff82E0AA)),
       ],
+      public: true,
     ),
     Organism(
       name: 'Hordeum vulgare',
@@ -145,6 +148,7 @@ class OrganismPresets {
         StageAndColor('Seed_maternal_tissues_24_DAP', const Color(0xff85C1E9)),
         StageAndColor('Leaf_non-infested_30_DAP', const Color(0xff82E0AA)),
       ],
+      public: true,
     ),
     Organism(
       name: 'Allium cepa',
