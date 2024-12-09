@@ -12,21 +12,26 @@ class StageSubtitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectedStages =
-        context.select<GeneModel, List<String>>((model) => model.stageSelection?.selectedStages ?? []);
-    final expectedResults = context.select<GeneModel, int>((model) => model.expectedSeriesCount);
+    final selectedStages = context.select<GeneModel, List<String>>(
+        (model) => model.stageSelection?.selectedStages ?? []);
+    final expectedResults =
+        context.select<GeneModel, int>((model) => model.expectedSeriesCount);
     if (expectedResults > 60 && selectedStages.length > 5) {
-      return Text('Analysis would result in $expectedResults series, reduce the number of selected stages');
+      return Text(
+          'Analysis would result in $expectedResults series, reduce the number of selected stages');
     }
     if (selectedStages.isEmpty) {
       return const Text('No stages selected');
     }
     final isMain = selectedStages.contains(GeneModel.kAllStages);
-    final realStages = selectedStages.where((s) => s != GeneModel.kAllStages).toList();
+    final realStages =
+        selectedStages.where((s) => s != GeneModel.kAllStages).toList();
     List<String> texts = [];
     if (isMain) texts.add('Genome');
     if (realStages.isNotEmpty) {
-      texts.add(realStages.length == 1 ? realStages.first : '${realStages.length} other stages');
+      texts.add(realStages.length == 1
+          ? realStages.first
+          : '${realStages.length} other stages');
     }
     return Text(texts.join(' and '));
   }
@@ -90,11 +95,16 @@ class _StagePanelState extends State<StagePanel> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final allStagesKeys = context.select<GeneModel, List<String>>((model) => model.sourceGenes?.stageKeys ?? []);
-    final allowFilter = context.select<GeneModel, bool>((model) => model.sourceGenes?.stages == null);
-    final stageColors = context.select<GeneModel, Map<String, Color>>((model) => model.sourceGenes?.colors ?? {});
-    final sourceGenes = context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
-    if (sourceGenes == null) return const Center(child: Text('Load source data first'));
+    final allStagesKeys = context.select<GeneModel, List<String>>(
+        (model) => model.sourceGenes?.stageKeys ?? []);
+    final allowFilter = context
+        .select<GeneModel, bool>((model) => model.sourceGenes?.stages == null);
+    final stageColors = context.select<GeneModel, Map<String, Color>>(
+        (model) => model.sourceGenes?.colors ?? {});
+    final sourceGenes =
+        context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
+    if (sourceGenes == null)
+      return const Center(child: Text('Load source data first'));
     return Align(
       alignment: Alignment.topLeft,
       child: Form(
@@ -103,17 +113,20 @@ class _StagePanelState extends State<StagePanel> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('GENOME', style: textTheme.titleSmall),
-            Text('Distribution of the motif across the genome.', style: textTheme.bodySmall),
+            Text('Distribution of the motif across the genome.',
+                style: textTheme.bodySmall),
             const SizedBox(height: 16),
             _StageCard(
               name: 'GENOME',
               color: null,
-              isSelected: _selectedStages.contains(GeneModel.kAllStages) == true,
+              isSelected:
+                  _selectedStages.contains(GeneModel.kAllStages) == true,
               onToggle: (value) => _handleToggle(GeneModel.kAllStages, value),
             ),
             const SizedBox(height: 16),
             Text('DEVELOPMENTAL STAGES', style: textTheme.titleSmall),
-            Text('Distribution of the motif in genes with elevated transcript levels in certain developmental stage.',
+            Text(
+                'Distribution of the motif in genes with elevated transcript levels in certain developmental stage.',
                 style: textTheme.bodySmall),
             const SizedBox(height: 16),
             Wrap(
@@ -131,7 +144,8 @@ class _StagePanelState extends State<StagePanel> {
             ),
             if (allowFilter) ...[
               const SizedBox(height: 16),
-              Text('Choose the transcript level based on TPM:', style: textTheme.titleSmall),
+              Text('Choose the transcript level based on TPM:',
+                  style: textTheme.titleSmall),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -153,16 +167,22 @@ class _StagePanelState extends State<StagePanel> {
                       width: 200,
                       child: TextFormField(
                         controller: _percentileController,
-                        decoration: const InputDecoration(labelText: 'Percentile', suffix: Text('th')),
+                        decoration: const InputDecoration(
+                            labelText: 'Percentile', suffix: Text('th')),
                         keyboardType: TextInputType.number,
                         onChanged: (value) {
-                          setState(() =>
-                              _percentile = ((double.tryParse(_percentileController.text) ?? 0) / 100).clamp(0, 1));
+                          setState(() => _percentile =
+                              ((double.tryParse(_percentileController.text) ??
+                                          0) /
+                                      100)
+                                  .clamp(0, 1));
                           _handleChanged();
                         },
                         validator: (value) {
-                          final parsed = double.tryParse(_percentileController.text);
-                          if (parsed == null || parsed < 0 || parsed > 100) return 'Enter a number between 0 and 100';
+                          final parsed =
+                              double.tryParse(_percentileController.text);
+                          if (parsed == null || parsed < 0 || parsed > 100)
+                            return 'Enter a number between 0 and 100';
                           return null;
                         },
                       ),
@@ -175,13 +195,16 @@ class _StagePanelState extends State<StagePanel> {
                         decoration: const InputDecoration(labelText: 'Count'),
                         keyboardType: TextInputType.number,
                         onChanged: (value) {
-                          setState(() =>
-                              _count = (int.tryParse(_countController.text) ?? 0).clamp(0, sourceGenes.genes.length));
+                          setState(() => _count =
+                              (int.tryParse(_countController.text) ?? 0)
+                                  .clamp(0, sourceGenes.genes.length));
                           _handleChanged();
                         },
                         validator: (value) {
                           final parsed = int.tryParse(_countController.text);
-                          if (parsed == null || parsed < 0 || parsed > sourceGenes.genes.length) {
+                          if (parsed == null ||
+                              parsed < 0 ||
+                              parsed > sourceGenes.genes.length) {
                             return 'Enter a number between 0 and ${sourceGenes.genes.length}';
                           }
                           return null;
@@ -246,13 +269,20 @@ class _StageCard extends StatelessWidget {
   final Color? color;
   final bool isSelected;
   final Function(bool value) onToggle;
-  const _StageCard({required this.name, required this.color, required this.isSelected, required this.onToggle});
+  const _StageCard(
+      {required this.name,
+      required this.color,
+      required this.isSelected,
+      required this.onToggle});
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final backgroundColor = isSelected ? (color ?? Colors.grey) : (color ?? Colors.grey).withOpacity(0.4);
-    final textColor = backgroundColor.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+    final backgroundColor = isSelected
+        ? (color ?? Colors.grey)
+        : (color ?? Colors.grey).withOpacity(0.4);
+    final textColor =
+        backgroundColor.computeLuminance() > 0.5 ? Colors.black : Colors.white;
     return SizedBox(
       width: 160,
       height: 120,
@@ -272,7 +302,8 @@ class _StageCard extends StatelessWidget {
                   style: textTheme.titleSmall?.copyWith(color: textColor),
                   maxLines: 3,
                 ),
-                Checkbox(value: isSelected, onChanged: (value) => onToggle(value!))
+                Checkbox(
+                    value: isSelected, onChanged: (value) => onToggle(value!))
               ],
             ),
           ),

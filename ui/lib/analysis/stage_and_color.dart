@@ -14,5 +14,6 @@ class StageAndColor {
   /// Whether the stage is checked by default
   final bool isCheckedByDefault;
 
-  StageAndColor(this.stage, this.color, {this.stroke = 4, this.isCheckedByDefault = true});
+  StageAndColor(this.stage, this.color,
+      {this.stroke = 4, this.isCheckedByDefault = true});
 }

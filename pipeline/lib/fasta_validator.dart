@@ -44,7 +44,8 @@ class FastaValidator {
       // Check that there is a corresponding sequence
       final sequence = (await fasta.sequence(gene.seqId));
       if (sequence == null) {
-        errors.add(ValidationError.noSequenceFound('Sequence `${gene.seqId}` not found in fasta file.'));
+        errors.add(ValidationError.noSequenceFound(
+            'Sequence `${gene.seqId}` not found in fasta file.'));
       }
 
       // Check that the strand is defined
@@ -57,10 +58,11 @@ class FastaValidator {
         final startCodons = gene.validStartCodons(sequence, gene.strand!);
         if (!allowMissingStartCodon) {
           if (startCodons.isEmpty) {
-            errors.add(ValidationError.noStartCodonFound('Start codon is missing'));
+            errors.add(
+                ValidationError.noStartCodonFound('Start codon is missing'));
           } else if (startCodons.length > 1) {
-            errors
-                .add(ValidationError.multipleStartCodonsFound('Multiple start codons found (${startCodons.length}).'));
+            errors.add(ValidationError.multipleStartCodonsFound(
+                'Multiple start codons found (${startCodons.length}).'));
           }
         }
       }
@@ -68,17 +70,20 @@ class FastaValidator {
       // Five-prime-UTR
       final fivePrimeUtr = gene.fivePrimeUtr();
       if (useTss && fivePrimeUtr == null) {
-        errors.add(ValidationError.noFivePrimeUtrFound('Five prime UTR is missing'));
+        errors.add(
+            ValidationError.noFivePrimeUtrFound('Five prime UTR is missing'));
       }
       if (fivePrimeUtr != null && sequence != null) {
         // check that we get either ATG (forward) or CAT (reverse)
-        if (fivePrimeUtr.start - 1 < 0 || fivePrimeUtr.end > sequence.sequence.length) {
+        if (fivePrimeUtr.start - 1 < 0 ||
+            fivePrimeUtr.end > sequence.sequence.length) {
           errors.add(ValidationError.invalidFivePrimeUtr(
               'Five prime UTR is out of bounds. Start: ${fivePrimeUtr.start}, end: ${fivePrimeUtr.end}, sequence ${sequence.seqId} length: ${sequence.sequence.length}'));
         } else {
           final fivePrimeUtrLength = fivePrimeUtr.end - fivePrimeUtr.start + 1;
           if (fivePrimeUtrLength < 1) {
-            errors.add(ValidationError.invalidFivePrimeUtr('Suspicious five prime UTR length: $fivePrimeUtrLength'));
+            errors.add(ValidationError.invalidFivePrimeUtr(
+                'Suspicious five prime UTR length: $fivePrimeUtrLength'));
           }
         }
       }
@@ -92,10 +97,11 @@ class FastaValidator {
           final tpm = stagesTpm[tpmKey]!;
           final features = tpm.get(gene);
           if (features.isEmpty) {
-            errors.add(ValidationError.noTpmDataFound('TPM data missing for stage $tpmKey'));
+            errors.add(ValidationError.noTpmDataFound(
+                'TPM data missing for stage $tpmKey'));
           } else if (features.length > 1) {
-            errors.add(
-                ValidationError.multipleTpmDataFound('Multiple TPM data (${features.length}) found for stage $tpmKey'));
+            errors.add(ValidationError.multipleTpmDataFound(
+                'Multiple TPM data (${features.length}) found for stage $tpmKey'));
           }
         }
       }
@@ -104,7 +110,8 @@ class FastaValidator {
       // Save a reference to the first transcript of each gene
       final existingTranscript = uniqueTranscripts[gene.geneId!];
       if (existingTranscript == null ||
-          (existingTranscript.transcriptNumber ?? 0) > (gene.transcriptNumber ?? 0) ||
+          (existingTranscript.transcriptNumber ?? 0) >
+              (gene.transcriptNumber ?? 0) ||
           existingTranscript.errors!.isNotEmpty && gene.errors!.isEmpty) {
         uniqueTranscripts[gene.geneId!] = gene;
       }
@@ -113,7 +120,8 @@ class FastaValidator {
     // iterate again and add redundant transcript error to all genes that are not in uniqueTranscripts
     if (oneTranscriptPerGene) {
       for (final gene in gff.genes) {
-        if (uniqueTranscripts[gene.geneId!] != null && uniqueTranscripts[gene.geneId!] != gene) {
+        if (uniqueTranscripts[gene.geneId!] != null &&
+            uniqueTranscripts[gene.geneId!] != gene) {
           gene.errors!.add(ValidationError.redundantTranscript(
               'Gene is already represented by transcript ${uniqueTranscripts[gene.geneId!]!.transcriptId}'));
         }
@@ -141,7 +149,8 @@ class ValidationError {
   }
 
   factory ValidationError.multipleStartCodonsFound(String? message) {
-    return ValidationError(ValidationErrorType.multipleStartCodonsFound, message);
+    return ValidationError(
+        ValidationErrorType.multipleStartCodonsFound, message);
   }
 
   factory ValidationError.noFivePrimeUtrFound(String? message) {

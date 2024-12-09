@@ -47,7 +47,8 @@ abstract class BaseOrganism {
   String seqIdTransformer(String seqId) => seqId;
 
   /// Finds the transcript id from the attributes.
-  String? transcriptParser(Map<String, String> attributes) => attributes['Name'];
+  String? transcriptParser(Map<String, String> attributes) =>
+      attributes['Name'];
 
   /// Finds the fallback transcript ID
   ///

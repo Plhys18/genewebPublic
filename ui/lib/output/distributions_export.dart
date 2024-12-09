@@ -8,12 +8,15 @@ class DistributionsExport {
   DistributionsExport(this.distributions);
 
   /// Exports the distributions to Excel
-  Future<List<int>?> toExcel(String fileName, Function(double progress) progressCallback) async {
+  Future<List<int>?> toExcel(
+      String fileName, Function(double progress) progressCallback) async {
     assert(distributions.isNotEmpty);
     var excel = Excel.createExcel();
     final originalSheets = excel.sheets.keys;
-    final headerCellStyle = CellStyle(backgroundColorHex: ExcelColor.fromHexString('FFDDFFDD'), bold: true);
-    final dataPoints = distributions.map((distribution) => distribution.dataPoints!).toList();
+    final headerCellStyle = CellStyle(
+        backgroundColorHex: ExcelColor.fromHexString('FFDDFFDD'), bold: true);
+    final dataPoints =
+        distributions.map((distribution) => distribution.dataPoints!).toList();
     final first = dataPoints.first;
 
     // Motifs sheet
@@ -24,7 +27,8 @@ class DistributionsExport {
       TextCellValue('Min'),
       ...distributions.map((distribution) => TextCellValue(distribution.name)),
       TextCellValue(''),
-      ...distributions.map((distribution) => TextCellValue('${distribution.name} [%]')),
+      ...distributions
+          .map((distribution) => TextCellValue('${distribution.name} [%]')),
     ]);
     // data rows
     for (var i = 0; i < first.length; i++) {
@@ -42,11 +46,17 @@ class DistributionsExport {
       ]);
     }
     for (int i = 0; i < motifSheet.maxColumns; i++) {
-      motifSheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0)).cellStyle = headerCellStyle;
+      motifSheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0))
+          .cellStyle = headerCellStyle;
     }
     for (int i = 0; i < motifSheet.maxRows; i++) {
-      motifSheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: i)).cellStyle = headerCellStyle;
-      motifSheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: i)).cellStyle = headerCellStyle;
+      motifSheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: i))
+          .cellStyle = headerCellStyle;
+      motifSheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: i))
+          .cellStyle = headerCellStyle;
     }
 
     // Genes sheet
@@ -57,7 +67,8 @@ class DistributionsExport {
       TextCellValue('Min'),
       ...distributions.map((distribution) => TextCellValue(distribution.name)),
       TextCellValue(''),
-      ...distributions.map((distribution) => TextCellValue('${distribution.name} [%]')),
+      ...distributions
+          .map((distribution) => TextCellValue('${distribution.name} [%]')),
     ]);
     // data rows
     for (var i = 0; i < first.length; i++) {
@@ -75,11 +86,17 @@ class DistributionsExport {
       ]);
     }
     for (int i = 0; i < genesSheet.maxColumns; i++) {
-      genesSheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0)).cellStyle = headerCellStyle;
+      genesSheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0))
+          .cellStyle = headerCellStyle;
     }
     for (int i = 0; i < genesSheet.maxRows; i++) {
-      genesSheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: i)).cellStyle = headerCellStyle;
-      genesSheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: i)).cellStyle = headerCellStyle;
+      genesSheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: i))
+          .cellStyle = headerCellStyle;
+      genesSheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: i))
+          .cellStyle = headerCellStyle;
     }
 
     for (var element in originalSheets) {

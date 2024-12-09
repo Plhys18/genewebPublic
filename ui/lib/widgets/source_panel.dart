@@ -18,15 +18,18 @@ class SourceSubtitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sourceGenes = context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
+    final sourceGenes =
+        context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
     final name = context.select<GeneModel, String?>((model) => model.name);
     return sourceGenes == null
         ? const Text(
             'Motif positions are mapped relative to the transcription start sites (TSS) or translation start site (ATG)')
         : Wrap(
             children: [
-              Text('$name', style: const TextStyle(fontStyle: FontStyle.italic)),
-              Text(', ${sourceGenes.genes.length} genes, ${sourceGenes.stageKeys.length} stages'),
+              Text('$name',
+                  style: const TextStyle(fontStyle: FontStyle.italic)),
+              Text(
+                  ', ${sourceGenes.genes.length} genes, ${sourceGenes.stageKeys.length} stages'),
             ],
           );
   }
@@ -51,7 +54,8 @@ class _SourcePanelState extends State<SourcePanel> {
 
   @override
   Widget build(BuildContext context) {
-    final sourceGenes = context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
+    final sourceGenes =
+        context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
     return Align(
         alignment: Alignment.topLeft,
         child: _loadingMessage != null
@@ -73,7 +77,8 @@ class _SourcePanelState extends State<SourcePanel> {
   }
 
   Widget _buildLoad(BuildContext context) {
-    final publicSite = context.select<GeneModel, bool>((model) => model.publicSite);
+    final publicSite =
+        context.select<GeneModel, bool>((model) => model.publicSite);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -82,10 +87,17 @@ class _SourcePanelState extends State<SourcePanel> {
           runSpacing: 8.0,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            ...OrganismPresets.kOrganisms.where((o) => o.public || publicSite == false).map((organism) => _OrganismCard(
-                organism: organism,
-                onSelected: organism.filename == null ? null : () => _handleDownloadFasta(organism))),
-            if (!publicSite) TextButton(onPressed: _handlePickFastaFile, child: const Text('Load custom .fasta file…')),
+            ...OrganismPresets.kOrganisms
+                .where((o) => o.public || publicSite == false)
+                .map((organism) => _OrganismCard(
+                    organism: organism,
+                    onSelected: organism.filename == null
+                        ? null
+                        : () => _handleDownloadFasta(organism))),
+            if (!publicSite)
+              TextButton(
+                  onPressed: _handlePickFastaFile,
+                  child: const Text('Load custom .fasta file…')),
           ],
         ),
       ],
@@ -93,8 +105,10 @@ class _SourcePanelState extends State<SourcePanel> {
   }
 
   Widget _buildLoadedState(BuildContext context) {
-    final publicSite = context.select<GeneModel, bool>((model) => model.publicSite);
-    final sourceGenes = context.select<GeneModel, GeneList>((model) => model.sourceGenes!);
+    final publicSite =
+        context.select<GeneModel, bool>((model) => model.publicSite);
+    final sourceGenes =
+        context.select<GeneModel, GeneList>((model) => model.sourceGenes!);
     final sampleErrors = sourceGenes.errors.take(100);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,12 +119,18 @@ class _SourcePanelState extends State<SourcePanel> {
             runSpacing: 8.0,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              TextButton(onPressed: _handlePickTPMFile, child: const Text('Add custom TPM (.csv)…')), //TODO
-              TextButton(onPressed: _handlePickStagesFile, child: const Text('Add custom Stages (.csv)…')),
+              TextButton(
+                  onPressed: _handlePickTPMFile,
+                  child: const Text('Add custom TPM (.csv)…')), //TODO
+              TextButton(
+                  onPressed: _handlePickStagesFile,
+                  child: const Text('Add custom Stages (.csv)…')),
             ],
           ),
         const SizedBox(height: 16),
-        TextButton(onPressed: _handleClear, child: const Text('Choose another species…')),
+        TextButton(
+            onPressed: _handleClear,
+            child: const Text('Choose another species…')),
         if (sourceGenes.errors.isNotEmpty)
           Container(
             margin: const EdgeInsets.only(top: 16.0),
@@ -119,11 +139,16 @@ class _SourcePanelState extends State<SourcePanel> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ...sampleErrors
-                    .map((e) => Text('$e', style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer))),
+                ...sampleErrors.map((e) => Text('$e',
+                    style: TextStyle(
+                        color:
+                            Theme.of(context).colorScheme.onErrorContainer))),
                 if (sourceGenes.errors.length > sampleErrors.length)
-                  Text('and ${sourceGenes.errors.length - sampleErrors.length} other errors.',
-                      style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer)),
+                  Text(
+                      'and ${sourceGenes.errors.length - sampleErrors.length} other errors.',
+                      style: TextStyle(
+                          color:
+                              Theme.of(context).colorScheme.onErrorContainer)),
               ],
             ),
           ),
@@ -160,7 +185,9 @@ class _SourcePanelState extends State<SourcePanel> {
         );
       }
       if (_model.sourceGenes!.errors.isEmpty) {
-        _scaffoldMessenger.showSnackBar(SnackBar(content: Text('Imported ${_model.sourceGenes?.genes.length} genes.')));
+        _scaffoldMessenger.showSnackBar(SnackBar(
+            content:
+                Text('Imported ${_model.sourceGenes?.genes.length} genes.')));
       } else {
         _scaffoldMessenger.showSnackBar(SnackBar(
             backgroundColor: Colors.red,
@@ -200,8 +227,9 @@ class _SourcePanelState extends State<SourcePanel> {
         status = await _model.loadStagesFromFile(path);
       }
 
-      _scaffoldMessenger
-          .showSnackBar(SnackBar(content: Text('Imported ${_model.sourceGenes?.stages?.length ?? 0} stages.')));
+      _scaffoldMessenger.showSnackBar(SnackBar(
+          content: Text(
+              'Imported ${_model.sourceGenes?.stages?.length ?? 0} stages.')));
       if (status) {
         widget.onShouldClose();
       }
@@ -222,10 +250,13 @@ class _SourcePanelState extends State<SourcePanel> {
       debugPrint('Preparing download of $filename');
       await Future.delayed(const Duration(milliseconds: 100));
 
-      final bytes =
-          await _downloadFile(Uri.https(kIsWeb ? Uri.base.authority : 'golem-dev.ncbr.muni.cz', 'datasets/$filename'));
+      final bytes = await _downloadFile(Uri.https(
+          kIsWeb ? Uri.base.authority : 'golem-dev.ncbr.muni.cz',
+          'datasets/$filename'));
       debugPrint('Downloaded ${bytes.length ~/ (1024 * 1024)} MB');
-      if (mounted) setState(() => _loadingMessage = 'Decompressing ${bytes.length ~/ (1024 * 1024)} MB…');
+      if (mounted)
+        setState(() => _loadingMessage =
+            'Decompressing ${bytes.length ~/ (1024 * 1024)} MB…');
       if (mounted) setState(() => _progress = 0.7);
       await Future.delayed(const Duration(milliseconds: 100));
       final archive = ZipDecoder().decodeBytes(bytes);
@@ -243,7 +274,8 @@ class _SourcePanelState extends State<SourcePanel> {
   Future<void> _handleDownloadFasta(Organism organism) async {
     try {
       Archive? archive = await _downloadAndUnarchive(organism.filename!);
-      final file = archive.firstWhere((f) => f.isFile); //StateError if not found
+      final file =
+          archive.firstWhere((f) => f.isFile); //StateError if not found
       final name = file.name.split('/').last;
       if (!name.endsWith('.fasta') && !name.endsWith('.fa')) {
         throw StateError('Expected .fasta file, got $name');
@@ -252,17 +284,22 @@ class _SourcePanelState extends State<SourcePanel> {
       final content = _fileContent(file);
       debugPrint('Decoded ${content.length ~/ (1024 * 1024)} MB of data');
       archive = null; // unload from memory
-      if (mounted) setState(() => _loadingMessage = 'Analyzing $name (${content.length ~/ (1024 * 1024)} MB)…');
+      if (mounted)
+        setState(() => _loadingMessage =
+            'Analyzing $name (${content.length ~/ (1024 * 1024)} MB)…');
       if (mounted) setState(() => _progress = 0.8);
       await Future.delayed(const Duration(milliseconds: 100));
       await _model.loadFastaFromString(
         data: content,
         organism: organism,
-        progressCallback: (value) => setState(() => _progress = 0.8 + value * 0.2),
+        progressCallback: (value) =>
+            setState(() => _progress = 0.8 + value * 0.2),
       );
       debugPrint('Finished loading');
       if (_model.sourceGenes!.errors.isEmpty) {
-        _scaffoldMessenger.showSnackBar(SnackBar(content: Text('Imported ${_model.sourceGenes?.genes.length} genes.')));
+        _scaffoldMessenger.showSnackBar(SnackBar(
+            content:
+                Text('Imported ${_model.sourceGenes?.genes.length} genes.')));
       } else {
         _scaffoldMessenger.showSnackBar(SnackBar(
             backgroundColor: Colors.red,
@@ -295,7 +332,10 @@ class _SourcePanelState extends State<SourcePanel> {
       (List<int> newBytes) {
         bytes.addAll(newBytes);
         downloadedBytes += newBytes.length;
-        if (mounted) setState(() => _progress = contentLength == null ? null : (downloadedBytes / contentLength * 0.7));
+        if (mounted)
+          setState(() => _progress = contentLength == null
+              ? null
+              : (downloadedBytes / contentLength * 0.7));
       },
       onDone: () async {
         debugPrint('Stream done');
@@ -310,8 +350,9 @@ class _SourcePanelState extends State<SourcePanel> {
 
   void _handleClear() {
     _model.reset();
-    _scaffoldMessenger
-        .showSnackBar(const SnackBar(content: Text('Cleared all data. Please pick a new organism to analyze.')));
+    _scaffoldMessenger.showSnackBar(const SnackBar(
+        content:
+            Text('Cleared all data. Please pick a new organism to analyze.')));
   }
 
   Future<void> _handlePickTPMFile() async {
@@ -334,8 +375,9 @@ class _SourcePanelState extends State<SourcePanel> {
         status = await _model.loadTPMFromFile(path);
       }
 
-      _scaffoldMessenger.showSnackBar(
-          SnackBar(content: Text('Imported TPM rates for ${_model.sourceGenes?.stages?.length ?? 0} stages.')));
+      _scaffoldMessenger.showSnackBar(SnackBar(
+          content: Text(
+              'Imported TPM rates for ${_model.sourceGenes?.stages?.length ?? 0} stages.')));
       if (status) {
         widget.onShouldClose();
       }
@@ -369,7 +411,9 @@ class _OrganismCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 FittedBox(
-                    child: Text(organism.name, style: textTheme.titleSmall!.copyWith(fontStyle: FontStyle.italic))),
+                    child: Text(organism.name,
+                        style: textTheme.titleSmall!
+                            .copyWith(fontStyle: FontStyle.italic))),
                 const SizedBox(height: 8),
                 FittedBox(
                     child: Wrap(
@@ -377,7 +421,8 @@ class _OrganismCard extends StatelessWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     if (!organism.public) const Icon(Icons.lock, size: 12),
-                    Text(organism.description ?? '', style: textTheme.bodySmall),
+                    Text(organism.description ?? '',
+                        style: textTheme.bodySmall),
                   ],
                 )),
               ],

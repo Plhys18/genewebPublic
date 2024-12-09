@@ -14,8 +14,9 @@ import 'package:geneweb/utilities/color_row_parser.dart';
 ///
 /// Colors row is optional, but must be in row 2 if present.
 class TPMData {
-  static const _converter =
-      CsvToListConverter(csvSettingsDetector: FirstOccurrenceSettingsDetector(eols: ['\r\n', '\n']));
+  static const _converter = CsvToListConverter(
+      csvSettingsDetector:
+          FirstOccurrenceSettingsDetector(eols: ['\r\n', '\n']));
 
   final Map<String, Map<String, double?>> stages;
   final Map<String, Color> colors;

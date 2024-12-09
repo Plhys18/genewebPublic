@@ -9,7 +9,8 @@ class AnalysisOptionsSubtitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final analysisOptions = context.select<GeneModel, AnalysisOptions>((model) => model.analysisOptions);
+    final analysisOptions = context
+        .select<GeneModel, AnalysisOptions>((model) => model.analysisOptions);
     return Text(
         'Analyzing interval <${analysisOptions.min}; ${analysisOptions.max}> bp relative to ${(analysisOptions.alignMarker?.toUpperCase() ?? 'sequence start')}, bucket size ${analysisOptions.bucketSize} bp');
   }
@@ -73,9 +74,10 @@ class _AnalysisOptionsPanelState extends State<AnalysisOptionsPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final publicSite = context.select<GeneModel, bool>((model) => model.publicSite);
-    final markers =
-        context.select<GeneModel, List<String>>((model) => model.sourceGenes?.genes.first.markers.keys.toList() ?? []);
+    final publicSite =
+        context.select<GeneModel, bool>((model) => model.publicSite);
+    final markers = context.select<GeneModel, List<String>>(
+        (model) => model.sourceGenes?.genes.first.markers.keys.toList() ?? []);
     markers.sort();
     return Align(
       alignment: Alignment.topLeft,
@@ -93,8 +95,12 @@ class _AnalysisOptionsPanelState extends State<AnalysisOptionsPanel> {
                   width: 300,
                   child: DropdownButtonFormField<String?>(
                     items: [
-                      if (!publicSite) const DropdownMenuItem(value: null, child: Text('Sequence start')),
-                      for (final marker in markers) DropdownMenuItem(value: marker, child: Text(marker.toUpperCase())),
+                      if (!publicSite)
+                        const DropdownMenuItem(
+                            value: null, child: Text('Sequence start')),
+                      for (final marker in markers)
+                        DropdownMenuItem(
+                            value: marker, child: Text(marker.toUpperCase())),
                     ],
                     onChanged: (value) {
                       setState(() => _alignMarker = value);
@@ -102,7 +108,8 @@ class _AnalysisOptionsPanelState extends State<AnalysisOptionsPanel> {
                     },
                     value: _alignMarker,
                     decoration: const InputDecoration(
-                        labelText: 'Motif mapping', helperText: 'Motifs are mapped relative to TSS or ATG'),
+                        labelText: 'Motif mapping',
+                        helperText: 'Motifs are mapped relative to TSS or ATG'),
                   ),
                 ),
                 SizedBox(
@@ -111,15 +118,18 @@ class _AnalysisOptionsPanelState extends State<AnalysisOptionsPanel> {
                     controller: _minController,
                     decoration: InputDecoration(
                         labelText: 'Genomic interval Min [bp]',
-                        helperText: 'Relative to ${_alignMarker?.toUpperCase() ?? 'sequence start'}'),
+                        helperText:
+                            'Relative to ${_alignMarker?.toUpperCase() ?? 'sequence start'}'),
                     keyboardType: TextInputType.number,
                     onChanged: (value) {
-                      setState(() => _min = (int.tryParse(_minController.text) ?? 0));
+                      setState(() =>
+                          _min = (int.tryParse(_minController.text) ?? 0));
                       _handleChanged();
                     },
                     validator: (value) {
                       final parsed = int.tryParse(_minController.text);
-                      if (parsed == null || parsed >= _max) return 'Enter a number lower than $_max';
+                      if (parsed == null || parsed >= _max)
+                        return 'Enter a number lower than $_max';
                       return null;
                     },
                   ),
@@ -130,15 +140,18 @@ class _AnalysisOptionsPanelState extends State<AnalysisOptionsPanel> {
                     controller: _maxController,
                     decoration: InputDecoration(
                         labelText: 'Genomic interval Max [bp]',
-                        helperText: 'Relative to ${_alignMarker?.toUpperCase() ?? 'sequence start'}'),
+                        helperText:
+                            'Relative to ${_alignMarker?.toUpperCase() ?? 'sequence start'}'),
                     keyboardType: TextInputType.number,
                     onChanged: (value) {
-                      setState(() => _max = (int.tryParse(_maxController.text) ?? 0));
+                      setState(() =>
+                          _max = (int.tryParse(_maxController.text) ?? 0));
                       _handleChanged();
                     },
                     validator: (value) {
                       final parsed = int.tryParse(_maxController.text);
-                      if (parsed == null || parsed <= _min) return 'Enter a number greater than $_min';
+                      if (parsed == null || parsed <= _min)
+                        return 'Enter a number greater than $_min';
                       return null;
                     },
                   ),
@@ -153,12 +166,15 @@ class _AnalysisOptionsPanelState extends State<AnalysisOptionsPanel> {
                     ),
                     keyboardType: TextInputType.number,
                     onChanged: (value) {
-                      setState(() => _interval = (int.tryParse(_intervalController.text) ?? 1).clamp(1, 10000));
+                      setState(() => _interval =
+                          (int.tryParse(_intervalController.text) ?? 1)
+                              .clamp(1, 10000));
                       _handleChanged();
                     },
                     validator: (value) {
                       final parsed = int.tryParse(_intervalController.text);
-                      if (parsed == null || parsed < 1 || parsed > 10000) return 'Enter a number between 1 and 10000';
+                      if (parsed == null || parsed < 1 || parsed > 10000)
+                        return 'Enter a number between 1 and 10000';
                       return null;
                     },
                   ),
@@ -174,7 +190,11 @@ class _AnalysisOptionsPanelState extends State<AnalysisOptionsPanel> {
   void _handleChanged() {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      widget.onChanged(AnalysisOptions(min: _min, max: _max, bucketSize: _interval, alignMarker: _alignMarker));
+      widget.onChanged(AnalysisOptions(
+          min: _min,
+          max: _max,
+          bucketSize: _interval,
+          alignMarker: _alignMarker));
     }
   }
 }

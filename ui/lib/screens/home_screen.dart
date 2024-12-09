@@ -10,7 +10,8 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = context.select<GeneModel, String?>((model) => model.name);
-    final deploymentFlavor = context.select<GeneModel, DeploymentFlavor?>((model) => model.deploymentFlavor);
+    final deploymentFlavor = context.select<GeneModel, DeploymentFlavor?>(
+        (model) => model.deploymentFlavor);
     final public = context.select<GeneModel, bool>((model) => model.publicSite);
     return Scaffold(
       appBar: AppBar(
@@ -31,7 +32,8 @@ class HomeScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text('Gene regulatory elements', style: Theme.of(context).textTheme.titleMedium),
+                    Text('Gene regulatory elements',
+                        style: Theme.of(context).textTheme.titleMedium),
                   ],
                 ),
               ),
@@ -39,11 +41,14 @@ class HomeScreen extends StatelessWidget {
             Expanded(
                 child: Align(
                     alignment: Alignment.center,
-                    child: Text(name ?? '', style: const TextStyle(fontStyle: FontStyle.italic)))),
+                    child: Text(name ?? '',
+                        style: const TextStyle(fontStyle: FontStyle.italic)))),
             Expanded(
               child: Align(
                 alignment: Alignment.centerRight,
-                child: !public ? const Text('private web') : const SizedBox.shrink(),
+                child: !public
+                    ? const Text('private web')
+                    : const SizedBox.shrink(),
               ),
             ),
           ],
@@ -53,7 +58,9 @@ class HomeScreen extends StatelessWidget {
             ? null
             : <Widget>[
                 IconButton(
-                  icon: public ? const Icon(Icons.lock_open) : const Icon(Icons.lock),
+                  icon: public
+                      ? const Icon(Icons.lock_open)
+                      : const Icon(Icons.lock),
                   onPressed: () => GeneModel.of(context).setPublicSite(!public),
                 ),
               ],

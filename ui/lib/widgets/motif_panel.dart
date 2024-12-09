@@ -12,15 +12,20 @@ class MotifSubtitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final motifs = context.select<GeneModel, List<Motif>>((model) => model.motifs);
-    final expectedResults = context.select<GeneModel, int>((model) => model.expectedSeriesCount);
+    final motifs =
+        context.select<GeneModel, List<Motif>>((model) => model.motifs);
+    final expectedResults =
+        context.select<GeneModel, int>((model) => model.expectedSeriesCount);
     if (expectedResults > 60 && motifs.length > 5) {
-      return Text('Analysis would result in $expectedResults series, reduce the number of selected motifs');
+      return Text(
+          'Analysis would result in $expectedResults series, reduce the number of selected motifs');
     }
     return motifs.isEmpty
         ? const Text('Choose motifs to analyze or enter a custom motif')
         : motifs.length == 1
-            ? Text(truncate('${motifs.first.name} (${motifs.first.definitions.join(', ')})', 100))
+            ? Text(truncate(
+                '${motifs.first.name} (${motifs.first.definitions.join(', ')})',
+                100))
             : Text('${motifs.length} motifs');
   }
 }
@@ -57,14 +62,22 @@ class _MotifPanelState extends State<MotifPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final sourceGenes = context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
-    if (sourceGenes == null) return const Center(child: Text('Load source data first'));
-    final publicSite = context.select<GeneModel, bool>((model) => model.publicSite);
-    final motifs = context.select<GeneModel, List<Motif>>((model) => model.motifs);
+    final sourceGenes =
+        context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
+    if (sourceGenes == null)
+      return const Center(child: Text('Load source data first'));
+    final publicSite =
+        context.select<GeneModel, bool>((model) => model.publicSite);
+    final motifs =
+        context.select<GeneModel, List<Motif>>((model) => model.motifs);
+
     final customMotifs = motifs.where((m) => m.isCustom).toList();
 
-    final presets = List.of(MotifPresets.presets).where((e) => e.isPublic || !publicSite).toList();
+    final presets = List.of(MotifPresets.presets)
+        .where((e) => e.isPublic || !publicSite)
+        .toList();
 
+    _model.setAllMotifs = [...customMotifs, ...presets];
     return Align(
       alignment: Alignment.topLeft,
       child: Form(
@@ -85,13 +98,17 @@ class _MotifPanelState extends State<MotifPanel> {
                       onToggle: (bool value) => _handlePresetToggled(m, value),
                       isSelected: true,
                     )),
-                if (!_showEditor) TextButton(onPressed: _handleOpenEditor, child: const Text('Add custom motif…'))
+                if (!_showEditor)
+                  TextButton(
+                      onPressed: _handleOpenEditor,
+                      child: const Text('Add custom motif…'))
               ],
             ),
             if (_showEditor) ...[
               _buildMotifEditor(),
               const SizedBox(height: 16),
-              Text('R = AG, Y = CT, W = AT, S = GC, M = AC, K = GT, B = CGT, D = AGT, H = ACT, V = ACG, N = ACGT',
+              Text(
+                  'R = AG, Y = CT, W = AT, S = GC, M = AC, K = GT, B = CGT, D = AGT, H = ACT, V = ACG, N = ACGT',
                   style: Theme.of(context).textTheme.labelMedium!),
               const SizedBox(height: 16),
             ],
@@ -161,7 +178,8 @@ class _MotifPanelState extends State<MotifPanel> {
             maxLines: null,
             readOnly: true,
             enabled: false,
-            decoration: const InputDecoration(labelText: "Reverse complements (read only)"),
+            decoration: const InputDecoration(
+                labelText: "Reverse complements (read only)"),
           ),
         ),
         ElevatedButton(onPressed: _handleAddMotif, child: const Text('ADD')),
@@ -173,8 +191,9 @@ class _MotifPanelState extends State<MotifPanel> {
     final error = _validateMotifDefinition(_customMotifDefinition);
     setState(() => _customMotifError = error);
     if (error == null) {
-      final motif =
-          Motif(name: _customMotifName ?? 'Unnamed motif', definitions: _getDefinitions(_customMotifDefinition!));
+      final motif = Motif(
+          name: _customMotifName ?? 'Unnamed motif',
+          definitions: _getDefinitions(_customMotifDefinition!));
       _reverseComplementsController.text = motif.reverseDefinitions.join('\n');
     } else {
       _reverseComplementsController.text = '';
@@ -182,7 +201,12 @@ class _MotifPanelState extends State<MotifPanel> {
   }
 
   List<String> _getDefinitions(String raw) {
-    return raw.toUpperCase().split('\n').map((line) => line.trim()).where((line) => line.isNotEmpty).toList();
+    return raw
+        .toUpperCase()
+        .split('\n')
+        .map((line) => line.trim())
+        .where((line) => line.isNotEmpty)
+        .toList();
   }
 
   String? _validateMotifDefinition(String? value) {
@@ -213,8 +237,10 @@ class _MotifPanelState extends State<MotifPanel> {
   void _handleAddMotif() {
     if (_formKey.currentState!.validate()) {
       final definitions = _customMotifDefinition!.toUpperCase().split('\n');
-      final name = (_customMotifName ?? '') != '' ? _customMotifName : definitions.first;
-      final motif = Motif(name: name!, definitions: definitions, isCustom: true);
+      final name =
+          (_customMotifName ?? '') != '' ? _customMotifName : definitions.first;
+      final motif =
+          Motif(name: name!, definitions: definitions, isCustom: true);
       _model.setMotifs([motif, ..._model.motifs]);
     }
     setState(() => _showEditor = false);
@@ -225,7 +251,8 @@ class _MotifCard extends StatelessWidget {
   final Motif motif;
   final Function(bool value) onToggle;
   final bool isSelected;
-  const _MotifCard({required this.motif, required this.onToggle, required this.isSelected});
+  const _MotifCard(
+      {required this.motif, required this.onToggle, required this.isSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -244,16 +271,21 @@ class _MotifCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Checkbox(value: isSelected, onChanged: (value) => onToggle(value!)),
+                    Checkbox(
+                        value: isSelected,
+                        onChanged: (value) => onToggle(value!)),
                     Expanded(
                         child: FittedBox(
                             fit: BoxFit.scaleDown,
                             alignment: Alignment.centerLeft,
-                            child: Text(truncate(motif.name, 20), style: textTheme.titleSmall))),
+                            child: Text(truncate(motif.name, 20),
+                                style: textTheme.titleSmall))),
                   ],
                 ),
                 const SizedBox(height: 8),
-                FittedBox(child: Text(truncate(motif.definitions.join(', '), 25), style: textTheme.labelSmall)),
+                FittedBox(
+                    child: Text(truncate(motif.definitions.join(', '), 25),
+                        style: textTheme.labelSmall)),
               ],
             ),
           ),

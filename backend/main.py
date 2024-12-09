@@ -18,8 +18,8 @@ app.include_router(organism.router, prefix="/api/organism")
 app.include_router(organism.router, prefix="/api/species")
 app.include_router(organism.router, prefix="/api/motifs")
 
-app.include_router(user.router, prefix="/api/user")
-app.include_router(auth.router, prefix="/api/auth")
+# app.include_router(user.router, prefix="/api/user")
+# app.include_router(auth.router, prefix="/api/auth")
 
 @app.get("/")
 async def root():

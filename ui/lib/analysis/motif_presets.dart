@@ -22,7 +22,15 @@ class MotifPresets {
     Motif(
       name: 'Arabidopsis.telobox',
       isPublic: false,
-      definitions: ['CCCTAAAC', 'CCTAAACC', 'CTAAACCC', 'TAAACCCT', 'AAACCCTA', 'AACCCTAA', 'ACCCTAAA'],
+      definitions: [
+        'CCCTAAAC',
+        'CCTAAACC',
+        'CTAAACCC',
+        'TAAACCCT',
+        'AAACCCTA',
+        'AACCCTAA',
+        'ACCCTAAA'
+      ],
     ),
     Motif(
       name: 'Arabidopsis.telobox.generic',

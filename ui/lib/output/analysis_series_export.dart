@@ -8,11 +8,13 @@ class AnalysisSeriesExport {
   AnalysisSeriesExport(this.series);
 
   /// Exports the series to Excel
-  Future<List<int>?> toExcel(String fileName, Function(double progress) progressCallback) async {
+  Future<List<int>?> toExcel(
+      String fileName, Function(double progress) progressCallback) async {
     assert(series.geneList.genes.isNotEmpty);
     var excel = Excel.createExcel();
     final originalSheets = excel.sheets.keys;
-    final headerCellStyle = CellStyle(backgroundColorHex: ExcelColor.fromHexString('FFDDFFDD'), bold: true);
+    final headerCellStyle = CellStyle(
+        backgroundColorHex: ExcelColor.fromHexString('FFDDFFDD'), bold: true);
 
     // selected_genes sheet
     Sheet genesSheet = excel['selected_genes'];
@@ -43,20 +45,27 @@ class AnalysisSeriesExport {
     }
     // style the header and first two columns
     for (int i = 0; i < genesSheet.maxColumns; i++) {
-      genesSheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0)).cellStyle = headerCellStyle;
+      genesSheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0))
+          .cellStyle = headerCellStyle;
     }
     for (int i = 0; i < genesSheet.maxRows; i++) {
       if (i % 1000 == 0) {
         progressCallback(0.5 + i / genesSheet.maxRows * 0.1);
         await Future.delayed(const Duration(milliseconds: 20));
       }
-      genesSheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: i)).cellStyle = headerCellStyle;
-      genesSheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: i)).cellStyle = headerCellStyle;
+      genesSheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: i))
+          .cellStyle = headerCellStyle;
+      genesSheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: i))
+          .cellStyle = headerCellStyle;
     }
 
     // distribution sheet
     Sheet distributionSheet = excel['distribution'];
-    distributionSheet.appendRow([TextCellValue('Interval'), TextCellValue('Genes with motif')]);
+    distributionSheet.appendRow(
+        [TextCellValue('Interval'), TextCellValue('Genes with motif')]);
     int i = 0;
     final datapoints = series.distribution!.dataPoints!;
     for (final dataPoint in datapoints) {
@@ -70,14 +79,18 @@ class AnalysisSeriesExport {
       ]);
     }
     for (int i = 0; i < distributionSheet.maxColumns; i++) {
-      distributionSheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0)).cellStyle = headerCellStyle;
+      distributionSheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0))
+          .cellStyle = headerCellStyle;
     }
     for (int i = 0; i < distributionSheet.maxRows; i++) {
       if (i % 100 == 0) {
         progressCallback(0.9 + i / distributionSheet.maxRows * 0.1);
         await Future.delayed(const Duration(milliseconds: 20));
       }
-      distributionSheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: i)).cellStyle = headerCellStyle;
+      distributionSheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: i))
+          .cellStyle = headerCellStyle;
     }
 
     for (var element in originalSheets) {

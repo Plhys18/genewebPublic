@@ -25,7 +25,8 @@ class StageSelection {
 
   @override
   String toString() {
-    if (strategy == null || selection == null) return '${selectedStages.length} stages';
+    if (strategy == null || selection == null)
+      return '${selectedStages.length} stages';
     return '${selectedStages.length} stages: ${strategy!.name} ${selection == FilterSelection.fixed ? count : '${(percentile! * 100).round()}th'}';
   }
 }

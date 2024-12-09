@@ -48,7 +48,8 @@ class GeneList extends Equatable {
   /// Parse fasta file into list of genes.
   ///
   /// Feed the result to [GeneList.fromList]
-  static Future<(List<Gene>, List<dynamic>)> parseFasta(String data, Function(double progress) progressCallback) async {
+  static Future<(List<Gene>, List<dynamic>)> parseFasta(
+      String data, Function(double progress) progressCallback) async {
     final chunks = data.split('>');
     final genes = <Gene>[];
     final errors = <dynamic>[];
@@ -70,7 +71,8 @@ class GeneList extends Equatable {
         errors.add(error);
       }
     }
-    debugPrint('.fasta parsing completed with ${genes.length} genes and ${errors.length} errors');
+    debugPrint(
+        '.fasta parsing completed with ${genes.length} genes and ${errors.length} errors');
     return (genes, errors);
   }
 
@@ -78,7 +80,9 @@ class GeneList extends Equatable {
   ///
   /// Feed the result to [GeneList.fromList]
   static Future<(List<Gene>, List<dynamic>)> takeSingleTranscript(
-      List<Gene> genes, List<dynamic> errors, Function(double progress) progressCallback) async {
+      List<Gene> genes,
+      List<dynamic> errors,
+      Function(double progress) progressCallback) async {
     Map<String, List<String>> keys = {};
 
     for (final gene in genes) {
@@ -98,14 +102,18 @@ class GeneList extends Equatable {
       final first = keys[key]!.first;
       merged.add(genes.firstWhere((gene) => gene.geneId == first));
     }
-    debugPrint('.fasta transcript filtering completed with ${merged.length} genes and ${errors.length} errors');
+    debugPrint(
+        '.fasta transcript filtering completed with ${merged.length} genes and ${errors.length} errors');
     return (merged, errors);
   }
 
   /// Create a new GeneList from list of genes.
   ///
   /// Obtain the list by calling [parseFasta]
-  factory GeneList.fromList({required List<Gene> genes, required List<dynamic> errors, Organism? organism}) {
+  factory GeneList.fromList(
+      {required List<Gene> genes,
+      required List<dynamic> errors,
+      Organism? organism}) {
     GeneList result;
     result = GeneList._(
       organism: organism,
@@ -114,7 +122,8 @@ class GeneList extends Equatable {
       stages: null,
       colors: null,
     );
-    debugPrint('.fasta analysis completed with ${result.genes.length} genes and ${result.errors.length} errors');
+    debugPrint(
+        '.fasta analysis completed with ${result.genes.length} genes and ${result.errors.length} errors');
     return result;
   }
 
@@ -139,7 +148,9 @@ class GeneList extends Equatable {
   /// Uses [stages] or [transcriptionRates]
   /// Returns stages ordered by developments stage for known organisms
   List<String> get stageKeys {
-    final detected = stages != null ? stages!.keys.toList() : transcriptionRates.keys.toList();
+    final detected = stages != null
+        ? stages!.keys.toList()
+        : transcriptionRates.keys.toList();
     final List<String> result = [];
     if (organism?.stages.isNotEmpty == true) {
       for (final stage in organism!.stages) {
@@ -162,27 +173,36 @@ class GeneList extends Equatable {
   List<String> get defaultSelectedStageKeys {
     final keys = stageKeys;
     if (organism?.stages.isNotEmpty == true) {
-      return organism!.stages.where((s) => s.isCheckedByDefault && keys.contains(s.stage)).map((s) => s.stage).toList();
+      return organism!.stages
+          .where((s) => s.isCheckedByDefault && keys.contains(s.stage))
+          .map((s) => s.stage)
+          .toList();
     }
     return keys;
   }
 
   /// Filters gene for given [stage]. Either uses [stages] or applies [stageSelection], if specified
-  GeneList filter({required String stage, required StageSelection stageSelection}) {
+  GeneList filter(
+      {required String stage, required StageSelection stageSelection}) {
     assert(stageKeys.contains(stage), 'Unknown stage $stage');
     if (stages != null) {
-      assert(stages![stage] != null && stages![stage]!.isNotEmpty, 'No genes for stage $stage');
+      assert(stages![stage] != null && stages![stage]!.isNotEmpty,
+          'No genes for stage $stage');
       final ids = stages![stage]!;
-      return copyWith(genes: genes.where((gene) => ids.contains(gene.geneId)).toList());
+      return copyWith(
+          genes: genes.where((gene) => ids.contains(gene.geneId)).toList());
     }
 
     assert(stageSelection.selectedStages.contains(stage));
-    genes.sort((a, b) => a.transcriptionRates[stage]!.compareTo(b.transcriptionRates[stage]!));
+    genes.sort((a, b) =>
+        a.transcriptionRates[stage]!.compareTo(b.transcriptionRates[stage]!));
     if (stageSelection.selection == FilterSelection.percentile) {
       if (stageSelection.strategy == FilterStrategy.top) {
-        return copyWith(genes: _topPercentile(stageSelection.percentile!, stage));
+        return copyWith(
+            genes: _topPercentile(stageSelection.percentile!, stage));
       } else {
-        return copyWith(genes: _bottomPercentile(stageSelection.percentile!, stage));
+        return copyWith(
+            genes: _bottomPercentile(stageSelection.percentile!, stage));
       }
     } else {
       if (stageSelection.strategy == FilterStrategy.top) {
@@ -220,8 +240,8 @@ class GeneList extends Equatable {
   }
 
   List<Gene> _topPercentile(double percentile, String transcriptionKey) {
-    final totalRate =
-        transcriptionRates[transcriptionKey]!.sum + 0.0001; // correction fo floating point operations error
+    final totalRate = transcriptionRates[transcriptionKey]!.sum +
+        0.0001; // correction fo floating point operations error
     final list = genes.reversed.toList();
     var rate = 0.0;
     var i = 0;
@@ -242,8 +262,8 @@ class GeneList extends Equatable {
   }
 
   List<Gene> _bottomPercentile(double percentile, String transcriptionKey) {
-    final totalRate =
-        transcriptionRates[transcriptionKey]!.sum + 0.0001; // correction fo floating point operations error;
+    final totalRate = transcriptionRates[transcriptionKey]!.sum +
+        0.0001; // correction fo floating point operations error;
     final list = genes;
     var rate = 0.0;
     var i = 0;

@@ -27,11 +27,15 @@ class TPMSummaryGenerator {
     // Content
     for (final gene in gff.genes) {
       // Ignore genes with validation errors
-      if (gene.errors == null) StateError('Validation must be run before generating fasta file');
-      if (gene.errors!.any((e) => e.type == ValidationErrorType.redundantTranscript)) continue;
+      if (gene.errors == null)
+        StateError('Validation must be run before generating fasta file');
+      if (gene.errors!
+          .any((e) => e.type == ValidationErrorType.redundantTranscript))
+        continue;
 
       final geneTpm = [
-        for (final tpmKey in tpm.keys) _formatTpm(tpm[tpmKey]?.get(gene).firstOrNull?.avg),
+        for (final tpmKey in tpm.keys)
+          _formatTpm(tpm[tpmKey]?.get(gene).firstOrNull?.avg),
       ];
 
       // if (geneTpm.any((e) => e == '')) {

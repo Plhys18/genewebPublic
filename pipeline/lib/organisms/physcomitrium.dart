@@ -6,7 +6,9 @@ class Physcomitrium extends BaseOrganism {
   @override
   String? stageNameFromTpmFilePath(String path) {
     final filename = path.split('/').last;
-    final key = RegExp(r'^([0-9A-Z]+\.)?\s*Physcomitrium_([^.]*)').firstMatch(filename)?.group(2);
+    final key = RegExp(r'^([0-9A-Z]+\.)?\s*Physcomitrium_([^.]*)')
+        .firstMatch(filename)
+        ?.group(2);
     return key;
   }
 }

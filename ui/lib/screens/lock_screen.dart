@@ -64,7 +64,9 @@ class __LockState extends State<_Lock> {
               ),
             ),
             const SizedBox(height: 20),
-            IconButton.filled(onPressed: _handleSubmit, icon: const Icon(Icons.arrow_forward)),
+            IconButton.filled(
+                onPressed: _handleSubmit,
+                icon: const Icon(Icons.arrow_forward)),
           ],
         ),
       ),
@@ -75,7 +77,7 @@ class __LockState extends State<_Lock> {
     // final password = _controller.text.trim();
     // final md5Hash = md5.convert(utf8.encode(password)).toString();
     // if (md5Hash == 'c36db9789b1401a805d8bb72ba70a3bc') {
-      GeneModel.of(context).isSignedIn = true;
+    GeneModel.of(context).isSignedIn = true;
     // } else {
     //   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Incorrect password')));
     // }

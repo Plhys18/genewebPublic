@@ -69,8 +69,10 @@ class Distribution {
   void run(List<AnalysisResult> results, int totalGenesCount) {
     Map<int, int> counts = {};
     Map<int, Set<String>> geneCounts = {};
+
     for (final result in results) {
-      final position = result.position - (alignMarker != null ? result.gene.markers[alignMarker]! : 0);
+      final position = result.position -
+          (alignMarker != null ? result.gene.markers[alignMarker]! : 0);
       if (position < min || position > max) {
         continue;
       }
@@ -87,7 +89,8 @@ class Distribution {
     };
     _totalCount = results.length;
     _totalGenesCount = totalGenesCount;
-    _totalGenesWithMotifCount = results.map((result) => result.gene.geneId).toSet().length;
+    _totalGenesWithMotifCount =
+        results.map((result) => result.gene.geneId).toSet().length;
   }
 }
 

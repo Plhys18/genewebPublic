@@ -5,14 +5,12 @@ from fastapi import HTTPException
 
 async def download_and_unarchive(filename: str):
     try:
-        # Download the file from the server
         url = f"https://golem-dev.ncbr.muni.cz/datasets/{filename}"
         response = requests.get(url)
 
         if response.status_code != 200:
             raise HTTPException(status_code=404, detail="File not found")
 
-        # Decompress (unzip) the file
         with zipfile.ZipFile(io.BytesIO(response.content)) as z:
             fasta_content = None
             for file_info in z.infolist():
@@ -25,7 +23,6 @@ async def download_and_unarchive(filename: str):
             if not fasta_content:
                 raise HTTPException(status_code=400, detail="No .fasta file found in archive.")
 
-        # Return the decompressed content
         return {
             "fasta_content": fasta_content
         }

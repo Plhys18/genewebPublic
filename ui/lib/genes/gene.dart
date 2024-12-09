@@ -30,9 +30,11 @@ class Gene {
         header = line;
         geneId = geneIdRegExp.firstMatch(line)?.namedGroup('gene');
       } else if (line[0] == ';') {
-        final transcriptionRatesJson = transcriptionRatesRegExp.firstMatch(line)?.namedGroup('json');
+        final transcriptionRatesJson =
+            transcriptionRatesRegExp.firstMatch(line)?.namedGroup('json');
         if (transcriptionRatesJson != null) {
-          transcriptionRates = Map<String, num>.from(jsonDecode(transcriptionRatesJson));
+          transcriptionRates =
+              Map<String, num>.from(jsonDecode(transcriptionRatesJson));
         }
         final markersJson = markersRegExp.firstMatch(line)?.namedGroup('json');
         if (markersJson != null) {
@@ -51,7 +53,8 @@ class Gene {
     if (atg != null) {
       final codon = sequence.substring(atg - 1, atg - 1 + 3);
       if (codon != 'ATG' && codon != 'CAT') {
-        throw StateError('$geneId: Expected `ATG`/`CAT` at ATG position of $atg, got `$codon` instead.');
+        throw StateError(
+            '$geneId: Expected `ATG`/`CAT` at ATG position of $atg, got `$codon` instead.');
       }
     }
     return Gene._(
@@ -66,7 +69,8 @@ class Gene {
 
   static final geneIdRegExp = RegExp(r"(?<gene>[A-Za-z0-9+_\.]+)");
   static final markersRegExp = RegExp(r";MARKERS (?<json>\{.*\})$");
-  static final transcriptionRatesRegExp = RegExp(r";TRANSCRIPTION_RATES (?<json>\{.*\})$");
+  static final transcriptionRatesRegExp =
+      RegExp(r";TRANSCRIPTION_RATES (?<json>\{.*\})$");
 
   /// Raw nucleotides data
   final String data;

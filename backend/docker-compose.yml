@@ -8,4 +8,4 @@ services:
   ui:
     build: ./ui
     ports:
-      - "3000:3000"  # Replace with the port for your Flutter web build
+      - "3002:3002"  # Replace with the port for your Flutter web build

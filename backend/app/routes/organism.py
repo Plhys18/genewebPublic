@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from app.models.organism_model import OrganismRequest
@@ -22,8 +23,9 @@ async def process_organism(request: OrganismRequest):
 
 @router.get("/get/species")
 async def get_species(name: Optional[str] = None):
-    names_list = []
+    logging.info(f"Backend received request to get species: {name}")
     if name:
         names_list = [name]
     else:
         names_list = OrganismService.get_species()
+    return DatabaseServices.getSpecies(names_list)

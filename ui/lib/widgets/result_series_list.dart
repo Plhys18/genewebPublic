@@ -19,9 +19,11 @@ class _ResultSeriesListState extends State<ResultSeriesList> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final analyses = context.select<GeneModel, List<AnalysisSeries>>((model) => model.analyses);
+    final analyses = context
+        .select<GeneModel, List<AnalysisSeries>>((model) => model.analyses);
     return ReorderableListView(
-      onReorder: (oldIndex, newIndex) => _handleReorder(context, oldIndex, newIndex),
+      onReorder: (oldIndex, newIndex) =>
+          _handleReorder(context, oldIndex, newIndex),
       children: [
         for (final analysis in analyses)
           ListTile(
@@ -73,7 +75,10 @@ class _ResultSeriesListState extends State<ResultSeriesList> {
     final model = GeneModel.of(context);
     model.setAnalyses([
       for (final a in model.analyses)
-        if (a.name == analysis.name) analysis.copyWith(visible: !analysis.visible) else a
+        if (a.name == analysis.name)
+          analysis.copyWith(visible: !analysis.visible)
+        else
+          a
     ]);
   }
 }

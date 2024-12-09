@@ -41,10 +41,12 @@ class OrganismPresets {
     StageAndColor('C_Seedlings_10d', const Color(0xffC6E0B4)),
     StageAndColor('C_Egg_cell', const Color(0xff607D8B)),
 
-    StageAndColor('L_EarlyPollen', const Color(0xffB71C1C), isCheckedByDefault: false),
+    StageAndColor('L_EarlyPollen', const Color(0xffB71C1C),
+        isCheckedByDefault: false),
     StageAndColor('L_UNM', const Color(0xffFF6D6D), isCheckedByDefault: false),
     StageAndColor('L_BCP', const Color(0xffC80002), isCheckedByDefault: false),
-    StageAndColor('L_LatePollen', const Color(0xff0D47A1), isCheckedByDefault: false),
+    StageAndColor('L_LatePollen', const Color(0xff0D47A1),
+        isCheckedByDefault: false),
     StageAndColor('L_TCP', const Color(0xff21C5FF), isCheckedByDefault: false),
     StageAndColor('L_MPG', const Color(0xff305496), isCheckedByDefault: false),
 
@@ -72,12 +74,16 @@ class OrganismPresets {
   ];
 
   static Organism organismByFileName(String filename) {
-    final preset = kOrganisms.firstWhereOrNull((element) => element.filename?.startsWith(filename) == true);
+    final preset = kOrganisms.firstWhereOrNull(
+        (element) => element.filename?.startsWith(filename) == true);
     if (preset != null) {
       return preset;
     }
-    final name =
-        RegExp(r'([A-Za-z0-9_]+).*').firstMatch(filename)?.group(1)?.replaceAll('_', ' ') ?? 'Unknown organism';
+    final name = RegExp(r'([A-Za-z0-9_]+).*')
+            .firstMatch(filename)
+            ?.group(1)
+            ?.replaceAll('_', ' ') ??
+        'Unknown organism';
     return Organism(name: name, filename: filename);
   }
 

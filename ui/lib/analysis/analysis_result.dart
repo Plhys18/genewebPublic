@@ -24,7 +24,8 @@ class AnalysisResult {
   /// returns a broader matched sequence
   String get broadMatch {
     final safeSequence = '          ${gene.data}          ';
-    return safeSequence.substring(rawPosition.toInt() + 2, rawPosition.toInt() + match.length + 18);
+    return safeSequence.substring(
+        rawPosition.toInt() + 2, rawPosition.toInt() + match.length + 18);
   }
 
   AnalysisResult({

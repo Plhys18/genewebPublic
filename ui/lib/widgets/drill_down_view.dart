@@ -37,7 +37,9 @@ class _DrillDownViewState extends State<DrillDownView> {
 
   Future<void> _update([String? pattern]) async {
     setState(() => _running = true);
-    final analysis = GeneModel.of(context).analyses.firstWhereOrNull((a) => a.name == widget.name);
+    final analysis = GeneModel.of(context)
+        .analyses
+        .firstWhereOrNull((a) => a.name == widget.name);
     final results = await compute(runDrillDown, {
       'analysis': analysis,
       'pattern': pattern,
@@ -50,7 +52,8 @@ class _DrillDownViewState extends State<DrillDownView> {
 
   @override
   Widget build(BuildContext context) {
-    if (_results == null) return const Center(child: CircularProgressIndicator());
+    if (_results == null)
+      return const Center(child: CircularProgressIndicator());
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -58,7 +61,9 @@ class _DrillDownViewState extends State<DrillDownView> {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             TextButton(
-              onPressed: _running || patterns.isEmpty ? null : () => _handleBreadCrumb(null),
+              onPressed: _running || patterns.isEmpty
+                  ? null
+                  : () => _handleBreadCrumb(null),
               child: const Text('Motif drill down'),
             ),
             for (final pattern in patterns) ...[
@@ -78,7 +83,8 @@ class _DrillDownViewState extends State<DrillDownView> {
                         itemBuilder: _itemBuilder,
                         itemCount: _results?.length ?? 0,
                       )
-                    : const Text('Selected pattern cannot be drilled down any further')),
+                    : const Text(
+                        'Selected pattern cannot be drilled down any further')),
       ],
     );
   }
@@ -87,12 +93,15 @@ class _DrillDownViewState extends State<DrillDownView> {
     return ListTile(
       dense: true,
       title: Text(_results![index].pattern),
-      subtitle: _results![index].share != null && _results![index].shareOfAll != null
+      subtitle: _results![index].share != null &&
+              _results![index].shareOfAll != null
           ? Text(
               'matches ${(_results![index].share! * 100).round()}% of selection, (${(_results![index].shareOfAll! * 100).round()}% of all results)')
           : null,
       trailing: Text(_results![index].count.toString()),
-      onTap: _running ? null : () => _handleDrillDownDeeper(_results![index].pattern),
+      onTap: _running
+          ? null
+          : () => _handleDrillDownDeeper(_results![index].pattern),
     );
   }
 

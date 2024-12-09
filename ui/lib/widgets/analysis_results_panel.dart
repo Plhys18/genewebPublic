@@ -39,10 +39,14 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
 
   double? _exportProgress;
 
-  late final _verticalAxisMinController = TextEditingController()..addListener(_axisListener);
-  late final _verticalAxisMaxController = TextEditingController()..addListener(_axisListener);
-  late final _horizontalAxisMinController = TextEditingController()..addListener(_axisListener);
-  late final _horizontalAxisMaxController = TextEditingController()..addListener(_axisListener);
+  late final _verticalAxisMinController = TextEditingController()
+    ..addListener(_axisListener);
+  late final _verticalAxisMaxController = TextEditingController()
+    ..addListener(_axisListener);
+  late final _horizontalAxisMinController = TextEditingController()
+    ..addListener(_axisListener);
+  late final _horizontalAxisMaxController = TextEditingController()
+    ..addListener(_axisListener);
 
   @override
   void dispose() {
@@ -55,17 +59,25 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final sourceGenes = context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
-    final motifs = context.select<GeneModel, List<Motif>>((model) => model.motifs);
-    final filter = context.select<GeneModel, StageSelection?>((model) => model.stageSelection);
-    final analyses = context.select<GeneModel, List<AnalysisSeries>>((model) => model.analyses);
-    final visibleAnalyses =
-        context.select<GeneModel, List<AnalysisSeries>>((model) => model.analyses.where((a) => a.visible).toList());
-    final analysisProgress = context.select<GeneModel, double?>((model) => model.analysisProgress);
-    final analysisCancelled = context.select<GeneModel, bool>((model) => model.analysisCancelled);
-    final expectedResults = context.select<GeneModel, int>((model) => model.expectedSeriesCount);
-    final analysis = context.select<GeneModel, AnalysisSeries?>(
-        (model) => model.analyses.firstWhereOrNull((a) => a.name == _selectedAnalysisName));
+    final sourceGenes =
+        context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
+    final motifs =
+        context.select<GeneModel, List<Motif>>((model) => model.motifs);
+    final filter = context
+        .select<GeneModel, StageSelection?>((model) => model.stageSelection);
+    final analyses = context
+        .select<GeneModel, List<AnalysisSeries>>((model) => model.analyses);
+    final visibleAnalyses = context.select<GeneModel, List<AnalysisSeries>>(
+        (model) => model.analyses.where((a) => a.visible).toList());
+    final analysisProgress =
+        context.select<GeneModel, double?>((model) => model.analysisProgress);
+    final analysisCancelled =
+        context.select<GeneModel, bool>((model) => model.analysisCancelled);
+    final expectedResults =
+        context.select<GeneModel, int>((model) => model.expectedSeriesCount);
+    final analysis = context.select<GeneModel, AnalysisSeries?>((model) => model
+        .analyses
+        .firstWhereOrNull((a) => a.name == _selectedAnalysisName));
     final canAnalyzeErrors = [
       if (sourceGenes == null) 'no source genes selected',
       if (motifs.isEmpty) 'no motifs selected',
@@ -80,19 +92,23 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (canAnalyzeErrors.isNotEmpty) ...[
-            Text('Analysis cannot be run: ${canAnalyzeErrors.join(', ')}', style: TextStyle(color: colorScheme.error)),
+            Text('Analysis cannot be run: ${canAnalyzeErrors.join(', ')}',
+                style: TextStyle(color: colorScheme.error)),
             const SizedBox(height: 16),
           ],
           if (analysisProgress != null) ...[
             const SizedBox(height: 16),
             Column(
               children: [
-                Text('Analysis in progress… (${(analysisProgress * 100).round()}% complete)',
+                Text(
+                    'Analysis in progress… (${(analysisProgress * 100).round()}% complete)',
                     style: textTheme.bodySmall),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Expanded(child: LinearProgressIndicator(value: analysisProgress)),
+                    Expanded(
+                        child:
+                            LinearProgressIndicator(value: analysisProgress)),
                     IconButton(
                       onPressed: analysisCancelled ? null : _handleStopAnalysis,
                       tooltip: 'Stop analysis',
@@ -106,7 +122,8 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
           ],
           if (analyses.isEmpty && analysisProgress == null) ...[
             const SizedBox(height: 16),
-            ElevatedButton(onPressed: _handleAnalyze, child: const Text('Run Analysis')),
+            ElevatedButton(
+                onPressed: _handleAnalyze, child: const Text('Run Analysis')),
             const SizedBox(height: 16),
             if (expectedResults > 20) ...[
               Text(
@@ -131,9 +148,12 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
                         _ExportIndicator(exportProgress: _exportProgress)
                       else
                         TextButton(
-                            onPressed: () => _handleExportSingleSeries(analysis),
+                            onPressed: () =>
+                                _handleExportSingleSeries(analysis),
                             child: const Text('Export this series')),
-                      TextButton(onPressed: () => _handleAnalysisSelected(null), child: const Text('Deselect')),
+                      TextButton(
+                          onPressed: () => _handleAnalysisSelected(null),
+                          child: const Text('Deselect')),
                     ],
                   )
                 else
@@ -145,11 +165,16 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
                           _ExportIndicator(exportProgress: _exportProgress)
                         else
                           TextButton(
-                              onPressed: analysisProgress == null ? () => _handleExportAllSeries(context) : null,
-                              child: Text('Export ${visibleAnalyses.length} series')),
+                              onPressed: analysisProgress == null
+                                  ? () => _handleExportAllSeries(context)
+                                  : null,
+                              child: Text(
+                                  'Export ${visibleAnalyses.length} series')),
                     ],
                   ),
-                TextButton(onPressed: _handleResetAnalyses, child: const Text('Close analysis')),
+                TextButton(
+                    onPressed: _handleResetAnalyses,
+                    child: const Text('Close analysis')),
               ],
             ),
           if (analyses.isNotEmpty) ...[
@@ -162,14 +187,72 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
   }
 
   Widget _buildResults(BuildContext context) {
-    final analyses = context.select<GeneModel, List<AnalysisSeries>>((model) => model.analyses);
+    final analyses = context
+        .select<GeneModel, List<AnalysisSeries>>((model) => model.analyses);
     assert(analyses.isNotEmpty);
-    final analysis = context.select<GeneModel, AnalysisSeries?>(
-        (model) => model.analyses.firstWhereOrNull((a) => a.name == _selectedAnalysisName));
+    final analysis = context.select<GeneModel, AnalysisSeries?>((model) => model
+        .analyses
+        .firstWhereOrNull((a) => a.name == _selectedAnalysisName));
+
+    Future<void> handleMotifSelection(BuildContext context) async {
+      final newMotifs = await showMotifSelectionDialog(context, _model.motifs);
+
+      if (newMotifs != null && newMotifs.isNotEmpty) {
+        final shouldReAnalyze = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext dialogContext) {
+            return AlertDialog(
+              title: const Text('Run Re-Analysis?'),
+              content: const Text(
+                'Would you like to run a smaller re-analysis using the newly selected motifs or start a whole new analysis?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, true),
+                  child: const Text('Re-Analyze'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: const Text('New Analysis'),
+                ),
+              ],
+            );
+          },
+        );
+
+        if (shouldReAnalyze != null) {
+          final model = context.read<GeneModel>();
+          model.setMotifs(
+              newMotifs); // Use the updateMotifs method to set the new motifs
+          if (mounted) {
+            if (shouldReAnalyze) {
+              model.reAnalyze(); // Run re-analysis
+            } else {
+              model.removeAnalyses(); // Reset analyses if starting a new one
+              model.analyze(); // Start a new analysis
+            }
+          }
+        }
+      }
+    }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(width: 400, child: ResultSeriesList(onSelected: _handleAnalysisSelected)),
+        SizedBox(
+          width: 400,
+          child: Column(
+            children: [
+              ElevatedButton(
+                onPressed: () => handleMotifSelection(context),
+                child: const Text('Select Motifs'),
+              ),
+              Expanded(
+                child: ResultSeriesList(onSelected: _handleAnalysisSelected),
+              ),
+            ],
+          ),
+        ),
         const VerticalDivider(width: 16),
         Expanded(
           child: Column(
@@ -186,7 +269,8 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
                   child: Row(
                     children: [
                       Expanded(child: _buildAnalysisRowSettings(analysis)),
-                      Expanded(child: DrillDownView(name: _selectedAnalysisName)),
+                      Expanded(
+                          child: DrillDownView(name: _selectedAnalysisName)),
                     ],
                   ),
                 ),
@@ -196,6 +280,86 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
         ),
       ],
     );
+  }
+
+  Future<List<Motif>?> showMotifSelectionDialog(
+      BuildContext context, List<Motif> currentMotifs) {
+    final selectedMotifs = [...currentMotifs];
+    return showDialog<List<Motif>>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Select Motifs'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView(
+              children: _model.allMotifs.map((motif) {
+                final isSelected = selectedMotifs.contains(motif);
+                return CheckboxListTile(
+                  value: isSelected,
+                  title: Text(motif.name),
+                  onChanged: (value) {
+                    setState(() {
+                      if (value == true) {
+                        selectedMotifs.add(motif);
+                      } else {
+                        selectedMotifs.remove(motif);
+                      }
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, selectedMotifs),
+              child: const Text('Confirm'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleModifyMotifs() async {
+    // Open motif selection dialog or widget
+    final newMotifs = await showMotifSelectionDialog(context, _model.motifs);
+
+    if (newMotifs == null || newMotifs.isEmpty) return; // User canceled
+
+    // Update the model with the new motifs
+    setState(() {
+      _model.setMotifs(newMotifs);
+    });
+
+    // Ask user to re-analyze or start fresh
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Re-analyze or New Analysis?'),
+        content: const Text(
+            'Would you like to run a smaller re-analysis or start a new analysis?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, 're-analyze'),
+              child: const Text('Re-analyze')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, 'new-analysis'),
+              child: const Text('New Analysis')),
+        ],
+      ),
+    );
+
+    if (choice == 're-analyze') {
+      _handleAnalyze(); // Re-run analysis
+    } else if (choice == 'new-analysis') {
+      _model.removeAnalyses(); // Clear existing results
+      _handleAnalyze(); // Start a new analysis
+    }
   }
 
   SizedBox _buildGraph() {
@@ -223,7 +387,8 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: TextField(
-                      decoration: const InputDecoration(labelText: 'Vertical axis min'),
+                      decoration:
+                          const InputDecoration(labelText: 'Vertical axis min'),
                       controller: _verticalAxisMinController,
                       keyboardType: TextInputType.number,
                     ),
@@ -233,7 +398,8 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: TextField(
-                      decoration: const InputDecoration(labelText: 'Vertical axis max'),
+                      decoration:
+                          const InputDecoration(labelText: 'Vertical axis max'),
                       controller: _verticalAxisMaxController,
                       keyboardType: TextInputType.number,
                     ),
@@ -243,7 +409,8 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: TextField(
-                      decoration: const InputDecoration(labelText: 'Horizontal axis min'),
+                      decoration: const InputDecoration(
+                          labelText: 'Horizontal axis min'),
                       controller: _horizontalAxisMinController,
                       keyboardType: TextInputType.number,
                     ),
@@ -253,7 +420,8 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: TextField(
-                      decoration: const InputDecoration(labelText: 'Horizontal axis max'),
+                      decoration: const InputDecoration(
+                          labelText: 'Horizontal axis max'),
                       controller: _horizontalAxisMaxController,
                       keyboardType: TextInputType.number,
                     ),
@@ -305,25 +473,39 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
 
   void _handleAnalyze() async {
     final result = await _model.analyze();
-    if (result) {
-      _scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Analysis complete')));
-    } else {
-      _scaffoldMessenger.showSnackBar(const SnackBar(backgroundColor: Colors.red, content: Text('Analysis cancelled')));
+    if (mounted) {
+      if (result) {
+        _scaffoldMessenger
+            .showSnackBar(const SnackBar(content: Text('Analysis complete')));
+      } else {
+        _scaffoldMessenger.showSnackBar(const SnackBar(
+            backgroundColor: Colors.red, content: Text('Analysis cancelled')));
+      }
     }
   }
 
   Future<void> _handleExportAllSeries(BuildContext context) async {
     setState(() => _exportProgress = 0);
-    final output = DistributionsExport(_model.analyses.where((a) => a.visible).map((e) => e.distribution!).toList());
+    final output = DistributionsExport(_model.analyses
+        .where((a) => a.visible)
+        .map((e) => e.distribution!)
+        .toList());
     final stageName = _model.stageSelection!.selectedStages.length == 1
         ? _model.stageSelection!.selectedStages.first
         : '${_model.stageSelection!.selectedStages.length} stages';
-    final motifName = _model.motifs.length == 1 ? _model.motifs.first : '${_model.motifs.length} motifs';
-    final filename = 'distributions_${_model.name}_${motifName}_$stageName.xlsx';
-    final data = await output.toExcel(filename, (progress) => setState(() => _exportProgress = progress));
+    final motifName = _model.motifs.length == 1
+        ? _model.motifs.first
+        : '${_model.motifs.length} motifs';
+    final filename =
+        'distributions_${_model.name}_${motifName}_$stageName.xlsx';
+    final data = await output.toExcel(filename, (progress) {
+      if (mounted) {
+        setState(() => _exportProgress = progress);
+      }
+    });
     if (data == null) return;
     debugPrint('Saving $filename (${data.length} bytes)');
-    setState(() => _exportProgress = null);
+    if (mounted) setState(() => _exportProgress = null);
   }
 
   void _setAxis(bool? value) {
@@ -332,14 +514,18 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
 
   void _axisListener() {
     setState(() {
-      _verticalAxisMin =
-          _verticalAxisMinController.text.isEmpty ? null : double.tryParse(_verticalAxisMinController.text);
-      _verticalAxisMax =
-          _verticalAxisMaxController.text.isEmpty ? null : double.tryParse(_verticalAxisMaxController.text);
-      _horizontalAxisMin =
-          _horizontalAxisMinController.text.isEmpty ? null : double.tryParse(_horizontalAxisMinController.text);
-      _horizontalAxisMax =
-          _horizontalAxisMaxController.text.isEmpty ? null : double.tryParse(_horizontalAxisMaxController.text);
+      _verticalAxisMin = _verticalAxisMinController.text.isEmpty
+          ? null
+          : double.tryParse(_verticalAxisMinController.text);
+      _verticalAxisMax = _verticalAxisMaxController.text.isEmpty
+          ? null
+          : double.tryParse(_verticalAxisMaxController.text);
+      _horizontalAxisMin = _horizontalAxisMinController.text.isEmpty
+          ? null
+          : double.tryParse(_horizontalAxisMinController.text);
+      _horizontalAxisMax = _horizontalAxisMaxController.text.isEmpty
+          ? null
+          : double.tryParse(_horizontalAxisMaxController.text);
     });
   }
 
@@ -386,7 +572,8 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
 
   Future<void> _handleSetColor(AnalysisSeries analysis) async {
     final model = GeneModel.of(context);
-    final color = await showColorPickerDialog(context: context, selected: analysis.color);
+    final color =
+        await showColorPickerDialog(context: context, selected: analysis.color);
     _updateAnalysis(model, analysis.copyWith(color: color));
   }
 
@@ -405,10 +592,16 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
     final output = AnalysisSeriesExport(analysis);
     final filename = sanitizeFilename('${analysis.name}.xlsx');
 
-    final data = await output.toExcel(filename, (progress) => setState(() => _exportProgress = progress));
+    final data = await output.toExcel(filename, (progress) {
+      if (mounted) {
+        setState(() => _exportProgress = progress);
+      }
+    });
     if (data == null) return;
     debugPrint('Saving $filename (${data.length} bytes)');
-    setState(() => _exportProgress = null);
+    if (mounted) {
+      setState(() => _exportProgress = null);
+    }
   }
 
   void _handleStopAnalysis() {

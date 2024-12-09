@@ -12,7 +12,8 @@ class Tpm {
 
   /// Gets the TPM data for a given gene
   List<TpmFeature> get(GffFeature gene) {
-    final result = genes[gene.transcriptId] ?? genes[gene.fallbackTranscriptId] ?? [];
+    final result =
+        genes[gene.transcriptId] ?? genes[gene.fallbackTranscriptId] ?? [];
     return result;
   }
 
@@ -26,20 +27,23 @@ class Tpm {
     try {
       lines = await file.readAsLines(encoding: Utf8Codec(allowMalformed: true));
     } on FileSystemException catch (_) {
-      lines = await file.readAsLines(encoding: ascii); //UTF-8 causes problems with some files
+      lines = await file.readAsLines(
+          encoding: ascii); //UTF-8 causes problems with some files
       // if it throws again, it's not a valid file
     }
     final Map<String, List<TpmFeature>> result = {};
     TPMFileFormat format;
     final firstLine = lines.first;
-    if (firstLine == 'Sequence	Aliases	Description	Avg.Expression	Min.Expression	Max.Expression') {
+    if (firstLine ==
+        'Sequence	Aliases	Description	Avg.Expression	Min.Expression	Max.Expression') {
       format = TPMFileFormat.tab;
     } else {
       format = TPMFileFormat.short;
     }
 
     for (final line in lines.skip(1)) {
-      final feature = TpmFeature.fromLine(line, geneIdParser: geneIdParser, format: format);
+      final feature =
+          TpmFeature.fromLine(line, geneIdParser: geneIdParser, format: format);
       if (result.containsKey(feature.geneId)) {
         result[feature.geneId]!.add(feature);
       } else {
@@ -76,7 +80,8 @@ class TpmFeature {
   }) {
     if (format == TPMFileFormat.short) {
       final parts = line.split(RegExp(r'[\s,]'));
-      if (parts.length < 2) throw StateError('Expected 2+ columns, got ${parts.length}: $line');
+      if (parts.length < 2)
+        throw StateError('Expected 2+ columns, got ${parts.length}: $line');
       final geneId = geneIdParser(parts);
       final avg = parts[1] == "" ? 0.0 : double.tryParse(parts[1]);
       if (avg == null) throw FormatException('Invalid number: $line');
@@ -86,7 +91,8 @@ class TpmFeature {
       );
     } else if (format == TPMFileFormat.tab) {
       final parts = line.split('\t');
-      if (parts.length != 6) throw StateError('Expected 6 columns, got ${parts.length}: $line');
+      if (parts.length != 6)
+        throw StateError('Expected 6 columns, got ${parts.length}: $line');
       final geneId = geneIdParser(parts);
       return TpmFeature(
         geneId: geneId,

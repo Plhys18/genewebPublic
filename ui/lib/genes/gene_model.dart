@@ -51,17 +51,25 @@ class GeneModel extends ChangeNotifier {
 
   /// Selected stages
   StageSelection? get stageSelection => _stageSelection;
+
   List<Motif> _motifs = [];
+  List<Motif> _allMotifs = [];
 
   /// All motifs
   List<Motif> get motifs => _motifs;
+  List<Motif> get allMotifs => _allMotifs;
+  set setAllMotifs(List<Motif> newMotifs) {
+    _allMotifs = newMotifs;
+  }
 
   /// Number of series the analysis will produce
-  int get expectedSeriesCount => motifs.length * (stageSelection?.selectedStages.length ?? 0);
+  int get expectedSeriesCount =>
+      motifs.length * (stageSelection?.selectedStages.length ?? 0);
 
   GeneModel(this.deploymentFlavor);
 
-  static GeneModel of(BuildContext context) => Provider.of<GeneModel>(context, listen: false);
+  static GeneModel of(BuildContext context) =>
+      Provider.of<GeneModel>(context, listen: false);
 
   void _reset({bool preserveSource = false}) {
     if (!preserveSource) {
@@ -82,7 +90,8 @@ class GeneModel extends ChangeNotifier {
 
   //TODO private
   void setPublicSite(bool value) {
-    if (deploymentFlavor != null) throw Exception('Flavor is defined by deployment');
+    if (deploymentFlavor != null)
+      throw Exception('Flavor is defined by deployment');
     _publicSite = value;
     notifyListeners();
   }
@@ -119,11 +128,26 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Triggers a smaller re-analysis with the current selection
+  Future<void> reAnalyze() async {
+    await analyze();
+  }
+
+  /// Clears everything and triggers a new analysis
+  Future<void> analyzeNew() async {
+    _reset(preserveSource: true);
+    await analyze();
+  }
+
   void resetAnalysisOptions() {
     final alignMarkers = sourceGenes?.genes.first.markers.keys.toList();
     alignMarkers?.sort();
     if (alignMarkers != null && alignMarkers.isNotEmpty) {
-      analysisOptions = AnalysisOptions(alignMarker: alignMarkers.first, min: -1000, max: 1000, bucketSize: 30);
+      analysisOptions = AnalysisOptions(
+          alignMarker: alignMarkers.first,
+          min: -1000,
+          max: 1000,
+          bucketSize: 30);
     } else {
       analysisOptions = AnalysisOptions();
     }
@@ -134,7 +158,8 @@ class GeneModel extends ChangeNotifier {
     _stageSelection = StageSelection(
       selectedStages: [kAllStages, ...selectedStages],
       strategy: sourceGenes?.stages != null ? null : FilterStrategy.top,
-      selection: sourceGenes?.stages != null ? null : FilterSelection.percentile,
+      selection:
+          sourceGenes?.stages != null ? null : FilterSelection.percentile,
       percentile: sourceGenes?.stages != null ? null : 0.9,
       count: sourceGenes?.stages != null ? null : 3200,
     );
@@ -142,19 +167,26 @@ class GeneModel extends ChangeNotifier {
 
   /// Loads genes and transcript rates from .fasta data
   Future<void> loadFastaFromString(
-      {required String data, Organism? organism, required Function(double progress) progressCallback}) async {
+      {required String data,
+      Organism? organism,
+      required Function(double progress) progressCallback}) async {
     _reset();
     name = organism?.name;
     List<Gene> genes;
     List<dynamic> errors;
-    final takeSingleTranscript = organism == null || organism.takeFirstTranscriptOnly;
+    final takeSingleTranscript =
+        organism == null || organism.takeFirstTranscriptOnly;
     (genes, errors) = await GeneList.parseFasta(
-        data, takeSingleTranscript ? (value) => progressCallback(value / 2) : progressCallback);
+        data,
+        takeSingleTranscript
+            ? (value) => progressCallback(value / 2)
+            : progressCallback);
     if (takeSingleTranscript) {
-      (genes, errors) =
-          await GeneList.takeSingleTranscript(genes, errors, (value) => progressCallback(0.5 + value / 2));
+      (genes, errors) = await GeneList.takeSingleTranscript(
+          genes, errors, (value) => progressCallback(0.5 + value / 2));
     }
-    sourceGenes = GeneList.fromList(genes: genes, errors: errors, organism: organism);
+    sourceGenes =
+        GeneList.fromList(genes: genes, errors: errors, organism: organism);
     resetAnalysisOptions();
     resetFilter();
     notifyListeners();
@@ -167,7 +199,8 @@ class GeneModel extends ChangeNotifier {
     required Function(double progress) progressCallback,
   }) async {
     final data = await File(path).readAsString();
-    return await loadFastaFromString(data: data, organism: organism, progressCallback: progressCallback);
+    return await loadFastaFromString(
+        data: data, organism: organism, progressCallback: progressCallback);
   }
 
   /// Loads info about stages and colors from CSV file
@@ -214,18 +247,23 @@ class GeneModel extends ChangeNotifier {
     final List<dynamic> errors = [];
     final List<Gene> genes = [
       for (final gene in sourceGenes!.genes)
-        if (tpm.stages.keys.every((stageKey) => tpm.stages[stageKey]![gene.geneId] != null))
+        if (tpm.stages.keys
+            .every((stageKey) => tpm.stages[stageKey]![gene.geneId] != null))
           gene.copyWith(transcriptionRates: {
-            for (final stage in tpm.stages.keys) stage: tpm.stages[stage]![gene.geneId]!,
+            for (final stage in tpm.stages.keys)
+              stage: tpm.stages[stage]![gene.geneId]!,
           }),
     ];
 
     if (genes.length != sourceGenes!.genes.length) {
-      errors.add('${sourceGenes!.genes.length - genes.length} genes excluded due to lack of TPM data');
+      errors.add(
+          '${sourceGenes!.genes.length - genes.length} genes excluded due to lack of TPM data');
     }
 
     sourceGenes = sourceGenes?.copyWith(
-        genes: genes, errors: errors.isEmpty ? null : [...errors, ...sourceGenes!.errors], colors: tpm.colors);
+        genes: genes,
+        errors: errors.isEmpty ? null : [...errors, ...sourceGenes!.errors],
+        colors: tpm.colors);
 
     resetAnalysisOptions();
     resetFilter();
@@ -248,7 +286,8 @@ class GeneModel extends ChangeNotifier {
     assert(stageSelection != null);
     assert(stageSelection!.selectedStages.isNotEmpty);
     assert(motifs.isNotEmpty);
-    final totalIterations = stageSelection!.selectedStages.length * motifs.length;
+    final totalIterations =
+        stageSelection!.selectedStages.length * motifs.length;
     assert(totalIterations > 0);
     int iterations = 0;
     analysisProgress = 0.0;
@@ -256,17 +295,20 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
     for (final motif in motifs) {
       for (final key in stageSelection!.selectedStages) {
-        await Future.delayed(const Duration(milliseconds: 50)); // Allow UI to refresh on web
+        await Future.delayed(
+            const Duration(milliseconds: 50)); // Allow UI to refresh on web
         if (_analysisCancelled) {
           analysisProgress = null;
           notifyListeners();
           return false;
         }
-        final filteredGenes =
-            key == kAllStages ? sourceGenes : sourceGenes!.filter(stage: key, stageSelection: stageSelection!);
+        final filteredGenes = key == kAllStages
+            ? sourceGenes
+            : sourceGenes!.filter(stage: key, stageSelection: stageSelection!);
         final name = '${key == kAllStages ? 'all' : key} - ${motif.name}';
-        final color =
-            sourceGenes?.colors.isNotEmpty == true ? (sourceGenes!.colors[key] ?? Colors.grey) : _randomColorOf(name);
+        final color = sourceGenes?.colors.isNotEmpty == true
+            ? (sourceGenes!.colors[key] ?? Colors.grey)
+            : _randomColorOf(name);
         final stroke = key == kAllStages ? 4 : sourceGenes?.stroke[key];
         removeAnalysis(name);
 

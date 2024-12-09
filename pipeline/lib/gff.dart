@@ -34,7 +34,8 @@ class Gff {
       if (triggerFeatures.contains(feature.type)) {
         genes.add(feature);
       } else {
-        assert(genes.isNotEmpty, 'Feature $feature does not have a parent gene.');
+        assert(
+            genes.isNotEmpty, 'Feature $feature does not have a parent gene.');
         final parent = genes.last;
         if (parent.start > feature.start || parent.end < feature.end) {
           // print('Feature $feature does not fall into its parent bounds.');
@@ -178,7 +179,8 @@ class GffFeature {
       if (startCodon.start - 1 < 0 || startCodon.end > sequenceLength) {
         continue;
       } else {
-        final startCodonSequence = sequence.sequence.substring(startCodon.start - 1, startCodon.end);
+        final startCodonSequence =
+            sequence.sequence.substring(startCodon.start - 1, startCodon.end);
         if (strand == Strand.forward && startCodonSequence == 'ATG') {
           validStartCodons.add(startCodon);
         } else if (strand == Strand.reverse && startCodonSequence == 'CAT') {
@@ -190,7 +192,8 @@ class GffFeature {
   }
 
   GffFeature? startCodon() {
-    return features.firstWhereOrNull((element) => element.type == 'start_codon');
+    return features
+        .firstWhereOrNull((element) => element.type == 'start_codon');
   }
 
   GffFeature? transcript() {
@@ -198,7 +201,9 @@ class GffFeature {
   }
 
   List<GffFeature> fivePrimeUtrs() {
-    return features.where((element) => element.type == 'five_prime_UTR').toList();
+    return features
+        .where((element) => element.type == 'five_prime_UTR')
+        .toList();
   }
 
   GffFeature? fivePrimeUtr() {
@@ -208,7 +213,8 @@ class GffFeature {
   }
 
   GffFeature? threePrimeUtr() {
-    return features.firstWhereOrNull((element) => element.type == 'three_prime_UTR');
+    return features
+        .firstWhereOrNull((element) => element.type == 'three_prime_UTR');
   }
 }
 

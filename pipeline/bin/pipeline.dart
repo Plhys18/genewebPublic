@@ -11,7 +11,8 @@ import 'package:pipeline/tpm_summary_generator.dart';
 
 void main(List<String> arguments) async {
   if (arguments.isEmpty || arguments.length > 2) {
-    throw ArgumentError('Invalid number of arguments.\n\nUsage: dart pipeline.dart <directory> [--with-tss]');
+    throw ArgumentError(
+        'Invalid number of arguments.\n\nUsage: dart pipeline.dart <directory> [--with-tss]');
   }
   final organismFolderName = arguments[0];
   final organism = OrganismFactory.getOrganism(organismFolderName);
@@ -19,7 +20,8 @@ void main(List<String> arguments) async {
 
   // Find files
   print('Searching input data for `${organism.name}`. TSS: $useTss');
-  final inputFilesConfiguration = await BatchConfiguration.fromPath('source_data/$organismFolderName');
+  final inputFilesConfiguration =
+      await BatchConfiguration.fromPath('source_data/$organismFolderName');
   print(' - fasta file: `${inputFilesConfiguration.fastaFile.path}`');
   print(' - gff file: `${inputFilesConfiguration.gffFile.path}`');
   for (final tpmFile in inputFilesConfiguration.tpmFiles) {
@@ -39,13 +41,18 @@ void main(List<String> arguments) async {
     fallbackTranscriptParser: organism.fallbackTranscriptParser,
     seqIdTransformer: organism.seqIdTransformer,
   );
-  print('Loaded `${inputFilesConfiguration.gffFile.path}` with ${gff.genes.length} genes');
-  print(' - ${gff.genes.where((g) => g.startCodon() != null).length} with start_codon');
-  print(' - ${gff.genes.where((g) => g.fivePrimeUtr() != null).length} with five_prime_UTR');
-  print(' - ${gff.genes.where((g) => g.threePrimeUtr() != null).length} with three_prime_UTR');
+  print(
+      'Loaded `${inputFilesConfiguration.gffFile.path}` with ${gff.genes.length} genes');
+  print(
+      ' - ${gff.genes.where((g) => g.startCodon() != null).length} with start_codon');
+  print(
+      ' - ${gff.genes.where((g) => g.fivePrimeUtr() != null).length} with five_prime_UTR');
+  print(
+      ' - ${gff.genes.where((g) => g.threePrimeUtr() != null).length} with three_prime_UTR');
 
   // Load fasta file
-  print('Loading `${inputFilesConfiguration.fastaFile.path}`. This may take a while...');
+  print(
+      'Loading `${inputFilesConfiguration.fastaFile.path}`. This may take a while...');
   final fasta = await Fasta.load(inputFilesConfiguration.fastaFile);
   print(
       'Loaded fasta file `${inputFilesConfiguration.fastaFile.path}` with ${fasta.availableSequences.length} sequences');
@@ -64,7 +71,8 @@ void main(List<String> arguments) async {
         geneIdParser: organism.sequenceIdentifier,
       );
       stagesTpm[tpmKey] = tpmData;
-      print('Loaded tpm file `${tpmFile.path}` as `$tpmKey` with ${tpmData.genes.length} genes');
+      print(
+          'Loaded tpm file `${tpmFile.path}` as `$tpmKey` with ${tpmData.genes.length} genes');
     } on FormatException catch (error) {
       print('Error loading tpm file `${tpmFile.path}`: $error');
     } on FileSystemException catch (error) {
@@ -95,23 +103,27 @@ void main(List<String> arguments) async {
   }
 
   // Save validation results
-  final validationOutputFile = File('$outputPath/$organismFolderName${useTss ? '-with-tss' : ''}.errors.csv');
+  final validationOutputFile = File(
+      '$outputPath/$organismFolderName${useTss ? '-with-tss' : ''}.errors.csv');
   final errors = [
     ['gene_id', 'errors'],
     for (final gene in gff.genes)
-      if (gene.errors!.isNotEmpty) [gene.transcriptId, gene.errors!.map((e) => e.message).join(' | ')],
+      if (gene.errors!.isNotEmpty)
+        [gene.transcriptId, gene.errors!.map((e) => e.message).join(' | ')],
   ];
   validationOutputFile.writeAsStringSync(ListToCsvConverter().convert(errors));
   print('Wrote errors to `${validationOutputFile.path}`');
 
   // Save Gene TPM CSV
   final geneTpm = TPMSummaryGenerator(gff, stagesTpm).toCsv();
-  final geneTpmOutputFile = File('$outputPath/$organismFolderName${useTss ? '-with-tss' : ''}.validated-genes-tpm.csv');
+  final geneTpmOutputFile = File(
+      '$outputPath/$organismFolderName${useTss ? '-with-tss' : ''}.validated-genes-tpm.csv');
   geneTpmOutputFile.writeAsStringSync(ListToCsvConverter().convert(geneTpm));
   print('Wrote validated genes TPM to `${geneTpmOutputFile.path}`');
 
   // Save the output fasta file
-  final fastaOutputFile = File('$outputPath/$organismFolderName${useTss ? '-with-tss' : ''}.fasta');
+  final fastaOutputFile =
+      File('$outputPath/$organismFolderName${useTss ? '-with-tss' : ''}.fasta');
   final fastaSink = fastaOutputFile.openWrite(mode: FileMode.writeOnly);
   final generator = FastaGenerator(
     gff,
@@ -141,20 +153,25 @@ class BatchConfiguration {
   final FileSystemEntity fastaFile;
   final FileSystemEntity gffFile;
   final List<FileSystemEntity> tpmFiles;
-  BatchConfiguration({required this.fastaFile, required this.gffFile, required this.tpmFiles});
+  BatchConfiguration(
+      {required this.fastaFile, required this.gffFile, required this.tpmFiles});
 
   /// Scans the given path and creates the configuration object
   static Future<BatchConfiguration> fromPath(String path) async {
     final dir = Directory(path);
     final List<FileSystemEntity> dirEntities = await dir.list().toList();
-    final fastaFiles = dirEntities.where((e) => e.path.endsWith('.fa') || e.path.endsWith('.fasta'));
+    final fastaFiles = dirEntities
+        .where((e) => e.path.endsWith('.fa') || e.path.endsWith('.fasta'));
     if (fastaFiles.length != 1) {
-      throw StateError('Expected exactly one FASTA file, ${fastaFiles.length} files found.');
+      throw StateError(
+          'Expected exactly one FASTA file, ${fastaFiles.length} files found.');
     }
     final fastaFile = fastaFiles.first;
-    final gffFiles = dirEntities.where((e) => e.path.endsWith('.gff') || e.path.endsWith('.gff3'));
+    final gffFiles = dirEntities
+        .where((e) => e.path.endsWith('.gff') || e.path.endsWith('.gff3'));
     if (gffFiles.length != 1) {
-      throw StateError('Expected exactly one GFF file, ${gffFiles.length} files found.');
+      throw StateError(
+          'Expected exactly one GFF file, ${gffFiles.length} files found.');
     }
     final gffFile = gffFiles.first;
     final tpmDir = Directory('$path/TPM');
@@ -163,12 +180,14 @@ class BatchConfiguration {
     if (tpmDir.existsSync()) {
       tpmFiles = await tpmDir.list().toList();
       if (tpmFiles.isEmpty) {
-        throw StateError('Expected at least one TPM file, ${tpmFiles.length} files found.');
+        throw StateError(
+            'Expected at least one TPM file, ${tpmFiles.length} files found.');
       }
       tpmFiles.sort((a, b) => a.path.compareTo(b.path));
     } else {
       tpmFiles = [];
     }
-    return BatchConfiguration(fastaFile: fastaFile, gffFile: gffFile, tpmFiles: tpmFiles);
+    return BatchConfiguration(
+        fastaFile: fastaFile, gffFile: gffFile, tpmFiles: tpmFiles);
   }
 }

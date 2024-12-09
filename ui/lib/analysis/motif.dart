@@ -46,13 +46,20 @@ class Motif {
     'V': 'B',
   };
 
-  Motif({required this.name, required this.definitions, this.isCustom = false, this.isPublic = true});
+  Motif(
+      {required this.name,
+      required this.definitions,
+      this.isCustom = false,
+      this.isPublic = true});
 
   static String? validate(List<String> definitions) {
     if (definitions.isEmpty) {
       return 'Definition cannot be empty';
     }
-    if (definitions.where((definition) => !RegExp(r"^[AGCTURYNWSMKBHDV]+$").hasMatch(definition)).isNotEmpty) {
+    if (definitions
+        .where((definition) =>
+            !RegExp(r"^[AGCTURYNWSMKBHDV]+$").hasMatch(definition))
+        .isNotEmpty) {
       return 'Motif definition contains invalid characters';
     }
     return null;
@@ -75,7 +82,8 @@ class Motif {
 
   Map<String, RegExp> get reverseComplementRegExp {
     return {
-      for (final definition in reverseDefinitions) definition: toRegExp(definition),
+      for (final definition in reverseDefinitions)
+        definition: toRegExp(definition),
     };
   }
 

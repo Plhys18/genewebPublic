@@ -6,5 +6,4 @@ class MockSettings:
     SECRET_KEY: str = "your_secret_key"
     DATABASE_URL: str = "sqlite:///./test.db"
 
-# Load the mock settings object to use in the app
 settings = MockSettings()

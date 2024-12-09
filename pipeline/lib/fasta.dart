@@ -22,13 +22,17 @@ class Fasta {
   /// The file is split into multiple files, one per sequence
   static Future<Fasta> load(FileSystemEntity entity) async {
     Map<String, String> sequences = {};
-    final tempDir = Directory.systemTemp.createTempSync(entity.path.split('/').last);
+    final tempDir =
+        Directory.systemTemp.createTempSync(entity.path.split('/').last);
     final file = File(entity.path);
     final stream = file.openRead();
     List<String> buffer = [];
     String? path;
     List<Future> completions = [];
-    await stream.transform(utf8.decoder).transform(LineSplitter()).listen((line) {
+    await stream
+        .transform(utf8.decoder)
+        .transform(LineSplitter())
+        .listen((line) {
       if (line.startsWith('>')) {
         if (path != null) {
           assert(buffer.isNotEmpty);

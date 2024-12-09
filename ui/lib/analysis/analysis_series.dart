@@ -135,7 +135,8 @@ class AnalysisSeries {
     return map;
   }
 
-  static List<AnalysisResult> _findMatches(Gene gene, Motif motif, bool noOverlaps) {
+  static List<AnalysisResult> _findMatches(
+      Gene gene, Motif motif, bool noOverlaps) {
     List<AnalysisResult> result = [];
     final definitions = {
       ...motif.regExp,
@@ -160,7 +161,8 @@ class AnalysisSeries {
   }
 
   /// Filter out matches that overlap each other
-  static List<AnalysisResult> filterOverlappingMatches(List<AnalysisResult> list) {
+  static List<AnalysisResult> filterOverlappingMatches(
+      List<AnalysisResult> list) {
     list.sort(
       (a, b) => a.rawPosition.compareTo(b.rawPosition),
     );
@@ -185,7 +187,10 @@ class AnalysisSeries {
   List<DrillDownResult> drillDown(String? pattern) {
     final filteredResult = pattern == null
         ? result!
-        : result!.where((e) => Motif.toRegExp(pattern, true).hasMatch(e.matchedSequence)).toList();
+        : result!
+            .where((e) =>
+                Motif.toRegExp(pattern, true).hasMatch(e.matchedSequence))
+            .toList();
     List<String> testPatterns;
     if (pattern != null) {
       testPatterns = [
@@ -201,15 +206,19 @@ class AnalysisSeries {
     }
     Map<String, int> counts = {};
     for (final testPattern in testPatterns) {
-      counts[testPattern] =
-          filteredResult.where((e) => Motif.toRegExp(testPattern, true).hasMatch(e.matchedSequence)).length;
+      counts[testPattern] = filteredResult
+          .where((e) =>
+              Motif.toRegExp(testPattern, true).hasMatch(e.matchedSequence))
+          .length;
     }
     final List<DrillDownResult> drillDownResults = [
       for (final testPattern in counts.keys)
         DrillDownResult(
           testPattern,
           counts[testPattern]!,
-          filteredResult.isEmpty ? null : counts[testPattern]! / filteredResult.length,
+          filteredResult.isEmpty
+              ? null
+              : counts[testPattern]! / filteredResult.length,
           result!.isEmpty ? null : counts[testPattern]! / result!.length,
         ),
     ];

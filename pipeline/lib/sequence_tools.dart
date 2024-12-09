@@ -27,7 +27,8 @@ class SequenceTools {
       }
     }
     final result = [
-      for (int i = sequence.length - 1; i >= 0; i--) reverseComplements[sequence[i]]!,
+      for (int i = sequence.length - 1; i >= 0; i--)
+        reverseComplements[sequence[i]]!,
     ].join();
     return result;
   }

@@ -40,12 +40,16 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
-    final organismAndStages =
-        context.select<GeneModel, String?>((model) => '${model.name} ${model.sourceGenes?.stageKeys.join('+')}');
-    final sourceGenes = context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
-    final motifs = context.select<GeneModel, List<Motif>>((model) => model.motifs);
-    final filter = context.select<GeneModel, StageSelection?>((model) => model.stageSelection);
-    final expectedResults = context.select<GeneModel, int>((model) => model.expectedSeriesCount);
+    final organismAndStages = context.select<GeneModel, String?>(
+        (model) => '${model.name} ${model.sourceGenes?.stageKeys.join('+')}');
+    final sourceGenes =
+        context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
+    final motifs =
+        context.select<GeneModel, List<Motif>>((model) => model.motifs);
+    final filter = context
+        .select<GeneModel, StageSelection?>((model) => model.stageSelection);
+    final expectedResults =
+        context.select<GeneModel, int>((model) => model.expectedSeriesCount);
 
     return SingleChildScrollView(
       child: Column(
@@ -53,7 +57,8 @@ class _HomeState extends State<Home> {
           Stepper(
             currentStep: _index,
             onStepCancel: _index > 0 ? _handleStepCancel : null,
-            onStepContinue: _isStepAllowed(_index + 1) ? _handleStepContinue : null,
+            onStepContinue:
+                _isStepAllowed(_index + 1) ? _handleStepContinue : null,
             onStepTapped: _handleStepTapped,
             physics: const NeverScrollableScrollPhysics(),
             steps: <Step>[
@@ -70,14 +75,19 @@ class _HomeState extends State<Home> {
               Step(
                 title: const Text('Genomic interval'),
                 subtitle: const AnalysisOptionsSubtitle(),
-                content:
-                    AnalysisOptionsPanel(key: ValueKey(organismAndStages), onChanged: _handleAnalysisOptionsChanged),
-                state: sourceGenes == null ? StepState.indexed : StepState.complete,
+                content: AnalysisOptionsPanel(
+                    key: ValueKey(organismAndStages),
+                    onChanged: _handleAnalysisOptionsChanged),
+                state: sourceGenes == null
+                    ? StepState.indexed
+                    : StepState.complete,
               ),
               Step(
                 title: const Text('Analyzed motifs'),
                 subtitle: const MotifSubtitle(),
-                content: MotifPanel(key: ValueKey(organismAndStages), onChanged: _handleMotifsChanged),
+                content: MotifPanel(
+                    key: ValueKey(organismAndStages),
+                    onChanged: _handleMotifsChanged),
                 state: expectedResults > 60 && motifs.length > 5
                     ? StepState.error
                     : motifs.isEmpty
@@ -87,9 +97,12 @@ class _HomeState extends State<Home> {
               Step(
                 title: const Text('Developmental stages'),
                 subtitle: const StageSubtitle(),
-                content: StagePanel(key: ValueKey(organismAndStages), onChanged: _handleStageSelectionChanged),
+                content: StagePanel(
+                    key: ValueKey(organismAndStages),
+                    onChanged: _handleStageSelectionChanged),
                 state: filter?.selectedStages.isEmpty == true ||
-                        expectedResults > 60 && (filter?.selectedStages.length ?? 0) > 5
+                        expectedResults > 60 &&
+                            (filter?.selectedStages.length ?? 0) > 5
                     ? StepState.error
                     : StepState.indexed,
               ),
@@ -120,7 +133,9 @@ class _HomeState extends State<Home> {
       case 3: // stage
         return model.sourceGenes != null;
       case 4: // analysis
-        return model.sourceGenes != null && model.expectedSeriesCount > 0 && model.expectedSeriesCount <= 60;
+        return model.sourceGenes != null &&
+            model.expectedSeriesCount > 0 &&
+            model.expectedSeriesCount <= 60;
       default:
         return false;
     }
@@ -135,7 +150,8 @@ class _HomeState extends State<Home> {
   Future<void> _handleStepContinue() async {
     final nextStep = _index + 1;
     if (nextStep == 4) {
-      await Navigator.of(context).push(MaterialPageRoute(builder: (context) => const AnalysisScreen()));
+      await Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const AnalysisScreen()));
       _model.removeAnalyses();
       return;
     }
