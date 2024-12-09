@@ -41,7 +41,7 @@ abstract class BaseOrganism {
   }) : assert(triggerFeatures.isNotEmpty);
 
   /// Converts the file name of the TPM file to the stage name.
-  String? stageNameFromTpmFilePath(String path);
+  String? stageNameFromTpmFilePath(String path) => path.split('/').last;
 
   /// Transforms the sequence identifier from GFF to the one from the fasta file.
   String seqIdTransformer(String seqId) => seqId;
@@ -49,6 +49,9 @@ abstract class BaseOrganism {
   /// Finds the transcript id from the attributes.
   String? transcriptParser(Map<String, String> attributes) =>
       attributes['Name'];
+
+  /// Preprocess the GFF lines before parsing.
+  List<String> gffLinesPreprocessor(List<String> lines) => lines;
 
   /// Finds the fallback transcript ID
   ///

@@ -8,7 +8,4 @@ class Allium extends BaseOrganism {
     // We use transcript_id instead of Name
     return attributes['ID'];
   }
-
-  @override
-  String? stageNameFromTpmFilePath(String path) => path;
 }

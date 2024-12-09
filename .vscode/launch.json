@@ -5,6 +5,30 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "pipeline Azolla",
+            "cwd": "pipeline",
+            "request": "launch",
+            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
+            "args": ["Azolla_filiculoides"],
+            "type": "dart"
+        },
+        {
+            "name": "pipeline Hordeum",
+            "cwd": "pipeline",
+            "request": "launch",
+            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
+            "args": ["Hordeum_vulgare"],
+            "type": "dart"
+        },
+        {
+            "name": "pipeline Ceratopteris",
+            "cwd": "pipeline",
+            "request": "launch",
+            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
+            "args": ["Ceratopteris_richardii"],
+            "type": "dart"
+        },
+        {
             "name": "pipeline Silene",
             "cwd": "pipeline",
             "request": "launch",
@@ -26,30 +50,6 @@
             "request": "launch",
             "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
             "args": ["Allium_cepa"],
-            "type": "dart"
-        },
-        {
-            "name": "pipeline Amborella",
-            "cwd": "pipeline",
-            "request": "launch",
-            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
-            "args": ["Amborella_trichopoda"],
-            "type": "dart"
-        },
-        {
-            "name": "pipeline Physco",
-            "cwd": "pipeline",
-            "request": "launch",
-            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
-            "args": ["Physcomitrium_patens"],
-            "type": "dart"
-        },
-        {
-            "name": "pipeline Arabidopsis",
-            "cwd": "pipeline",
-            "request": "launch",
-            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
-            "args": ["Arabidopsis_thaliana"],
             "type": "dart"
         },
         {

@@ -27,6 +27,9 @@ for FILE in $TARGET_DIR ; do
         # Run organisms with TSS
         if [ "$DIRECTORY" = "Arabidopsis_thaliana_private" ] || \
            [ "$DIRECTORY" = "Arabidopsis_thaliana" ] || \
+           [ "$DIRECTORY" = "Azolla_filiculoides" ] || \
+           [ "$DIRECTORY" = "Ceratopteris_richardii" ] || \
+           [ "$DIRECTORY" = "Hordeum_vulgare" ] || \
            [ "$DIRECTORY" = "Physcomitrium_patens" ] || \
            [ "$DIRECTORY" = "Marchantia_polymorpha" ] || \
            [ "$DIRECTORY" = "Silene_vulgaris" ] || \

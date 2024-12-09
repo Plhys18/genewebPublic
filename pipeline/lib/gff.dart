@@ -18,9 +18,11 @@ class Gff {
     required String Function(String seqId) seqIdTransformer,
     List<String> ignoredFeatures = const ['chromosome', 'gene', 'transcript'],
     List<String> triggerFeatures = const ['mRNA'],
+    List<String> Function(List<String> lines)? linesPreprocessor,
   }) async {
     final file = File(entity.path);
-    final lines = await file.readAsLines();
+    final rawLines = await file.readAsLines();
+    final lines = linesPreprocessor?.call(rawLines) ?? rawLines;
     final List<GffFeature> genes = [];
     for (final line in lines) {
       if (line.startsWith('#')) continue;
