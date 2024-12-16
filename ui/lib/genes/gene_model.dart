@@ -10,6 +10,7 @@ import 'package:geneweb/genes/gene_list.dart';
 import 'package:geneweb/genes/stages_data.dart';
 import 'package:geneweb/genes/tpm_data.dart';
 import 'package:geneweb/my_app.dart';
+import 'package:geneweb/output/analysis_series_export.dart';
 import 'package:provider/provider.dart';
 import 'package:universal_file/universal_file.dart';
 
@@ -41,6 +42,7 @@ class GeneModel extends ChangeNotifier {
 
   /// List of analysis series
   List<AnalysisSeries> analyses = [];
+  List<AnalysisSeries> analysesHistory = [];
 
   /// Progress of the analysis
   double? analysisProgress;
@@ -345,6 +347,10 @@ class GeneModel extends ChangeNotifier {
     final green = ((finalHash & 0xFF));
     final color = Color.fromRGBO(red, green, blue, 1);
     return color;
+  }
+
+  void addAnalysisToHistory() {
+    analysesHistory.addAll(analyses);
   }
 }
 

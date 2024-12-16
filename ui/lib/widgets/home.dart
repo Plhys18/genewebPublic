@@ -12,6 +12,8 @@ import 'package:geneweb/widgets/source_panel.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'analysis_list_screen.dart';
+
 /// Widget that builds the contents of the Home Screen
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -116,6 +118,13 @@ class _HomeState extends State<Home> {
             child: Image.asset('assets/logo_elixir.png', height: 64),
           ),
           const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => const AnalysisListScreen()),
+            ),
+            child: const Text('View Analysis List'),
+          ),
+
         ],
       ),
     );
@@ -152,6 +161,7 @@ class _HomeState extends State<Home> {
     if (nextStep == 4) {
       await Navigator.of(context).push(
           MaterialPageRoute(builder: (context) => const AnalysisScreen()));
+      _model.addAnalysisToHistory();
       _model.removeAnalyses();
       return;
     }

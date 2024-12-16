@@ -202,14 +202,14 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
           context: context,
           builder: (BuildContext dialogContext) {
             return AlertDialog(
-              title: const Text('Run Re-Analysis?'),
+              title: const Text('Run Recursive-Analysis?'),
               content: const Text(
-                'Would you like to run a smaller re-analysis using the newly selected motifs or start a whole new analysis?',
+                'Would you like to run a smaller recursive-analysis using the newly selected motifs or start a whole new analysis?',
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext, true),
-                  child: const Text('Re-Analyze'),
+                  child: const Text('Recursive-Analysis'),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext, false),
@@ -323,43 +323,6 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
         ),
       ),
     );
-  }
-
-  void _handleModifyMotifs() async {
-    // Open motif selection dialog or widget
-    final newMotifs = await showMotifSelectionDialog(context, _model.motifs);
-
-    if (newMotifs == null || newMotifs.isEmpty) return; // User canceled
-
-    // Update the model with the new motifs
-    setState(() {
-      _model.setMotifs(newMotifs);
-    });
-
-    // Ask user to re-analyze or start fresh
-    final choice = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Re-analyze or New Analysis?'),
-        content: const Text(
-            'Would you like to run a smaller re-analysis or start a new analysis?'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, 're-analyze'),
-              child: const Text('Re-analyze')),
-          TextButton(
-              onPressed: () => Navigator.pop(context, 'new-analysis'),
-              child: const Text('New Analysis')),
-        ],
-      ),
-    );
-
-    if (choice == 're-analyze') {
-      _handleAnalyze(); // Re-run analysis
-    } else if (choice == 'new-analysis') {
-      _model.removeAnalyses(); // Clear existing results
-      _handleAnalyze(); // Start a new analysis
-    }
   }
 
   SizedBox _buildGraph() {
@@ -517,7 +480,7 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
       _verticalAxisMin = _verticalAxisMinController.text.isEmpty
           ? null
           : double.tryParse(_verticalAxisMinController.text);
-      _verticalAxisMax = _verticalAxisMaxController.text.isEmpty
+      _verticalAxisMax = _verticalAxisMaxController .text.isEmpty
           ? null
           : double.tryParse(_verticalAxisMaxController.text);
       _horizontalAxisMin = _horizontalAxisMinController.text.isEmpty
@@ -568,6 +531,7 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
       for (final a in model.analyses)
         if (a.name == analysis.name) analysis else a
     ]);
+    _model.addAnalysisToHistory();
   }
 
   Future<void> _handleSetColor(AnalysisSeries analysis) async {
