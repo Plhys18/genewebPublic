@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:geneweb/analysis/analysis_result.dart';
+import 'package:geneweb/analysis/analysis_result.py.dart';
 import 'package:geneweb/analysis/distribution.dart';
 import 'package:geneweb/analysis/motif.dart';
 import 'package:geneweb/genes/gene.dart';

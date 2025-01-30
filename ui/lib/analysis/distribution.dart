@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:geneweb/analysis/analysis_result.dart';
+import 'package:geneweb/analysis/analysis_result.py.dart';
 
 /// Holds the result of series distribution
 class Distribution {
