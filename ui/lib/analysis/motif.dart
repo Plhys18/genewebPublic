@@ -172,4 +172,22 @@ class Motif {
         throw ArgumentError('Unsupported code `$code`');
     }
   }
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'definitions': definitions,
+      'isCustom': isCustom,
+      'isPublic': isPublic,
+    };
+  }
+
+  static Motif fromJson(Map<String, dynamic> json) {
+    return Motif(
+      name: json['name'] as String,
+      definitions: List<String>.from(json['definitions'] as List),
+      isCustom: json['isCustom'] as bool? ?? false,
+      isPublic: json['isPublic'] as bool? ?? true,
+    );
+  }
 }
+

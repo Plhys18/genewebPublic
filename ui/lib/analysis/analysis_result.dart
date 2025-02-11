@@ -36,4 +36,26 @@ class AnalysisResult {
     required this.match,
     required this.matchedSequence,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'gene': gene.toJson(),
+      'motif': motif.toJson(),
+      'position': position,
+      'rawPosition': rawPosition,
+      'match': match,
+      'matchedSequence': matchedSequence,
+    };
+  }
+
+  static AnalysisResult fromJson(Map<String, dynamic> json) {
+    return AnalysisResult(
+      gene: Gene.fromJson(json['gene'] as Map<String, dynamic>),
+      motif: Motif.fromJson(json['motif'] as Map<String, dynamic>),
+      position: json['position'],
+      rawPosition: json['rawPosition'],
+      match: json['match'] as String,
+      matchedSequence: json['matchedSequence'] as String,
+    );
+  }
 }

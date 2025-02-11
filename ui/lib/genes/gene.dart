@@ -122,4 +122,25 @@ class Gene {
 
   /// Returns the splicing variant of the gene
   String get geneSplicingVariant => geneId.split('.').last;
+  Map<String, dynamic> toJson() {
+    return {
+      'geneId': geneId,
+      'data': data,
+      'header': header,
+      'notes': notes,
+      'markers': markers,
+      'transcriptionRates': transcriptionRates,
+    };
+  }
+
+  static Gene fromJson(Map<String, dynamic> json) {
+    return Gene._(
+      geneId: json['geneId'] as String,
+      data: json['data'] as String,
+      header: json['header'] as String,
+      notes: List<String>.from(json['notes'] as List),
+      transcriptionRates: Map<String, num>.from(json['transcriptionRates'] as Map),
+      markers: Map<String, int>.from(json['markers'] as Map),
+    );
+  }
 }

@@ -349,7 +349,8 @@ class _SourcePanelState extends State<SourcePanel> {
   }
 
   void _handleClear() {
-    _model.reset();
+    //TODO this needs to be implemented and readded
+    // _model.reset();
     _scaffoldMessenger.showSnackBar(const SnackBar(
         content:
             Text('Cleared all data. Please pick a new organism to analyze.')));

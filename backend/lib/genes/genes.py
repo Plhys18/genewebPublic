@@ -1,13 +1,12 @@
 import json
 import re
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Optional
 
 class Gene:
     """
     Holds a single gene data
     """
 
-    # Replicating Dart's static fields
     gene_id_reg_exp = re.compile(r"(?P<gene>[A-Za-z0-9+_\.]+)")
     markers_reg_exp = re.compile(r";MARKERS (?P<json>\{.*\})$")
     transcription_rates_reg_exp = re.compile(r";TRANSCRIPTION_RATES (?P<json>\{.*\})$")
@@ -87,14 +86,12 @@ class Gene:
 
         if header is None or gene_id is None:
             # For clarity, replicate the same error message
-            raise Exception(f"Unable to parse: {'\\n'.join(lines)}")
+            raise Exception(f"Unable to parse: {lines}")
 
         sequence = "".join(data_lines)
         # Validate the ATG marker if present
         if markers and "atg" in markers:
             atg_pos = markers["atg"]
-            # In Dart, we do: `sequence.substring(atg - 1, (atg - 1) + 3)`
-            # Note that Python slicing is [start:end), so we do:
             codon = sequence[atg_pos - 1 : (atg_pos - 1) + 3]
             if codon not in ("ATG", "CAT"):
                 raise ValueError(
@@ -139,9 +136,6 @@ class Gene:
         """
         if self._geneCode is None:
             items = self.geneId.split(".")
-            from math import floor
-            # replicate sublist(0, max(items.length - 1, 1))
-            # max(items.length - 1, 1) in Dart ensures we always keep at least 1
             cutoff = max(len(items) - 1, 1)
             self._geneCode = ".".join(items[:cutoff])
         return self._geneCode

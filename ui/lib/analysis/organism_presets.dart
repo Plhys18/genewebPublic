@@ -9,25 +9,6 @@ import 'package:geneweb/analysis/stage_and_color.dart';
 /// TODO private
 class OrganismPresets {
   static final _arabidopsisStages = [
-    // StageAndColor('tapetum_C', const Color(0xff993300)),
-    // StageAndColor('EarlyPollen_C', const Color(0xffB71C1C), stroke: 4),
-    // StageAndColor('UNM_C', const Color(0xffFF6D6D)),
-    // StageAndColor('BCP_C', const Color(0xffC80002)),
-    // StageAndColor('LatePollen_C', const Color(0xff0D47A1), stroke: 4),
-    // StageAndColor('TCP_C', const Color(0xff21C5FF)),
-    // StageAndColor('MPG_C', const Color(0xff305496)),
-    // StageAndColor('SIV_C', const Color(0xffFF6600)),
-    // StageAndColor('sperm_C', const Color(0xffFFC002)),
-    // StageAndColor('leaves_C', const Color(0xff92D050)),
-    // StageAndColor('seedling_C', const Color(0xffC6E0B4)),
-    // StageAndColor('egg_C', const Color(0xff607D8B)),
-    // StageAndColor('EarlyPollen_L', const Color(0xffB71C1C), stroke: 4),
-    // StageAndColor('UNM_L', const Color(0xffFF6D6D)),
-    // StageAndColor('BCP_L', const Color(0xffC80002)),
-    // StageAndColor('LatePollen_L', const Color(0xff0D47A1), stroke: 4),
-    // StageAndColor('TCP_L', const Color(0xff21C5FF)),
-    // StageAndColor('MPG_L', const Color(0xff305496)),
-
     StageAndColor('C_Tapetum', const Color(0xff993300)),
     StageAndColor('C_EarlyPollen', const Color(0xffB71C1C)),
     StageAndColor('C_UNM', const Color(0xffFF6D6D)),

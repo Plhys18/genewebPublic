@@ -13,7 +13,7 @@ class GeneList extends Equatable {
   final List<dynamic> errors;
 
   /// List of stages. Key is stage name, value is a list of Gene.ids for that stage (unvalidated) This can be `null` if not supplied
-  final Map<String, Set<String>>? stages;
+  late final Map<String, Set<String>>? stages;
 
   /// Transcription rates for each stage
   ///
@@ -21,7 +21,7 @@ class GeneList extends Equatable {
   /// Used in calculating percentiles.
   final Map<String, Series> transcriptionRates;
 
-  final Map<String, Color>? _colors;
+  late final Map<String, Color>? _colors;
   final List<Gene> _genes;
 
   @override
@@ -31,7 +31,9 @@ class GeneList extends Equatable {
 
   /// Map of colors to be applied for given stage
   Map<String, Color> get colors => _colors ?? _colorsFromStages();
-
+  set colors(Map<String, Color>? value) {
+    _colors = value;
+  }
   /// Stroke width for stages
   Map<String, int> get stroke => _strokeFromStages();
 
@@ -296,5 +298,42 @@ class GeneList extends Equatable {
       return result;
     }
     return {};
+  }
+  Map<String, dynamic> toJson() {
+    return {
+      'genes': genes.map((g) => g.toJson()).toList(),
+      'errors': errors,
+      // Assuming stages is Map<String, Set<String>> – convert each Set to List.
+      'stages': stages?.map((key, value) => MapEntry(key, value.toList())),
+      // Assuming colors is Map<String, Color> – convert each Color to its integer value.
+      'colors': colors?.map((key, value) => MapEntry(key, value.value)),
+    };
+  }
+
+  static GeneList fromJson(Map<String, dynamic> json) {
+    final genesJson = json['genes'] as List<dynamic>;
+    // Create GeneList from the genes list.
+    final geneList = GeneList.fromList(
+      genes: genesJson.map((g) => Gene.fromJson(g as Map<String, dynamic>)).toList(),
+      errors: json['errors'] as List<dynamic>? ?? [],
+      organism: null, // Organism can be set separately if needed.
+    );
+
+    // If stages are present, convert lists back to sets.
+    if (json['stages'] != null) {
+      final stagesMap = (json['stages'] as Map<String, dynamic>).map(
+            (key, value) => MapEntry(key, Set<String>.from(value as List<dynamic>)),
+      );
+      geneList.stages = stagesMap;
+    }
+
+    // Convert colors back from integer values to Color.
+    if (json['colors'] != null) {
+      final colorsMap = (json['colors'] as Map<String, dynamic>).map(
+            (key, value) => MapEntry(key, Color(value as int)),
+      );
+      geneList.colors = colorsMap;
+    }
+    return geneList;
   }
 }

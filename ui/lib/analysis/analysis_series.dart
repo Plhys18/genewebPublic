@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:geneweb/analysis/analysis_result.py.dart';
+import 'package:geneweb/analysis/analysis_result.dart';
 import 'package:geneweb/analysis/distribution.dart';
 import 'package:geneweb/analysis/motif.dart';
 import 'package:geneweb/genes/gene.dart';
@@ -225,7 +225,40 @@ class AnalysisSeries {
     drillDownResults.sort((a, b) => b.count.compareTo(a.count));
     return drillDownResults;
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'geneList': geneList.toJson(),
+      'name': name,
+      'motif': motif.toJson(),
+      'color': color.value,
+      'stroke': stroke,
+      'visible': visible,
+      'result': result?.map((r) => r.toJson()).toList(),
+      'distribution': distribution?.toJson(),
+    };
+  }
+
+  static AnalysisSeries fromJson(Map<String, dynamic> json) {
+    return AnalysisSeries._(
+      geneList: GeneList.fromJson(json['geneList'] as Map<String, dynamic>),
+      noOverlaps: true, // or from json if needed
+      motif: Motif.fromJson(json['motif'] as Map<String, dynamic>),
+      name: json['name'] as String,
+      color: Color(json['color'] as int),
+      stroke: json['stroke'] as int,
+      visible: json['visible'] as bool? ?? true,
+      result: (json['result'] as List<dynamic>?)
+          ?.map((r) => AnalysisResult.fromJson(r as Map<String, dynamic>))
+          .toList(),
+      distribution: json['distribution'] != null
+          ? Distribution.fromJson(json['distribution'] as Map<String, dynamic>)
+          : null,
+    );
+  }
 }
+
+
 
 /// The result of a drill down
 class DrillDownResult {

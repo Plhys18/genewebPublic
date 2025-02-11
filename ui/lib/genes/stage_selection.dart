@@ -17,7 +17,7 @@ class StageSelection {
 
   StageSelection({
     this.selectedStages = const [],
-    this.strategy = FilterS0trategy.top,
+    this.strategy = FilterStrategy.top,
     this.selection = FilterSelection.percentile,
     this.percentile = 0.9,
     this.count = 3200,

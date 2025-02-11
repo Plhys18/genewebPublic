@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/analysis_series.dart';
@@ -13,58 +15,49 @@ import 'package:geneweb/my_app.dart';
 import 'package:geneweb/output/analysis_series_export.dart';
 import 'package:provider/provider.dart';
 import 'package:universal_file/universal_file.dart';
+import 'package:http/http.dart' as http;
 
-/// Main model for the UI app
 class GeneModel extends ChangeNotifier {
+  // ------------------------------
+  // Basic Properties & Authentication
+  // ------------------------------
   static const kAllStages = '__ALL__';
 
   final DeploymentFlavor? deploymentFlavor;
-
-  bool get publicSite => _publicSite;
   late bool _publicSite = deploymentFlavor == DeploymentFlavor.prod;
+  bool get publicSite => _publicSite;
 
-  bool get isSignedIn => _isSignedIn;
   bool _isSignedIn = false;
+  bool get isSignedIn => _isSignedIn;
   set isSignedIn(bool value) {
     _isSignedIn = value;
     notifyListeners();
   }
 
-  /// Flag that the analyis has been cancelled by the user
-  bool get analysisCancelled => _analysisCancelled;
   bool _analysisCancelled = false;
+  bool get analysisCancelled => _analysisCancelled;
 
-  /// Name of the organism
-  String? name;
-
-  /// List of genes
+  // ------------------------------
+  // Data and Analysis State
+  // ------------------------------
+  String? name; // Organism name
   GeneList? sourceGenes;
-
-  /// List of analysis series
   List<AnalysisSeries> analyses = [];
   List<AnalysisSeries> analysesHistory = [];
-
-  /// Progress of the analysis
   double? analysisProgress;
 
-  /// Options for the analysis
   AnalysisOptions analysisOptions = AnalysisOptions();
   StageSelection? _stageSelection;
-
-  /// Selected stages
   StageSelection? get stageSelection => _stageSelection;
 
   List<Motif> _motifs = [];
   List<Motif> _allMotifs = [];
-
-  /// All motifs
   List<Motif> get motifs => _motifs;
   List<Motif> get allMotifs => _allMotifs;
   set setAllMotifs(List<Motif> newMotifs) {
     _allMotifs = newMotifs;
   }
 
-  /// Number of series the analysis will produce
   int get expectedSeriesCount =>
       motifs.length * (stageSelection?.selectedStages.length ?? 0);
 
@@ -73,6 +66,9 @@ class GeneModel extends ChangeNotifier {
   static GeneModel of(BuildContext context) =>
       Provider.of<GeneModel>(context, listen: false);
 
+  // ------------------------------
+  // Reset and Configuration Methods
+  // ------------------------------
   void _reset({bool preserveSource = false}) {
     if (!preserveSource) {
       name = null;
@@ -85,12 +81,43 @@ class GeneModel extends ChangeNotifier {
     _motifs = [];
   }
 
+  void resetAnalysisOptions() {
+    if (sourceGenes?.genes.isNotEmpty ?? false) {
+      final alignMarkers = sourceGenes!.genes.first.markers.keys.toList()..sort();
+      if (alignMarkers.isNotEmpty) {
+        analysisOptions = AnalysisOptions(
+          alignMarker: alignMarkers.first,
+          min: -1000,
+          max: 1000,
+          bucketSize: 30,
+        );
+      } else {
+        analysisOptions = AnalysisOptions();
+      }
+    } else {
+      analysisOptions = AnalysisOptions();
+    }
+  }
+
+  void resetFilter() {
+    final selectedStages = sourceGenes?.defaultSelectedStageKeys ?? [];
+    _stageSelection = StageSelection(
+      selectedStages: [kAllStages, ...selectedStages],
+      strategy: sourceGenes?.stages != null ? null : FilterStrategy.top,
+      selection: sourceGenes?.stages != null ? null : FilterSelection.percentile,
+      percentile: sourceGenes?.stages != null ? null : 0.9,
+      count: sourceGenes?.stages != null ? null : 3200,
+    );
+  }
+
+  // ------------------------------
+  // Public Setters (UI Updates)
+  // ------------------------------
   void cancelAnalysis() {
     _analysisCancelled = true;
     notifyListeners();
   }
 
-  //TODO private
   void setPublicSite(bool value) {
     if (deploymentFlavor != null)
       throw Exception('Flavor is defined by deployment');
@@ -98,8 +125,8 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setAnalyses(List<AnalysisSeries> analyses) {
-    this.analyses = analyses;
+  void setAnalyses(List<AnalysisSeries> newAnalyses) {
+    analyses = newAnalyses;
     notifyListeners();
   }
 
@@ -120,8 +147,8 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void removeAnalysis(String name) {
-    analyses = analyses.where((a) => a.name != name).toList();
+  void removeAnalysis(String analysisName) {
+    analyses = analyses.where((a) => a.name != analysisName).toList();
     notifyListeners();
   }
 
@@ -130,68 +157,57 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Triggers a smaller re-analysis with the current selection
   Future<void> reAnalyze() async {
     await analyze();
   }
 
-  /// Clears everything and triggers a new analysis
   Future<void> analyzeNew() async {
     _reset(preserveSource: true);
     await analyze();
   }
 
-  void resetAnalysisOptions() {
-    final alignMarkers = sourceGenes?.genes.first.markers.keys.toList();
-    alignMarkers?.sort();
-    if (alignMarkers != null && alignMarkers.isNotEmpty) {
-      analysisOptions = AnalysisOptions(
-          alignMarker: alignMarkers.first,
-          min: -1000,
-          max: 1000,
-          bucketSize: 30);
-    } else {
-      analysisOptions = AnalysisOptions();
-    }
+  void addAnalysisToHistory() {
+    analysesHistory.addAll(analyses);
   }
 
-  void resetFilter() {
-    final selectedStages = sourceGenes?.defaultSelectedStageKeys ?? [];
-    _stageSelection = StageSelection(
-      selectedStages: [kAllStages, ...selectedStages],
-      strategy: sourceGenes?.stages != null ? null : FilterStrategy.top,
-      selection:
-          sourceGenes?.stages != null ? null : FilterSelection.percentile,
-      percentile: sourceGenes?.stages != null ? null : 0.9,
-      count: sourceGenes?.stages != null ? null : 3200,
-    );
-  }
-
-  /// Loads genes and transcript rates from .fasta data
-  Future<void> loadFastaFromString(
-      {required String data,
-      Organism? organism,
-      required Function(double progress) progressCallback}) async {
+  // ------------------------------
+  // Data Loading (Local, to be moved later)
+  // ------------------------------
+  Future<void> loadFastaFromString({
+    required String data,
+    Organism? organism,
+    required Function(double progress) progressCallback,
+  }) async {
     _reset();
     name = organism?.name;
+    try {
+      final geneList = await _parseFasta(data, organism, progressCallback);
+      sourceGenes = geneList;
+      resetAnalysisOptions();
+      resetFilter();
+      notifyListeners();
+    } catch (e) {
+      throw Exception("Error loading FASTA: $e");
+    }
+  }
+
+  Future<GeneList> _parseFasta(String data, Organism? organism, Function(double) progressCallback) async {
+    // Delegate to GeneList parsing methods.
     List<Gene> genes;
     List<dynamic> errors;
-    final takeSingleTranscript =
-        organism == null || organism.takeFirstTranscriptOnly;
+    final takeSingleTranscript = organism == null || organism.takeFirstTranscriptOnly;
     (genes, errors) = await GeneList.parseFasta(
-        data,
-        takeSingleTranscript
-            ? (value) => progressCallback(value / 2)
-            : progressCallback);
+      data,
+      takeSingleTranscript ? (value) => progressCallback(value / 2) : progressCallback,
+    );
     if (takeSingleTranscript) {
       (genes, errors) = await GeneList.takeSingleTranscript(
-          genes, errors, (value) => progressCallback(0.5 + value / 2));
+        genes,
+        errors,
+            (value) => progressCallback(0.5 + value / 2),
+      );
     }
-    sourceGenes =
-        GeneList.fromList(genes: genes, errors: errors, organism: organism);
-    resetAnalysisOptions();
-    resetFilter();
-    notifyListeners();
+    return GeneList.fromList(genes: genes, errors: errors, organism: organism);
   }
 
   Future<void> loadFastaFromFile({
@@ -201,32 +217,32 @@ class GeneModel extends ChangeNotifier {
     required Function(double progress) progressCallback,
   }) async {
     final data = await File(path).readAsString();
-    return await loadFastaFromString(
-        data: data, organism: organism, progressCallback: progressCallback);
+    await loadFastaFromString(
+      data: data,
+      organism: organism,
+      progressCallback: progressCallback,
+    );
   }
 
-  /// Loads info about stages and colors from CSV file
-  ///
-  /// See [StagesData]
   bool loadStagesFromString(String data) {
     _reset(preserveSource: true);
-    assert(sourceGenes != null);
-    final stages = StagesData.fromCsv(data);
-
+    assert(sourceGenes != null, "Source genes must be loaded first");
+    final stagesData = StagesData.fromCsv(data);
     final List<dynamic> errors = [];
-    final genes = sourceGenes!.genes.map((g) => g.geneId).toSet();
-    for (final stageKey in stages.stages.keys) {
-      final stageGenes = stages.stages[stageKey]!.toSet();
-      final diff = stageGenes.difference(genes);
+    final genesSet = sourceGenes!.genes.map((g) => g.geneId).toSet();
+    for (final stageKey in stagesData.stages.keys) {
+      final stageGenes = stagesData.stages[stageKey]!.toSet();
+      final diff = stageGenes.difference(genesSet);
       if (diff.isNotEmpty) {
         errors.add(
-            'Found ${diff.length} genes in stage $stageKey that are not in the gene list: ${diff.toList().take(3).join(', ')}${diff.length > 3 ? '…' : ''}');
+            'Found ${diff.length} genes in stage $stageKey not in gene list: ${diff.toList().take(3).join(', ')}${diff.length > 3 ? "…" : ""}');
       }
     }
     sourceGenes = sourceGenes?.copyWith(
-        stages: stages.stages,
-        colors: stages.colors,
-        errors: errors.isEmpty ? null : [...errors, ...sourceGenes!.errors]);
+      stages: stagesData.stages,
+      colors: stagesData.colors,
+      errors: errors.isEmpty ? null : [...errors, ...sourceGenes!.errors],
+    );
     resetAnalysisOptions();
     resetFilter();
     notifyListeners();
@@ -238,35 +254,28 @@ class GeneModel extends ChangeNotifier {
     return loadStagesFromString(data);
   }
 
-  /// Loads TPM data for individual stages and colors from CSV file
-  ///
-  /// See [StagesData]
   bool loadTPMFromString(String data) {
     _reset(preserveSource: true);
-    assert(sourceGenes != null);
-    final tpm = TPMData.fromCsv(data);
-
+    assert(sourceGenes != null, "Source genes must be loaded first");
+    final tpmData = TPMData.fromCsv(data);
     final List<dynamic> errors = [];
-    final List<Gene> genes = [
+    final List<Gene> newGenes = [
       for (final gene in sourceGenes!.genes)
-        if (tpm.stages.keys
-            .every((stageKey) => tpm.stages[stageKey]![gene.geneId] != null))
+        if (tpmData.stages.keys.every((stageKey) => tpmData.stages[stageKey]![gene.geneId] != null))
           gene.copyWith(transcriptionRates: {
-            for (final stage in tpm.stages.keys)
-              stage: tpm.stages[stage]![gene.geneId]!,
+            for (final stage in tpmData.stages.keys)
+              stage: tpmData.stages[stage]![gene.geneId]!,
           }),
     ];
-
-    if (genes.length != sourceGenes!.genes.length) {
+    if (newGenes.length != sourceGenes!.genes.length) {
       errors.add(
-          '${sourceGenes!.genes.length - genes.length} genes excluded due to lack of TPM data');
+          '${sourceGenes!.genes.length - newGenes.length} genes excluded due to missing TPM data');
     }
-
     sourceGenes = sourceGenes?.copyWith(
-        genes: genes,
-        errors: errors.isEmpty ? null : [...errors, ...sourceGenes!.errors],
-        colors: tpm.colors);
-
+      genes: newGenes,
+      errors: errors.isEmpty ? null : [...errors, ...sourceGenes!.errors],
+      colors: tpmData.colors,
+    );
     resetAnalysisOptions();
     resetFilter();
     notifyListeners();
@@ -278,59 +287,72 @@ class GeneModel extends ChangeNotifier {
     return loadTPMFromString(data);
   }
 
-  void reset() {
-    _reset();
-    notifyListeners();
-  }
-
-  /// Runs analysis for all selected stages and motifs
+  // ------------------------------
+  // Analysis (Delegates heavy work to backend eventually)
+  // ------------------------------
   Future<bool> analyze() async {
-    assert(stageSelection != null);
-    assert(stageSelection!.selectedStages.isNotEmpty);
-    assert(motifs.isNotEmpty);
-    final totalIterations =
-        stageSelection!.selectedStages.length * motifs.length;
-    assert(totalIterations > 0);
+    assert(stageSelection != null, "Stage selection must be set");
+    assert(stageSelection!.selectedStages.isNotEmpty, "No stages selected");
+    assert(motifs.isNotEmpty, "No motifs selected");
+    final totalIterations = stageSelection!.selectedStages.length * motifs.length;
+    assert(totalIterations > 0, "Total iterations must be greater than zero");
     int iterations = 0;
     analysisProgress = 0.0;
     _analysisCancelled = false;
     notifyListeners();
+
+    // For each combination of motif and selected stage,
+    // prepare parameters and delegate analysis.
     for (final motif in motifs) {
-      for (final key in stageSelection!.selectedStages) {
-        await Future.delayed(
-            const Duration(milliseconds: 50)); // Allow UI to refresh on web
+      for (final stageKey in stageSelection!.selectedStages) {
+        await Future.delayed(const Duration(milliseconds: 50)); // allow UI update
         if (_analysisCancelled) {
           analysisProgress = null;
           notifyListeners();
           return false;
         }
-        final filteredGenes = key == kAllStages
+        final filteredGenes = stageKey == kAllStages
             ? sourceGenes
-            : sourceGenes!.filter(stage: key, stageSelection: stageSelection!);
-        final name = '${key == kAllStages ? 'all' : key} - ${motif.name}';
+            : sourceGenes!.filter(stage: stageKey, stageSelection: stageSelection!);
+        final analysisName = '${stageKey == kAllStages ? 'all' : stageKey} - ${motif.name}';
         final color = sourceGenes?.colors.isNotEmpty == true
-            ? (sourceGenes!.colors[key] ?? Colors.grey)
-            : _randomColorOf(name);
-        final stroke = key == kAllStages ? 4 : sourceGenes?.stroke[key];
-        removeAnalysis(name);
-
-        final analysis = await compute(runAnalysis, {
-          'genes': filteredGenes,
-          'motif': motif,
-          'name': name,
+            ? (sourceGenes!.colors[stageKey] ?? Colors.grey)
+            : _randomColorOf(analysisName);
+        final stroke = stageKey == kAllStages ? 4 : sourceGenes?.stroke[stageKey];
+        removeAnalysis(analysisName);
+        final params = {
+          'genes': filteredGenes?.toJson(), // JSON representation; ensure implementation
+          'motif': motif.toJson(),         // JSON representation; ensure implementation
+          'name': analysisName,
           'min': analysisOptions.min,
           'max': analysisOptions.max,
           'interval': analysisOptions.bucketSize,
           'alignMarker': analysisOptions.alignMarker,
           'color': color.value,
           'stroke': stroke,
-        });
-        analyses.add(analysis);
+        };
+        try {
+          final response = await http.post(
+            Uri.parse("http://localhost:8000/api/analysis/run/"),
+            headers: {"Content-Type": "application/json"},
+            body: jsonEncode(params),
+          );
+          if (response.statusCode == 200) {
+            final json = jsonDecode(response.body);
+            final analysisSeries = AnalysisSeries.fromJson(json);
+            analyses.add(analysisSeries);
+          } else {
+            // Optionally handle error responses here
+          }
+        } catch (e) {
+          // Handle network or JSON errors
+        }
         iterations++;
         analysisProgress = iterations / totalIterations;
         notifyListeners();
       }
     }
+
     analysisProgress = null;
     notifyListeners();
     return true;
@@ -345,16 +367,16 @@ class GeneModel extends ChangeNotifier {
     final red = ((finalHash & 0xFF0000) >> 16);
     final blue = ((finalHash & 0xFF00) >> 8);
     final green = ((finalHash & 0xFF));
-    final color = Color.fromRGBO(red, green, blue, 1);
-    return color;
+    return Color.fromRGBO(red, green, blue, 1);
   }
 
-  void addAnalysisToHistory() {
-    analysesHistory.addAll(analyses);
-  }
+// ------------------------------
+// End of GeneModel
+// ------------------------------
 }
 
-/// Runs the analysis (isolate)
+/// Runs the analysis in an isolate or locally.
+/// Currently wraps the call to AnalysisSeries.run; later this could be replaced by a backend call.
 Future<AnalysisSeries> runAnalysis(Map<String, dynamic> params) async {
   final list = params['genes'] as GeneList;
   final motif = params['motif'] as Motif;

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:geneweb/analysis/analysis_result.py.dart';
+import 'package:geneweb/analysis/analysis_result.dart';
+
+import 'distributionDataPoints.dart';
 
 /// Holds the result of series distribution
 class Distribution {
@@ -92,38 +94,30 @@ class Distribution {
     _totalGenesWithMotifCount =
         results.map((result) => result.gene.geneId).toSet().length;
   }
-}
+  Map<String, dynamic> toJson() {
+    return {
+      'min': min,
+      'max': max,
+      'bucketSize': bucketSize,
+      'alignMarker': alignMarker,
+      'name': name,
+      'color': color?.value,
+      'dataPoints': dataPoints?.map((dp) => dp.toJson()).toList(),
+      'totalCount': totalCount,
+      'totalGenesCount': totalGenesCount,
+      'totalGenesWithMotifCount': totalGenesWithMotifCount,
+    };
+  }
 
-/// Holds a datapoint of the distribution
-class DistributionDataPoint {
-  /// The minimum position of the interval (inclusive)
-  final int min;
-
-  /// The maximum position of the interval (exclusive)
-  final int max;
-
-  /// The number of matches in the interval
-  final int count;
-
-  /// The percentage of matches in the interval
-  final double percent;
-
-  /// The genes with the motif in the interval
-  final Set<String> genes;
-
-  /// The percentage of genes with the motif in the interval
-  final double genesPercent;
-  DistributionDataPoint(
-      {required this.min,
-      required this.max,
-      required this.count,
-      required this.percent,
-      required this.genes,
-      required this.genesPercent});
-
-  int get genesCount => genes.length;
-
-  String get label {
-    return '<$min; $max)';
+  static Distribution fromJson(Map<String, dynamic> json) {
+    final distribution = Distribution(
+      min: json['min'] as int,
+      max: json['max'] as int,
+      bucketSize: json['bucketSize'] as int,
+      alignMarker: json['alignMarker'] as String?,
+      name: json['name'] as String,
+      color: json['color'] != null ? Color(json['color'] as int) : null,
+    );
+    return distribution;
   }
 }
