@@ -25,7 +25,7 @@ class Organism {
     required this.name,
     this.filename,
     this.description,
-    this.public = false,
+    this.public = true,
     this.takeFirstTranscriptOnly = true,
     this.stages = const [],
   });

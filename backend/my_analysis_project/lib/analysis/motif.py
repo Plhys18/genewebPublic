@@ -197,4 +197,15 @@ class Motif:
             return {'R', 'S', 'M', 'A', 'G', 'C'}
         else:
             raise ValueError(f"Unsupported code `{code}`")
-# from motif import Motif
+
+    @classmethod
+    def fromJson(cls, motif_json):
+        """
+        :param motif_json:
+        :return:
+        """
+        name = motif_json.get('name')
+        definitions = motif_json.get('definitions')
+        is_custom = motif_json.get('is_custom', False)
+        is_public = motif_json.get('is_public', True)
+        return cls(name, definitions, is_custom, is_public)

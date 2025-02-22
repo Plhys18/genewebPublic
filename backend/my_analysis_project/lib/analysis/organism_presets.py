@@ -1,5 +1,4 @@
 import re
-from typing import Optional
 from organism import Organism
 from stage_and_color import StageAndColor
 

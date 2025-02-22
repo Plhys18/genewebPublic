@@ -416,7 +416,8 @@ class GeneModel:
         self.notifyListeners()
         return True
 
-    def _randomColorOf(self, text: str):
+    @staticmethod
+    def _randomColorOf(text: str):
         """
         Mimic the Dart hashing approach for a color.
         We'll return a hex string like '#RRGGBB'

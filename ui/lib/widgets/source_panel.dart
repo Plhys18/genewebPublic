@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/organism.dart';
-import 'package:geneweb/analysis/organism_presets.dart';
 import 'package:geneweb/genes/gene_list.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:http/http.dart' as http;
@@ -76,31 +74,49 @@ class _SourcePanelState extends State<SourcePanel> {
     );
   }
 
+  Future<List<Organism>> fetchOrganismNames() async {
+    final response = await http.get(Uri.parse("http://localhost:8000/api/organisms/"));
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return List<String>.from(data["organisms"])
+          .map((name) => Organism(name: name, filename: "$name.fasta"))
+          .toList();
+    } else {
+      throw Exception("Failed to fetch organism names");
+    }
+  }
+
   Widget _buildLoad(BuildContext context) {
-    final publicSite =
-        context.select<GeneModel, bool>((model) => model.publicSite);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Wrap(
-          spacing: 8.0,
-          runSpacing: 8.0,
-          crossAxisAlignment: WrapCrossAlignment.center,
+
+    return FutureBuilder<List<Organism>>(
+      future: fetchOrganismNames(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Text("Error loading organisms: ${snapshot.error}");
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Text("No organisms available");
+        }
+
+        final organisms = snapshot.data!;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ...OrganismPresets.kOrganisms
-                .where((o) => o.public || publicSite == false)
-                .map((organism) => _OrganismCard(
-                    organism: organism,
-                    onSelected: organism.filename == null
-                        ? null
-                        : () => _handleDownloadFasta(organism))),
-            if (!publicSite)
-              TextButton(
-                  onPressed: _handlePickFastaFile,
-                  child: const Text('Load custom .fasta file…')),
+            Wrap(
+              spacing: 8.0,
+              runSpacing: 8.0,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: organisms.map((organism) => _OrganismCard(
+                organism: organism,
+                onSelected: () => _handleSelectOrganism(organism),
+              )).toList(),
+            ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -155,57 +171,28 @@ class _SourcePanelState extends State<SourcePanel> {
       ],
     );
   }
-
-  Future<void> _handlePickFastaFile() async {
+  Future<void> _handleSelectOrganism(Organism organism) async {
     try {
-      setState(() => _loadingMessage = 'Picking file…');
-      FilePickerResult? result = await FilePicker.platform.pickFiles();
-      if (result == null) {
-        return;
-      }
-      final filename = result.files.single.name;
-      setState(() => _loadingMessage = 'Loading $filename…');
-      await Future.delayed(const Duration(milliseconds: 100));
-      final organism = OrganismPresets.organismByFileName(filename);
-      if (kIsWeb) {
-        final data = const Utf8Decoder().convert(result.files.single.bytes!);
-        debugPrint('Loaded ${data.length ~/ (1024 * 1024)} MB');
-        await _model.loadFastaFromString(
-          data: data,
-          organism: organism,
-          progressCallback: (value) => setState(() => _progress = value),
-        );
-      } else {
-        final path = result.files.single.path!;
-        await _model.loadFastaFromFile(
-          path: path,
-          organism: organism,
-          filename: filename,
-          progressCallback: (value) => setState(() => _progress = value),
-        );
-      }
-      if (_model.sourceGenes!.errors.isEmpty) {
-        _scaffoldMessenger.showSnackBar(SnackBar(
-            content:
-                Text('Imported ${_model.sourceGenes?.genes.length} genes.')));
-      } else {
-        _scaffoldMessenger.showSnackBar(SnackBar(
-            backgroundColor: Colors.red,
-            content: Text(
-                'Imported ${_model.sourceGenes?.genes.length} genes, ${_model.sourceGenes?.errors.length} errors.')));
-      }
-      if (_model.publicSite) {
-        widget.onShouldClose();
-      }
+      setState(() => _loadingMessage = "Setting active organism: ${organism.name}…");
+
+      final model = GeneModel.of(context);
+      await model.loadOrganismFromBackend(organism.name);
+
+      _scaffoldMessenger.showSnackBar(SnackBar(
+        content: Text("Now working with ${organism.name}."),
+      ));
+
+      widget.onShouldClose();
     } catch (error) {
       _scaffoldMessenger.showSnackBar(SnackBar(
-        content: Text('Error loading data: $error'),
+        content: Text("Error selecting organism: $error"),
         backgroundColor: Colors.red,
       ));
     } finally {
       setState(() => _loadingMessage = null);
     }
   }
+
 
   Future<void> _handlePickStagesFile() async {
     try {
@@ -241,111 +228,6 @@ class _SourcePanelState extends State<SourcePanel> {
     } finally {
       setState(() => _loadingMessage = null);
     }
-  }
-
-  Future<Archive> _downloadAndUnarchive(String filename) async {
-    try {
-      setState(() => _loadingMessage = 'Downloading $filename…');
-      setState(() => _progress = null);
-      debugPrint('Preparing download of $filename');
-      await Future.delayed(const Duration(milliseconds: 100));
-
-      final bytes = await _downloadFile(Uri.https(
-          kIsWeb ? Uri.base.authority : 'golem-dev.ncbr.muni.cz',
-          'datasets/$filename'));
-      debugPrint('Downloaded ${bytes.length ~/ (1024 * 1024)} MB');
-      if (mounted)
-        setState(() => _loadingMessage =
-            'Decompressing ${bytes.length ~/ (1024 * 1024)} MB…');
-      if (mounted) setState(() => _progress = 0.7);
-      await Future.delayed(const Duration(milliseconds: 100));
-      final archive = ZipDecoder().decodeBytes(bytes);
-      debugPrint('Decoded $archive');
-      return archive;
-    } catch (_) {
-      rethrow;
-    }
-  }
-
-  String _fileContent(ArchiveFile file) {
-    return const Utf8Decoder().convert(file.content);
-  }
-
-  Future<void> _handleDownloadFasta(Organism organism) async {
-    try {
-      Archive? archive = await _downloadAndUnarchive(organism.filename!);
-      final file =
-          archive.firstWhere((f) => f.isFile); //StateError if not found
-      final name = file.name.split('/').last;
-      if (!name.endsWith('.fasta') && !name.endsWith('.fa')) {
-        throw StateError('Expected .fasta file, got $name');
-      }
-      debugPrint('Found $file');
-      final content = _fileContent(file);
-      debugPrint('Decoded ${content.length ~/ (1024 * 1024)} MB of data');
-      archive = null; // unload from memory
-      if (mounted)
-        setState(() => _loadingMessage =
-            'Analyzing $name (${content.length ~/ (1024 * 1024)} MB)…');
-      if (mounted) setState(() => _progress = 0.8);
-      await Future.delayed(const Duration(milliseconds: 100));
-      await _model.loadFastaFromString(
-        data: content,
-        organism: organism,
-        progressCallback: (value) =>
-            setState(() => _progress = 0.8 + value * 0.2),
-      );
-      debugPrint('Finished loading');
-      if (_model.sourceGenes!.errors.isEmpty) {
-        _scaffoldMessenger.showSnackBar(SnackBar(
-            content:
-                Text('Imported ${_model.sourceGenes?.genes.length} genes.')));
-      } else {
-        _scaffoldMessenger.showSnackBar(SnackBar(
-            backgroundColor: Colors.red,
-            content: Text(
-                'Imported ${_model.sourceGenes?.genes.length} genes, ${_model.sourceGenes?.errors.length} errors.')));
-      }
-      widget.onShouldClose();
-    } catch (error) {
-      _scaffoldMessenger.showSnackBar(SnackBar(
-        content: Text('Error loading data: $error'),
-        backgroundColor: Colors.red,
-      ));
-    } finally {
-      if (mounted) setState(() => _loadingMessage = null);
-      if (mounted) setState(() => _progress = null);
-    }
-  }
-
-  Future<List<int>> _downloadFile(Uri uri) async {
-    debugPrint('Starting download $uri');
-    final request = http.Request('GET', uri);
-    debugPrint('Sending request');
-    final http.StreamedResponse response = await http.Client().send(request);
-    debugPrint('Got $response');
-    final contentLength = response.contentLength;
-    debugPrint('Will download ${(contentLength ?? 0) ~/ (1024 * 1024)} MB');
-    int downloadedBytes = 0;
-    List<int> bytes = [];
-    await response.stream.listen(
-      (List<int> newBytes) {
-        bytes.addAll(newBytes);
-        downloadedBytes += newBytes.length;
-        if (mounted)
-          setState(() => _progress = contentLength == null
-              ? null
-              : (downloadedBytes / contentLength * 0.7));
-      },
-      onDone: () async {
-        debugPrint('Stream done');
-      },
-      onError: (e) {
-        throw StateError('Error downloading file: $e');
-      },
-      cancelOnError: true,
-    ).asFuture();
-    return bytes;
   }
 
   void _handleClear() {
@@ -392,7 +274,6 @@ class _SourcePanelState extends State<SourcePanel> {
     }
   }
 }
-
 class _OrganismCard extends StatelessWidget {
   final Organism organism;
   final VoidCallback? onSelected;
@@ -415,14 +296,13 @@ class _OrganismCard extends StatelessWidget {
                     child: Text(organism.name,
                         style: textTheme.titleSmall!
                             .copyWith(fontStyle: FontStyle.italic))),
-                const SizedBox(height: 8),
-                FittedBox(
+                const SizedBox(height: 8),FittedBox(
                     child: Wrap(
                   spacing: 4,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     if (!organism.public) const Icon(Icons.lock, size: 12),
-                    Text(organism.description ?? '',
+                    Text(organism.description ?? ' ',
                         style: textTheme.bodySmall),
                   ],
                 )),

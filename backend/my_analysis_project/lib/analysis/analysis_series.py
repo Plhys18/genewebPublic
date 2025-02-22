@@ -1,10 +1,12 @@
 from typing import List, Dict, Optional
 import re
-from genes.gene_list import GeneList
-from analysis.analysis_result import AnalysisResult
-from analysis.motif import Motif
-from analysis.distribution import Distribution
 from collections import defaultdict
+
+from lib.analysis.analysis_result import AnalysisResult
+from lib.analysis.distribution import Distribution
+from lib.analysis.motif import Motif
+from lib.genes.gene_list import GeneList
+
 
 class AnalysisSeries:
     """Represents one series in the analysis"""
@@ -108,8 +110,9 @@ class AnalysisSeries:
             included_results.append(result)
             excluded_results.update(
                 e for e in results
-                if e != result and e.raw_position >= result.raw_position
-                and e.raw_position < result.raw_position + len(result.match)
+                if
+                e != result and result.raw_position <= e.raw_position < result.raw_position + len(
+                    result.match)
             )
 
         return included_results

@@ -65,6 +65,7 @@ class __LockState extends State<_Lock> {
                   hintText: 'Enter your username',
                   border: OutlineInputBorder(),
                 ),
+                onSubmitted: (_) => _handleSubmit(),
               ),
             ),
             const SizedBox(height: 20),
@@ -78,6 +79,7 @@ class __LockState extends State<_Lock> {
                   border: OutlineInputBorder(),
                 ),
                 obscureText: true,
+                onSubmitted: (_) => _handleSubmit(),
               ),
             ),
             const SizedBox(height: 20),
@@ -107,8 +109,8 @@ class __LockState extends State<_Lock> {
       return;
     }
 
-    // final passwordHash = _hashPassword(password);
-    final payload = _buildPayload(username, password);
+    final passwordHash = _hashPassword(password);
+    final payload = _buildPayload(username, passwordHash);
 
     try {
       final response = await _postLogin(payload);
@@ -139,7 +141,7 @@ class __LockState extends State<_Lock> {
 
   Future<http.Response> _postLogin(String payload) {
     return http.post(
-      Uri.parse('http://0.0.0.0:8000/auth/login/'),
+      Uri.parse('http://0.0.0.0:8000/api/auth/login/'),
       headers: {'Content-Type': 'application/json'},
       body: payload,
     );

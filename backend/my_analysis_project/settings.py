@@ -9,7 +9,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-default-key')
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
 # Hosts settings
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,0.0.0.0').split(',')
 
 # CORS settings (using django-cors-headers)
 # For development, you might allow all origins.
@@ -18,6 +18,12 @@ if not CORS_ALLOW_ALL_ORIGINS:
     CORS_ALLOWED_ORIGINS = os.environ.get('DJANGO_CORS_ALLOWED_ORIGINS', 'http://localhost:35525').split(',')
 
 # Application definition
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Directory where static gene and CSV files are stored
+DATA_DIR = BASE_DIR / "data"
 
 INSTALLED_APPS = [
     # Django core apps
@@ -47,7 +53,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'my_analysis_app.urls'
+ROOT_URLCONF = 'analysis_app.urls'
 
 TEMPLATES = [
     {
@@ -65,7 +71,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'my_analysis_app.wsgi.application'
+WSGI_APPLICATION = 'analysis_app.wsgi.application'
 
 # Database configuration using SQLite for development
 DATABASES = {

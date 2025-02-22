@@ -66,13 +66,9 @@ class _HomeState extends State<Home> {
             steps: <Step>[
               Step(
                 title: const Text('Species'),
-                subtitle: const SourceSubtitle(),
+                subtitle: Text(GeneModel.of(context).name ?? 'Select an organism'),
                 content: SourcePanel(onShouldClose: () => _handleStepTapped(1)),
-                state: sourceGenes == null
-                    ? StepState.indexed
-                    : sourceGenes.errors.isNotEmpty
-                        ? StepState.error
-                        : StepState.complete,
+                state: GeneModel.of(context).name == null ? StepState.indexed : StepState.complete,
               ),
               Step(
                 title: const Text('Genomic interval'),
@@ -133,18 +129,14 @@ class _HomeState extends State<Home> {
   bool _isStepAllowed(int nextStep) {
     final model = GeneModel.of(context);
     switch (nextStep) {
-      case 0: // source data
+      case 0:
         return true;
-      case 1: // analysis options
-        return model.sourceGenes != null;
-      case 2: // motif
-        return model.sourceGenes != null;
-      case 3: // stage
-        return model.sourceGenes != null;
-      case 4: // analysis
-        return model.sourceGenes != null &&
-            model.expectedSeriesCount > 0 &&
-            model.expectedSeriesCount <= 60;
+      case 1:
+      case 2:
+      case 3:
+        return model.name != null;
+      case 4:
+        return model.name != null && model.expectedSeriesCount > 0;
       default:
         return false;
     }

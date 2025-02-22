@@ -1,8 +1,7 @@
 from typing import Optional, List, Dict, Set
 from dataclasses import dataclass
 
-# We assume AnalysisResult is defined in analysis_result.py (already converted)
-# from analysis_result import AnalysisResult
+from analysis_result import AnalysisResult
 
 class Distribution:
     """
