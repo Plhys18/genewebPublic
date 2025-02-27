@@ -1,3 +1,6 @@
+from my_analysis_project.lib.analysis.motif import Motif
+
+
 class MotifPresets:
     """
     Presets for motifs that are used in the UI
@@ -8,7 +11,6 @@ class MotifPresets:
     # We statically define the presets list, then sort by name.
     @staticmethod
     def get_presets():
-        from motif import Motif  # local import to avoid circular references
         presets = [
             Motif(name='ABRE', definitions=['ACGTG']),
             Motif(name='ARR10_core', definitions=['GATY']),

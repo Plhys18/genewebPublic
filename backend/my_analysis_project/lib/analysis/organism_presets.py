@@ -1,6 +1,8 @@
 import re
-from organism import Organism
-from stage_and_color import StageAndColor
+
+from my_analysis_project.lib.analysis.organism import Organism
+from my_analysis_project.lib.analysis.stage_and_color import StageAndColor
+
 
 class OrganismPresets:
     """
@@ -9,7 +11,6 @@ class OrganismPresets:
     See Organism
     """
 
-    # Mimic the `_arabidopsisStages` list from Dart
     _arabidopsis_stages = [
         StageAndColor("C_Tapetum", "#993300"),
         StageAndColor("C_EarlyPollen", "#B71C1C"),

@@ -1,7 +1,8 @@
 from typing import Optional, List, Dict, Set
 from dataclasses import dataclass
 
-from analysis_result import AnalysisResult
+from my_analysis_project.lib.analysis.analysis_result import AnalysisResult
+
 
 class Distribution:
     """
@@ -104,15 +105,42 @@ class Distribution:
 
             if interval_index not in gene_counts:
                 gene_counts[interval_index] = set()
-            gene_counts[interval_index].add(result.gene.gene_id)
+            gene_counts[interval_index].add(result.gene.geneId)
 
         self._counts = counts
-        self._genes = {k: v for k, v in gene_counts.items()}  # copy to ensure immutability if needed
+        self._genes = {k: v for k, v in gene_counts.items()}
 
         self._totalCount = len(results)
         self._totalGenesCount = total_genes_count
-        self._totalGenesWithMotifCount = len({r.gene.gene_id for r in results})
+        self._totalGenesWithMotifCount = len({r.gene.geneId for r in results})
 
+
+
+    def to_dict(self) -> dict:
+        """Serializes the Distribution object to a dictionary."""
+        return {
+            "min": self.min,
+            "max": self.max,
+            "bucket_size": self.bucket_size,
+            "name": self.name,
+            "color": self.color,
+            "align_marker": self.align_marker,
+            "total_count": self._totalCount,
+            "total_genes_count": self._totalGenesCount,
+            "total_genes_with_motif_count": self._totalGenesWithMotifCount
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Distribution":
+        """Deserializes a dictionary into a Distribution object."""
+        return cls(
+            min=data["min"],
+            max=data["max"],
+            bucket_size=data["bucket_size"],
+            name=data["name"],
+            color=data.get("color"),
+            align_marker=data.get("align_marker")
+        )
 
 @dataclass
 class DistributionDataPoint:

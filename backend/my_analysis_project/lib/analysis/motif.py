@@ -209,3 +209,37 @@ class Motif:
         is_custom = motif_json.get('is_custom', False)
         is_public = motif_json.get('is_public', True)
         return cls(name, definitions, is_custom, is_public)
+
+
+    def to_dict(self) -> dict:
+        """Serializes the Motif object to a dictionary."""
+        return {
+            "name": self.name,
+            "definitions": self.definitions,
+            "is_custom": self.is_custom,
+            "is_public": self.is_public
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Motif":
+        """Deserializes a dictionary into a Motif object."""
+        return cls(
+            name=data["name"],
+            definitions=data["definitions"],
+            is_custom=data.get("is_custom", False),
+            is_public=data.get("is_public", True)
+        )
+
+    @staticmethod
+    def nucleotide_code_to_reg_exp_part(code: str) -> str:
+        code_mapping = {
+            'A': 'A', 'G': 'G', 'C': 'C', 'T': 'T', 'U': 'A',
+            'R': '[RAG]', 'Y': '[YCT]', 'N': '.', 'W': '[WAT]',
+            'S': '[SGC]', 'M': '[MAC]', 'K': '[KGT]',
+            'B': '[BSYKGCT]', 'H': '[HMYWACT]', 'D': '[DRKWAGT]',
+            'V': '[VRSMAGC]',
+        }
+        if code not in code_mapping:
+            raise ValueError(f'Unsupported code `{code}`')
+        return code_mapping[code]
+

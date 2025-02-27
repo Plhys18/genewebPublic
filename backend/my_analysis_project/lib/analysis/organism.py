@@ -1,7 +1,6 @@
 from typing import Optional, List
-# If stage_and_color.py is in the same directory, you can do:
-# from .stage_and_color import StageAndColor
-# Adjust import paths to match your actual project layout.
+
+from my_analysis_project.lib.analysis.stage_and_color import StageAndColor
 
 class Organism:
     """

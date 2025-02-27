@@ -1,6 +1,6 @@
-from typing import Any
-from genes.gene import Gene
-from analysis.motif import Motif
+from my_analysis_project.lib.analysis.motif import Motif
+from my_analysis_project.lib.genes.genes import Gene
+
 
 class AnalysisResult:
     """Holds the result of a single motif position in the gene"""
@@ -26,3 +26,30 @@ class AnalysisResult:
         """Returns a broader matched sequence"""
         safe_sequence = " " * 10 + self.gene.data + " " * 10
         return safe_sequence[int(self.raw_position) + 2 : int(self.raw_position) + len(self.match) + 18]
+
+
+    def to_dict(self) -> dict:
+        """Serializes the AnalysisResult object to a dictionary."""
+        return {
+            "gene": self.gene.to_dict(),  # Assuming Gene has to_dict
+            "motif": self.motif.to_dict(),  # Assuming Motif has to_dict
+            "raw_position": self.raw_position,
+            "position": self.position,
+            "match": self.match,
+            "matched_sequence": self.matched_sequence
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "AnalysisResult":
+        """Deserializes a dictionary into an AnalysisResult object."""
+        from my_analysis_project.lib.genes.genes import Gene
+        from my_analysis_project.lib.analysis.motif import Motif
+
+        return cls(
+            gene=Gene.from_dict(data["gene"]),
+            motif=Motif.from_dict(data["motif"]),
+            raw_position=data["raw_position"],
+            position=data["position"],
+            match=data["match"],
+            matched_sequence=data["matched_sequence"]
+        )

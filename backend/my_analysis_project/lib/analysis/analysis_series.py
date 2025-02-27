@@ -1,11 +1,13 @@
-from typing import List, Dict, Optional
+import json
+from typing import List, Dict, Optional, Any
 import re
 from collections import defaultdict
 
-from lib.analysis.analysis_result import AnalysisResult
-from lib.analysis.distribution import Distribution
-from lib.analysis.motif import Motif
-from lib.genes.gene_list import GeneList
+
+from my_analysis_project.lib.analysis.analysis_result import AnalysisResult
+from my_analysis_project.lib.analysis.distribution import Distribution
+from my_analysis_project.lib.analysis.motif import Motif
+from my_analysis_project.lib.genes.gene_list import GeneList
 
 
 class AnalysisSeries:
@@ -50,7 +52,7 @@ class AnalysisSeries:
         )
 
     @classmethod
-    def run(cls, gene_list: GeneList, motif: Motif, name: str, color: str, min: int, max: int,
+    def run(cls, gene_list: GeneList, motif: Motif, name: str, color: str, minimal: int, maximal: int,
             bucket_size: int, align_marker: Optional[str] = None, no_overlaps: bool = True,
             stroke: int = 4, visible: bool = True):
         """Runs the analysis on the given GeneList"""
@@ -61,7 +63,7 @@ class AnalysisSeries:
             results.extend(cls._find_matches(gene, motif, no_overlaps))
 
         # Calculate the distribution
-        distribution = Distribution(min=min, max=max, bucket_size=bucket_size, align_marker=align_marker,
+        distribution = Distribution(min=minimal, max=maximal, bucket_size=bucket_size, align_marker=align_marker,
                                     name=name, color=color)
         distribution.run(results, len(gene_list.genes))
 
@@ -72,7 +74,7 @@ class AnalysisSeries:
         """Returns the results as a dictionary mapping gene ID to a list of AnalysisResult"""
         results_dict = defaultdict(list)
         for result in self.result:
-            results_dict[result.gene.gene_id].append(result)
+            results_dict[result.gene.geneId].append(result)
         return results_dict
 
     @staticmethod
@@ -117,6 +119,41 @@ class AnalysisSeries:
 
         return included_results
 
+    def toJson(self) -> str:
+        return json.dumps(self.to_dict())
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "geneList": self.gene_list.to_dict(),
+            "motif": self.motif.to_dict(),
+            "name": self.name,
+            "color": self.color,
+            "stroke": self.stroke,
+            "visible": self.visible,
+            "no_overlaps": self.no_overlaps,
+            "result": [r.to_dict() for r in self.result] if self.result else [],
+            "distribution": self.distribution.to_dict() if self.distribution else None,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "AnalysisSeries":
+        gene_list = GeneList.from_dict(data["geneList"])
+        motif = Motif.from_dict(data["motif"])
+        result = [AnalysisResult.from_dict(r) for r in data.get("result", [])]
+        distribution = (Distribution.from_dict(data["distribution"])
+                        if data.get("distribution") is not None else None)
+        return cls(
+            gene_list=gene_list,
+            motif=motif,
+            name=data["name"],
+            color=data["color"],
+            stroke=data["stroke"],
+            visible=data["visible"],
+            no_overlaps=data["no_overlaps"],
+            result=result,
+            distribution=distribution,
+        )
+
 class DrillDownResult:
     """The result of a drill-down analysis"""
 
@@ -131,3 +168,22 @@ class DrillDownResult:
         self.count = count
         self.share = share
         self.share_of_all = share_of_all
+
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "pattern": self.pattern,
+            "count": self.count,
+            "share": self.share,
+            "shareOfAll": self.share_of_all,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "DrillDownResult":
+        return cls(
+            pattern=data["pattern"],
+            count=data["count"],
+            share=data.get("share"),
+            share_of_all=data.get("shareOfAll"),
+        )
+
