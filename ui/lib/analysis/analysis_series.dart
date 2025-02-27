@@ -242,7 +242,7 @@ class AnalysisSeries {
   static AnalysisSeries fromJson(Map<String, dynamic> json) {
     return AnalysisSeries._(
       geneList: GeneList.fromJson(json['geneList'] as Map<String, dynamic>),
-      noOverlaps: true, // or from json if needed
+      noOverlaps: true,
       motif: Motif.fromJson(json['motif'] as Map<String, dynamic>),
       name: json['name'] as String,
       color: Color(json['color'] as int),

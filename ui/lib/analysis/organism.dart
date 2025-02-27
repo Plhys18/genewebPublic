@@ -29,4 +29,16 @@ class Organism {
     this.takeFirstTranscriptOnly = true,
     this.stages = const [],
   });
+
+  factory Organism.fromJson(Map<String, dynamic> json) {
+    return Organism(
+      name: json["name"] ?? "Unknown",
+      description: json["description"] ?? "No description available",
+      public: json["public"] ?? false,
+      stages: json["stages"] != null
+          ? List<StageAndColor>.from(
+          json["stages"].map((s) => StageAndColor.fromJson(s)))
+          : [],
+    );
+  }
 }
