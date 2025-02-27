@@ -1,43 +1,91 @@
 import json
-from django.http import JsonResponse, HttpResponseNotAllowed
+
+from django.contrib.auth import logout, authenticate
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import AppUser
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenRefreshView
+
+from my_analysis_project.auth_app.models import AppUser, UserSelection
+from my_analysis_project.lib.analysis.motif_presets import MotifPresets
+from my_analysis_project.lib.analysis.organism_presets import OrganismPresets
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def login_view(request):
+    username = request.data.get("username")
+    password = request.data.get("password")
+
+    if not username or not password:
+        return Response({"error": "Username and password required"}, status=400)
+
+    user = authenticate(username=username, password=password)
+
+    if user:
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+        })
+    else:
+        return Response({"error": "Invalid credentials"}, status=401)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def logout_view(request):
+    """Invalidate the refresh token (Blacklist it)"""
+    try:
+        refresh_token = request.data.get("refresh")
+        token = RefreshToken(refresh_token)
+        token.blacklist()  # 🚀 Blacklist the token
+        return Response({"message": "Logged out successfully"}, status=200)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+class refresh_token_view(TokenRefreshView):
+    """Allows users to refresh JWT tokens"""
+    pass
+
+@login_required
+def get_available_data(request):
+    """Returns organisms, motifs, and stages for the user to choose from."""
+    organisms = [
+        {"name": org.name, "description": org.description}
+        for org in OrganismPresets.k_organisms
+    ]
+    motifs = [
+        {"name": motif.name, "definitions": motif.definitions}
+        for motif in MotifPresets.get_presets()
+    ]
+    return JsonResponse({"organisms": organisms, "motifs": motifs})
 
 @csrf_exempt
-def login_view(request):
-    print("DEBUG: Received request in login_view")
-    print("DEBUG: Request method:", request.method)
-
-    if request.method != 'POST':
-        print("DEBUG: Request method not POST; returning 405")
-        return HttpResponseNotAllowed(['POST'], 'Only POST is allowed')
-
+@login_required
+def store_user_selection(request):
+    """Stores the user's selected organism, motifs, and stages in the database."""
     try:
         data = json.loads(request.body)
-        print("DEBUG: Parsed JSON data:", data)
-    except json.JSONDecodeError:
-        print("DEBUG: JSON decoding error; request body:", request.body)
-        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        user = request.user
 
-    username = data.get('username')
-    password_hash = data.get('password_hash')
-    print("DEBUG: Username received:", username)
-    print("DEBUG: Password hash received:", password_hash)
+        organism = data.get("organism")
+        motifs = data.get("motifs", [])
+        stages = data.get("stages", [])
 
-    if not username or not password_hash:
-        print("DEBUG: Missing username or password_hash")
-        return JsonResponse({'error': 'Invalid credentials'}, status=403)
+        if not organism:
+            return JsonResponse({"error": "Missing organism"}, status=400)
 
-    try:
-        user = AppUser.objects.get(username=username)
-        print("DEBUG: Found user in database:", user)
-    except AppUser.DoesNotExist:
-        print("DEBUG: User not found for username:", username)
-        return JsonResponse({'error': 'Invalid credentials'}, status=403)
+        selection, created = UserSelection.objects.update_or_create(
+            user=user,
+            defaults={"organism": organism, "selected_motifs": motifs, "selected_stages": stages},
+        )
 
-    if user.password_hash == password_hash:
-        print("DEBUG: Password hash matches for user:", username)
-        return JsonResponse({'authenticated': True, 'username': username}, status=200)
-    else:
-        print("DEBUG: Password hash does not match for user:", username)
-        return JsonResponse({'error': 'Invalid credentials'}, status=403)
+        return JsonResponse({"message": "Selection saved successfully"})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
