@@ -2,6 +2,9 @@ import io
 import asyncio
 import xlsxwriter
 
+from my_analysis_project.lib.analysis.distribution import Distribution
+
+
 class DistributionsExport:
     """
     Responsible for exporting multiple Distribution objects to Excel.
@@ -15,8 +18,7 @@ class DistributionsExport:
 
     async def to_excel(
             self,
-            file_name: str,
-            progress_callback
+            file_name: str
     ) -> bytes:
         """
         Exports the distributions to Excel in memory.
@@ -65,12 +67,6 @@ class DistributionsExport:
 
         # Write data rows
         for i, dp in enumerate(first_data_points):
-            # partial progress ~ 0..0.5
-            if i % 1000 == 0:
-                progress = (i / max(len(first_data_points), 1)) * 0.5
-                progress_callback(progress)
-                await asyncio.sleep(0.02)
-
             row_idx = i + 1
             # Interval label
             motifs_sheet.write(row_idx, 0, dp.label, header_format)
@@ -113,12 +109,6 @@ class DistributionsExport:
 
         # data rows
         for i, dp in enumerate(first_data_points):
-            # partial progress ~ 0.5..1
-            if i % 1000 == 0:
-                progress = 0.5 + (i / max(len(first_data_points), 1)) * 0.5
-                progress_callback(progress)
-                await asyncio.sleep(0.02)
-
             row_idx = i + 1
             # Interval label
             genes_sheet.write(row_idx, 0, dp.label, header_format)
@@ -141,7 +131,7 @@ class DistributionsExport:
             # Then each distribution's genesPercent
             for dp_list in data_points_list:
                 if i < len(dp_list):
-                    genes_sheet.write_number(row_idx, col_idx, dp_list[i].genesPercent)
+                    genes_sheet.write_number(row_idx, col_idx, dp_list[i].genes_percent)
                 else:
                     genes_sheet.write(row_idx, col_idx, "")
                 col_idx += 1
