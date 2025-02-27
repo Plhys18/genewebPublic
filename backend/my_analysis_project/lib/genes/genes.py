@@ -153,3 +153,26 @@ class Gene:
         Replicates Dart's `toString()` => returns geneId
         """
         return self.geneId
+
+    def to_dict(self) -> dict:
+        """Serializes the Gene object to a dictionary."""
+        return {
+            "gene_id": self.geneId,
+            "data": self.data,
+            "header": self.header,
+            "notes": self.notes,
+            "transcription_rates": self.transcriptionRates,
+            "markers": self.markers,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Gene":
+        """Deserializes a dictionary into a Gene object."""
+        return cls(
+            gene_id=data["gene_id"],
+            data=data["data"],
+            header=data["header"],
+            notes=data["notes"],
+            transcription_rates=data.get("transcription_rates", {}),
+            markers=data.get("markers", {}),
+        )

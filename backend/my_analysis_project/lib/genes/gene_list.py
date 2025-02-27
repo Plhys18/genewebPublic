@@ -1,7 +1,13 @@
 import asyncio
+import time
 from typing import List, Dict, Set, Any, Optional, Tuple
 
-from genes import Gene
+import aiofiles
+
+from my_analysis_project.lib.analysis.organism import Organism
+from my_analysis_project.lib.genes.genes import Gene
+from my_analysis_project.lib.genes.stage_selection import StageSelection, FilterSelection, FilterStrategy
+
 
 class Series:
     """
@@ -26,7 +32,7 @@ class GeneList:
             organism: Optional["Organism"],
             genes: List["Gene"],
             stages: Optional[Dict[str, Set[str]]],
-            colors: Optional[Dict[str, Any]],  # We'll store color as 'Any' (e.g. string, etc.)
+            colors: Optional[Dict[str, Any]],
             errors: List[Any]
     ):
         """
@@ -85,7 +91,6 @@ class GeneList:
     async def parse_fasta(
             cls,
             data: str,
-            progress_callback,
     ) -> Tuple[List["Gene"], List[Any]]:
         """
         Parse fasta file into list of genes.
@@ -96,32 +101,26 @@ class GeneList:
         errors: List[Any] = []
         cnt = 0
         for i, chunk in enumerate(chunks):
-            # Insert a small async sleep to avoid blocking
-            if cnt % 1000 == 0:
-                progress_callback(cnt / len(chunks))
-                await asyncio.sleep(0.02)
-            cnt += 1
 
             if not chunk.strip():
                 continue
 
             lines = ('>' + chunk).split('\n')
             try:
-                from .genes import Gene  # local import to avoid circular references
+                from .genes import Gene
                 gene = Gene.from_fasta(lines)
                 genes.append(gene)
             except Exception as e:
                 errors.append(e)
 
         print(f".fasta parsing completed with {len(genes)} genes and {len(errors)} errors")
-        return (genes, errors)
+        return genes, errors
 
     @classmethod
     async def take_single_transcript(
             cls,
             genes: List["Gene"],
-            errors: List[Any],
-            progress_callback
+            errors: List[Any]
     ) -> Tuple[List["Gene"], List[Any]]:
         """
         Takes the first transcript from each gene only
@@ -138,22 +137,16 @@ class GeneList:
         key_list = list(keys.keys())
 
         for i, key in enumerate(key_list):
-            if cnt % 1000 == 0:
-                progress_callback(cnt / len(key_list))
-                await asyncio.sleep(0.02)
-            cnt += 1
 
             keys[key].sort()
             first = keys[key][0]
-            # find the gene object in original list
-            # We assume there's guaranteed to be one
             merged.append(next(g for g in genes if g.geneId == first))
 
         print(
             f".fasta transcript filtering completed with {len(merged)} genes "
             f"and {len(errors)} errors"
         )
-        return (merged, errors)
+        return merged, errors
 
     @classmethod
     def from_list(
@@ -177,6 +170,28 @@ class GeneList:
             f"and {len(result.errors)} errors"
         )
         return result
+
+
+    def to_dict(self) -> dict:
+        return {
+            "organism": self.organism.name if self.organism else None,
+            "genes": [gene.to_dict() for gene in self._genes],
+            "stages": {key: list(value) for key, value in self.stages.items()} if self.stages else None,
+            "colors": self._colors if self._colors else None,
+            "errors": self.errors
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "GeneList":
+        organism = Organism(name=data["organism"]) if data["organism"] else None
+        genes = [Gene.from_dict(g) for g in data["genes"]]
+        return cls(
+            organism=organism,
+            genes=genes,
+            stages={key: set(value) for key, value in data["stages"].items()} if data.get("stages") else None,
+            colors=data.get("colors"),
+            errors=data.get("errors", [])
+        )
 
     def copy_with(
             self,
@@ -254,7 +269,7 @@ class GeneList:
                 key=lambda g: g.transcriptionRates[stage]
                 if stage in g.transcriptionRates else 0.0
             )
-            from stage_selection import FilterSelection, FilterStrategy
+
             if stageSelection.selection == FilterSelection.percentile:
                 if stageSelection.strategy == FilterStrategy.top:
                     return self.copy_with(genes=self._topPercentile(stageSelection.percentile, stage))
@@ -355,3 +370,29 @@ class GeneList:
                 d[s.stage] = s.stroke
             return d
         return {}
+
+    @classmethod
+    def load_from_file(cls, file_path: str) -> "GeneList":
+        print(f"[DEBUG] Starting load_from_file with file_path: {file_path}")
+
+        async def _load():
+            print(f"[DEBUG] Opening file: {file_path}")
+            async with aiofiles.open(file_path, 'r') as f:
+                data = await f.read()
+                print(f"[DEBUG] File read complete. Data size: {len(data)} bytes")
+
+            last_update_time = time.time()
+
+            print("[DEBUG] Starting FASTA parsing...")
+            genes, errors = await cls.parse_fasta(data)
+            print(f"[DEBUG] FASTA parsing complete. Parsed {len(genes)} genes, {len(errors)} errors.")
+
+            print("[DEBUG] Creating GeneList instance...")
+            return cls.from_list(genes=genes, errors=errors)
+
+        print("[DEBUG] Running _load() in asyncio event loop...")
+        result = asyncio.run(_load())
+        print("[DEBUG] load_from_file completed successfully.")
+        return result
+
+
