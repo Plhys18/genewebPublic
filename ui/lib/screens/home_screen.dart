@@ -1,18 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:geneweb/genes/gene_model.dart';
-import 'package:geneweb/my_app.dart';
-import 'package:geneweb/widgets/home.dart';
-import 'package:provider/provider.dart';
 
-class HomeScreen extends StatelessWidget {
+import '../widgets/home.dart';
+
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String? _name;
+  bool _public = false;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final name = context.select<GeneModel, String?>((model) => model.name);
-    final deploymentFlavor = context.select<GeneModel, DeploymentFlavor?>(
-        (model) => model.deploymentFlavor);
-    final public = context.select<GeneModel, bool>((model) => model.publicSite);
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 80.0,
@@ -41,29 +49,19 @@ class HomeScreen extends StatelessWidget {
             Expanded(
                 child: Align(
                     alignment: Alignment.center,
-                    child: Text(name ?? '',
+                    child: _loading
+                        ? const CircularProgressIndicator()
+                        : Text(_name ?? 'Unknown Organism',
                         style: const TextStyle(fontStyle: FontStyle.italic)))),
             Expanded(
               child: Align(
                 alignment: Alignment.centerRight,
-                child: !public
-                    ? const Text('private web')
-                    : const SizedBox.shrink(),
+                child: !_public ? const Text('private web') : const SizedBox.shrink(),
               ),
             ),
           ],
         ),
-        backgroundColor: public ? null : const Color(0xffEC6138),
-        actions: deploymentFlavor != null
-            ? null
-            : <Widget>[
-                IconButton(
-                  icon: public
-                      ? const Icon(Icons.lock_open)
-                      : const Icon(Icons.lock),
-                  onPressed: () => GeneModel.of(context).setPublicSite(!public),
-                ),
-              ],
+        backgroundColor: _public ? null : const Color(0xffEC6138),
       ),
       body: const Home(),
     );

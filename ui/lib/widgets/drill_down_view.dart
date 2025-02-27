@@ -1,14 +1,13 @@
-import 'package:flutter/foundation.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:geneweb/analysis/analysis_series.dart';
-import 'package:geneweb/genes/gene_model.dart';
-import 'package:collection/collection.dart';
+import 'package:http/http.dart' as http;
+import '../analysis/analysis_series.dart';
 
-/// Widget that builds the drill down view
+/// Widget that builds the drill-down view
 class DrillDownView extends StatefulWidget {
-  const DrillDownView({super.key, required this.name});
-
   final String? name;
+
+  const DrillDownView({super.key, required this.name});
 
   @override
   State<DrillDownView> createState() => _DrillDownViewState();
@@ -17,12 +16,13 @@ class DrillDownView extends StatefulWidget {
 class _DrillDownViewState extends State<DrillDownView> {
   List<String> patterns = [];
   List<DrillDownResult>? _results;
-  bool _running = false;
+  bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _update();
+    _fetchDrillDownData();
   }
 
   @override
@@ -30,30 +30,52 @@ class _DrillDownViewState extends State<DrillDownView> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.name != widget.name) {
       patterns = [];
-      _results = null;
-      _update();
+      _fetchDrillDownData();
     }
   }
 
-  Future<void> _update([String? pattern]) async {
-    setState(() => _running = true);
-    final analysis = GeneModel.of(context)
-        .analyses
-        .firstWhereOrNull((a) => a.name == widget.name);
-    final results = await compute(runDrillDown, {
-      'analysis': analysis,
-      'pattern': pattern,
-    });
-    setState(() {
-      _results = results;
-      _running = false;
-    });
+  Future<void> _fetchDrillDownData([String? pattern]) async {
+    if (widget.name == null) return;
+
+    setState(() => _loading = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse("http://localhost:8000/api/analysis/drilldown/"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "analysis_name": widget.name,
+          "pattern": pattern,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _results = (data["results"] as List)
+              .map((e) => DrillDownResult.fromJson(e))
+              .toList();
+          _loading = false;
+        });
+      } else {
+        throw Exception("Failed to fetch drill-down results");
+      }
+    } catch (error) {
+      setState(() {
+        _error = "Error loading drill-down: $error";
+        _loading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_results == null)
-      return const Center(child: CircularProgressIndicator());
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_error != null) return Center(child: Text(_error!));
+    if (_results == null || _results!.isEmpty) {
+      return const Center(child: Text('No drill-down data available'));
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -61,75 +83,80 @@ class _DrillDownViewState extends State<DrillDownView> {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             TextButton(
-              onPressed: _running || patterns.isEmpty
-                  ? null
-                  : () => _handleBreadCrumb(null),
+              onPressed: patterns.isEmpty ? null : () => _handleBreadCrumb(null),
               child: const Text('Motif drill down'),
             ),
             for (final pattern in patterns) ...[
-              const Text('>'),
+              const Text(' > '),
               TextButton(
-                onPressed: _running ? null : () => _handleBreadCrumb(pattern),
+                onPressed: () => _handleBreadCrumb(pattern),
                 child: Text(pattern),
               ),
             ]
           ],
         ),
         Expanded(
-            child: _running
-                ? const Center(child: CircularProgressIndicator())
-                : (_results?.length ?? 0) > 0
-                    ? ListView.builder(
-                        itemBuilder: _itemBuilder,
-                        itemCount: _results?.length ?? 0,
-                      )
-                    : const Text(
-                        'Selected pattern cannot be drilled down any further')),
+          child: ListView.builder(
+            itemCount: _results!.length,
+            itemBuilder: (context, index) {
+              final result = _results![index];
+              return ListTile(
+                dense: true,
+                title: Text(result.pattern),
+                subtitle: result.share != null && result.shareOfAll != null
+                    ? Text(
+                    'Matches ${((result.share ?? 0) * 100).round()}% of selection, '
+                        '(${((result.shareOfAll ?? 0) * 100).round()}% of all results)')
+                    : null,
+                trailing: Text(result.count.toString()),
+                onTap: () => _handleDrillDownDeeper(result.pattern),
+              );
+            },
+          ),
+        ),
       ],
-    );
-  }
-
-  Widget _itemBuilder(BuildContext context, int index) {
-    return ListTile(
-      dense: true,
-      title: Text(_results![index].pattern),
-      subtitle: _results![index].share != null &&
-              _results![index].shareOfAll != null
-          ? Text(
-              'matches ${(_results![index].share! * 100).round()}% of selection, (${(_results![index].shareOfAll! * 100).round()}% of all results)')
-          : null,
-      trailing: Text(_results![index].count.toString()),
-      onTap: _running
-          ? null
-          : () => _handleDrillDownDeeper(_results![index].pattern),
     );
   }
 
   void _handleDrillDownDeeper(String pattern) {
     setState(() {
       patterns.add(pattern);
-      _update(pattern);
+      _fetchDrillDownData(pattern);
     });
   }
 
   void _handleBreadCrumb(String? pattern) {
-    if (pattern == null) {
-      setState(() {
+    setState(() {
+      if (pattern == null) {
         patterns = [];
-        _update();
-      });
-    } else {
-      setState(() {
+      } else {
         patterns = [...patterns.takeWhile((e) => e != pattern), pattern];
-        _update(pattern);
-      });
-    }
+      }
+      _fetchDrillDownData(pattern);
+    });
   }
 }
 
-List<DrillDownResult> runDrillDown(Map<String, dynamic> params) {
-  final analysis = params['analysis'] as AnalysisSeries;
-  final pattern = params['pattern'] as String?;
-  final result = analysis.drillDown(pattern);
-  return result;
+/// Model for DrillDownResult
+class DrillDownResult {
+  final String pattern;
+  final int count;
+  final double? share;
+  final double? shareOfAll;
+
+  DrillDownResult({
+    required this.pattern,
+    required this.count,
+    this.share,
+    this.shareOfAll,
+  });
+
+  factory DrillDownResult.fromJson(Map<String, dynamic> json) {
+    return DrillDownResult(
+      pattern: json["pattern"],
+      count: json["count"],
+      share: json["share"]?.toDouble(),
+      shareOfAll: json["share_of_all"]?.toDouble(),
+    );
+  }
 }

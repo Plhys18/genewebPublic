@@ -1,38 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:geneweb/analysis/motif.dart';
-import 'package:geneweb/analysis/motif_presets.dart';
-import 'package:geneweb/genes/gene_list.dart';
-import 'package:geneweb/genes/gene_model.dart';
 import 'package:provider/provider.dart';
 import 'package:truncate/truncate.dart';
+import '../analysis/motif_presets.dart';
+import '../genes/gene_model.dart';
+import '../analysis/motif.dart';
 
-/// Widget shown below the Motif selection headline
-class MotifSubtitle extends StatelessWidget {
-  const MotifSubtitle({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final motifs =
-        context.select<GeneModel, List<Motif>>((model) => model.motifs);
-    final expectedResults =
-        context.select<GeneModel, int>((model) => model.expectedSeriesCount);
-    if (expectedResults > 60 && motifs.length > 5) {
-      return Text(
-          'Analysis would result in $expectedResults series, reduce the number of selected motifs');
-    }
-    return motifs.isEmpty
-        ? const Text('Choose motifs to analyze or enter a custom motif')
-        : motifs.length == 1
-            ? Text(truncate(
-                '${motifs.first.name} (${motifs.first.definitions.join(', ')})',
-                100))
-            : Text('${motifs.length} motifs');
-  }
-}
-
-/// Widget that builds the panel with motif selection
 class MotifPanel extends StatefulWidget {
-  final Function(List<Motif> motif) onChanged;
+  final Function(List<Motif>) onChanged;
 
   const MotifPanel({super.key, required this.onChanged});
 
@@ -62,22 +36,10 @@ class _MotifPanelState extends State<MotifPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final sourceGenes =
-        context.select<GeneModel, GeneList?>((model) => model.sourceGenes);
-    if (sourceGenes == null)
-      return const Center(child: Text('Load source data first'));
-    final publicSite =
-        context.select<GeneModel, bool>((model) => model.publicSite);
-    final motifs =
-        context.select<GeneModel, List<Motif>>((model) => model.motifs);
-
-    final customMotifs = motifs.where((m) => m.isCustom).toList();
-
-    final presets = List.of(MotifPresets.presets)
-        .where((e) => e.isPublic || !publicSite)
-        .toList();
-
-    _model.setAllMotifs = [...customMotifs, ...presets];
+    final motifs = context.select<GeneModel, List<Motif>>((model) => model.getAllMotifs);
+    final customMotifs = motifs.where((m) => m.isCustom).toSet();
+    final presets = List.of(MotifPresets.presets).where((e) => e.isPublic).toSet();
+    
     return Align(
       alignment: Alignment.topLeft,
       child: Form(
@@ -94,10 +56,10 @@ class _MotifPanelState extends State<MotifPanel> {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 ...customMotifs.map((m) => _MotifCard(
-                      motif: m,
-                      onToggle: (bool value) => _handlePresetToggled(m, value),
-                      isSelected: true,
-                    )),
+                  motif: m,
+                  onToggle: (bool value) => _handlePresetToggled(m, value),
+                  isSelected: true,
+                )),
                 if (!_showEditor)
                   TextButton(
                       onPressed: _handleOpenEditor,
@@ -121,10 +83,10 @@ class _MotifPanelState extends State<MotifPanel> {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 ...presets.map((m) => _MotifCard(
-                      motif: m,
-                      onToggle: (bool value) => _handlePresetToggled(m, value),
-                      isSelected: motifs.contains(m),
-                    )),
+                  motif: m,
+                  onToggle: (bool value) => _handlePresetToggled(m, value),
+                  isSelected: motifs.contains(m),
+                )),
               ],
             ),
           ],
@@ -218,13 +180,10 @@ class _MotifPanelState extends State<MotifPanel> {
   }
 
   void _handlePresetToggled(Motif motif, bool value) {
-    final newMotifs = List.of(_model.motifs);
-    if (value) {
-      newMotifs.add(motif);
-    } else {
-      newMotifs.remove(motif);
-    }
-    _model.setMotifs(newMotifs);
+    setState(() {
+      _model.toggleMotifSelected(motif, value);
+    });
+    widget.onChanged(_model.getSelectedMotifs);
   }
 
   void _handleOpenEditor() {
@@ -238,10 +197,10 @@ class _MotifPanelState extends State<MotifPanel> {
     if (_formKey.currentState!.validate()) {
       final definitions = _customMotifDefinition!.toUpperCase().split('\n');
       final name =
-          (_customMotifName ?? '') != '' ? _customMotifName : definitions.first;
+      (_customMotifName ?? '') != '' ? _customMotifName : definitions.first;
       final motif =
-          Motif(name: name!, definitions: definitions, isCustom: true);
-      _model.setMotifs([motif, ..._model.motifs]);
+      Motif(name: name!, definitions: definitions, isCustom: true);
+      _model.setMotifs([motif, ..._model.getAllMotifs]);
     }
     setState(() => _showEditor = false);
   }
@@ -251,8 +210,12 @@ class _MotifCard extends StatelessWidget {
   final Motif motif;
   final Function(bool value) onToggle;
   final bool isSelected;
-  const _MotifCard(
-      {required this.motif, required this.onToggle, required this.isSelected});
+
+  const _MotifCard({
+    required this.motif,
+    required this.onToggle,
+    required this.isSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -272,20 +235,25 @@ class _MotifCard extends StatelessWidget {
                 Row(
                   children: [
                     Checkbox(
-                        value: isSelected,
-                        onChanged: (value) => onToggle(value!)),
+                      value: isSelected,
+                      onChanged: (value) => onToggle(value!),
+                    ),
                     Expanded(
-                        child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: Text(truncate(motif.name, 20),
-                                style: textTheme.titleSmall))),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(truncate(motif.name, 20), style: textTheme.titleSmall),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 FittedBox(
-                    child: Text(truncate(motif.definitions.join(', '), 25),
-                        style: textTheme.labelSmall)),
+                  child: Text(
+                    truncate(motif.definitions.join(', '), 25),
+                    style: textTheme.labelSmall,
+                  ),
+                ),
               ],
             ),
           ),

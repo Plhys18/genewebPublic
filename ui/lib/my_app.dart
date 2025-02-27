@@ -1,21 +1,18 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:geneweb/screens/home_screen.dart';
 import 'package:geneweb/screens/lock_screen.dart';
 import 'package:provider/provider.dart';
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
-  /// Are we running on `dev` or `prod` on the web?
-  ///
-  /// Returns `null` if not running on the web.
-  DeploymentFlavor? get deploymentFlavor => !kIsWeb
-      ? null
-      : Uri.base.host == 'golem.ncbr.muni.cz' && Uri.base.scheme == 'https'
-          ? DeploymentFlavor.prod
-          : DeploymentFlavor.dev;
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool? _isSignedIn;
 
   // This widget is the root of your application.
   @override
@@ -23,27 +20,19 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<GeneModel>(
-          create: (BuildContext context) => GeneModel(deploymentFlavor),
+          create: (context) => GeneModel(),
         ),
       ],
       child: MaterialApp(
-        title: 'GOLEM${deploymentFlavor == DeploymentFlavor.dev ? '-DEV' : ''}',
+        title: 'GOLEM',
         theme: ThemeData(
           colorSchemeSeed: const Color(0xff488AB9),
           fontFamily: 'Barlow',
           appBarTheme: const AppBarTheme(backgroundColor: Color(0xffA0CB85)),
           useMaterial3: true,
         ),
-        home: Builder(builder: (context) {
-          final isSignedIn =
-              context.select<GeneModel, bool>((model) => model.isSignedIn);
-          return (deploymentFlavor == DeploymentFlavor.dev && !isSignedIn)
-              ? const LockScreen()
-              : const HomeScreen();
-        }),
+        home: _isSignedIn == true ? const HomeScreen() : const LockScreen(),
       ),
     );
   }
 }
-
-enum DeploymentFlavor { dev, prod }

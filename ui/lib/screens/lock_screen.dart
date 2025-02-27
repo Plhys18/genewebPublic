@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:geneweb/genes/gene_model.dart';
 
+import '../utilities/api_service.dart';
 import 'home_screen.dart';
 
 class LockScreen extends StatelessWidget {
@@ -97,76 +97,34 @@ class __LockState extends State<_Lock> {
 
   void _handleSubmit() async {
     setState(() {
-      _loading = true;
+      _loading = false;
     });
 
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (!_validateInputs(username, password)) {
+    if (username.isEmpty || password.isEmpty) {
       _showSnackBar("Username and password must not be empty");
       setState(() => _loading = false);
       return;
     }
 
-    final passwordHash = _hashPassword(password);
-    final payload = _buildPayload(username, passwordHash);
+    final success = await ApiService().login(username, password);
 
-    try {
-      final response = await _postLogin(payload);
-      _handleResponse(response);
-    } catch (e) {
-      _showSnackBar('Network error: $e ${e.runtimeType}');
-    } finally {
-      setState(() {
-        _loading = false;
-      });
+    if (success) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    } else {
+      _showSnackBar('Incorrect username or password');
     }
-  }
 
-  bool _validateInputs(String username, String password) {
-    return username.isNotEmpty && password.isNotEmpty;
-  }
-
-  String _hashPassword(String password) {
-    return md5.convert(utf8.encode(password)).toString();
-  }
-
-  String _buildPayload(String username, String passwordHash) {
-    return jsonEncode({
-      'username': username,
-      'password_hash': passwordHash,
+    setState(() {
+      _loading = false;
     });
   }
 
-  Future<http.Response> _postLogin(String payload) {
-    return http.post(
-      Uri.parse('http://0.0.0.0:8000/api/auth/login/'),
-      headers: {'Content-Type': 'application/json'},
-      body: payload,
-    );
-  }
-
-  void _handleResponse(http.Response response) {
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data['authenticated'] == true) {
-        GeneModel.of(context).isSignedIn = true;
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
-      } else {
-        _showSnackBar('Incorrect username or password');
-      }
-    } else {
-      _showSnackBar('Error: ${response.statusCode}');
-    }
-  }
-
-
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
-
 }
