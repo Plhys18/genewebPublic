@@ -1,6 +1,6 @@
 from django.urls import path
 from my_analysis_project.analysis.views.analysis_views import (
-    cancel_analysis_view, run_analysis, get_analysis_history_list
+    cancel_analysis_view, run_analysis, get_analysis_history_list, get_analysis_details
 )
 from my_analysis_project.analysis.views.motif_views import get_motifs
 from my_analysis_project.analysis.views.organism_views import (
@@ -11,7 +11,7 @@ from my_analysis_project.analysis.views.stage_views import get_active_stages
 urlpatterns = [
     path('analyze/', run_analysis, name='run_analysis'),
     path('history/', get_analysis_history_list, name='analysis_history'),
-    path('history/<str:organism_id>', get_organism_details, name="get_organism_details"),
+    path('history/<int:analysis_id>/', get_analysis_details, name="get_analysis_details"),
     path('cancel/', cancel_analysis_view, name='cancel_analysis'),
 
     path('organisms/', list_organisms, name="list_organisms"),

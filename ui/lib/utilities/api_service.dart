@@ -216,7 +216,7 @@ class ApiService {
 
   /// Fetches full details for a selected analysis
   Future<Map<String, dynamic>> fetchAnalysisDetails(int analysisId) async {
-    var data = await getRequest("analysis/history/$analysisId");
+    var data = await getRequest("analysis/history/16/");
 
     return {
       "id": data["id"],

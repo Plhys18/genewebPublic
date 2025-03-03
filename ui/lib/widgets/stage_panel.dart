@@ -91,7 +91,7 @@ class _StageCard extends StatelessWidget {
     return SizedBox(
       width: 200,
       child: Card(
-        color: isSelected ? Colors.blue.shade100 : null,
+        color: stage.color.withOpacity(isSelected ? 0.5 : 1.0),
         child: InkWell(
           onTap: () {
             onToggle(!isSelected);
