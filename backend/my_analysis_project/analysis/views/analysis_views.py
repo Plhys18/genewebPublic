@@ -1,6 +1,3 @@
-import json
-from typing import List
-
 from django.http import JsonResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -103,9 +100,40 @@ async def _async_run_analysis(request):
             return JsonResponse({"error": "Analysis was cancelled or failed"}, status=500)
 
         results = [analysis.to_dict() for analysis in gene_model.analyses]
+        filtered_results = []
+        for analysis in gene_model.analyses:
+            filtered_results.append({
+                "name": analysis.name,
+                "color": analysis.color,
+                "distribution": {
+                "min": analysis.distribution.min,
+                "max": analysis.distribution.max,
+                "bucket_size": analysis.distribution.bucket_size,
+                "name": analysis.distribution.name,
+                "color": analysis.distribution.color,
+                "align_marker": analysis.distribution.align_marker,
+                "total_count": analysis.distribution.totalCount,
+                "total_genes_count": analysis.distribution.totalGenesCount,
+                "total_genes_with_motif_count": analysis.distribution.totalGenesWithMotifCount,
+                "data_points": [
+                    {
+                        "min": dp.min,
+                        "max": dp.max,
+                        "count": dp.count,
+                        "percent": dp.percent
+                    }
+                    for dp in analysis.distribution.dataPoints
+                ] if analysis.distribution.dataPoints else []
+},
+
+            })
+
+        # ✅ Save full results, but return only filtered data
         await sync_to_async(save_analysis_history, thread_sensitive=True)(user, organism_name, results)
+
         print(f"✅ DEBUG: Analysis completed successfully, saved to DB")
-        return JsonResponse({"message": "Analysis complete", "results": results}, status=200)
+
+        return JsonResponse({"message": "Analysis complete", "results": filtered_results}, status=200)
 
     except Exception as e:
         print(f"❌ ERROR: {str(e)}")  # Debugging error

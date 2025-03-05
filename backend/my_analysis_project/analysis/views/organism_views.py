@@ -1,15 +1,16 @@
 import json
-from pathlib import Path
 from django.http import JsonResponse
 from rest_framework.response import Response
 
-from my_analysis_project import settings
 from my_analysis_project.auth_app.models import UserSelection
 from my_analysis_project.lib.analysis.motif_presets import MotifPresets
 from my_analysis_project.lib.analysis.organism_presets import OrganismPresets
 from my_analysis_project.lib.genes.gene_list import GeneList
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
+
+from my_analysis_project.views import find_fasta_file
+
 
 def list_organisms(request):
     """Returns a list of predefined organisms from `OrganismPresets`."""
@@ -58,7 +59,6 @@ def get_active_organism(request):
 
     print(f"✅ Found selection: {selection.organism}")
 
-    # Find the organism in k_organisms
     organism = next((org for org in OrganismPresets.k_organisms if org.name == selection.organism), None)
 
     if not organism:
@@ -79,20 +79,38 @@ def get_active_organism(request):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
-def get_organism_details(request, name):
+def get_active_organism_source_gene_informations(request):
     """Fetches details about a specific organism."""
     try:
-        file_path = Path(settings.DATA_DIR) / f"{name}.fasta"
-        if not file_path.exists():
+        user = request.user
+        selection = UserSelection.objects.filter(user=user).first()
+        if not selection:
+            return JsonResponse({"error": "No active organism selected"}, status=400)
+
+        file_path = find_fasta_file(selection.organism)
+        if not file_path:
             return JsonResponse({"error": "Organism not found"}, status=404)
 
         gene_list = GeneList.load_from_file(str(file_path))
 
+        # Compute `organismAndStages`
+        organism_and_stages = f"{selection.organism} {'+'.join(gene_list.stageKeys)}"
+
+        # Extract all unique marker names
+        unique_marker_names = sorted(set(
+            marker for gene in gene_list.genes for marker in gene.markers.keys()
+        ))
+
         return JsonResponse({
-            "name": name,
-            "gene_count": len(gene_list.genes),
-            "stage_count": len(gene_list.stageKeys),
+            "organism_name": selection.organism,
+            "genes_length": len(gene_list.genes),
+            "genes_keys_length": len(gene_list.stageKeys),
+            "organism_and_stages": organism_and_stages,
+            "stages": gene_list.stageKeys,
+            "colors": gene_list.colors,
+            "markers": unique_marker_names,
+            "error_count": len(gene_list.errors),
         })
+
     except Exception as e:
-        return JsonResponse(
-            {"error": str(e)}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)
