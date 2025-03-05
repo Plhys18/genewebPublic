@@ -3,11 +3,8 @@ import 'package:geneweb/genes/gene.dart';
 
 /// Holds the result of a single motif position in the gene
 class AnalysisResult {
-  /// The gene the motif was found in
-  final Gene gene;
-
-  /// The motif that was found
-  final Motif motif;
+  /// The motifName it was found in
+  final String motifName;
 
   /// The position of the motif midpoint (in the string, starting from 0)
   final num position;
@@ -15,47 +12,24 @@ class AnalysisResult {
   /// The raw position of the motif (in the string, starting from 0)
   final num rawPosition;
 
-  /// The concrete motif definition that matched (e.g. 'ACTN')
-  final String match;
-
-  /// The actual sequence that matched (e.g. 'ACTA')
-  final String matchedSequence;
-
-  /// returns a broader matched sequence
-  String get broadMatch {
-    final safeSequence = '          ${gene.data}          ';
-    return safeSequence.substring(
-        rawPosition.toInt() + 2, rawPosition.toInt() + match.length + 18);
-  }
-
   AnalysisResult({
-    required this.gene,
-    required this.motif,
+    required this.motifName,
     required this.rawPosition,
     required this.position,
-    required this.match,
-    required this.matchedSequence,
   });
 
   Map<String, dynamic> toJson() {
     return {
-      'gene': gene.toJson(),
-      'motif': motif.toJson(),
       'position': position,
       'rawPosition': rawPosition,
-      'match': match,
-      'matchedSequence': matchedSequence,
     };
   }
 
   static AnalysisResult fromJson(Map<String, dynamic> json) {
     return AnalysisResult(
-      gene: Gene.fromJson(json['gene'] as Map<String, dynamic>),
-      motif: Motif.fromJson(json['motif'] as Map<String, dynamic>),
       position: json['position'],
       rawPosition: json['rawPosition'],
-      match: json['match'] as String,
-      matchedSequence: json['matchedSequence'] as String,
+      motifName: json['motifName'],
     );
   }
 }

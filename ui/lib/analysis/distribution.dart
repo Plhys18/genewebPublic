@@ -67,33 +67,7 @@ class Distribution {
     ];
   }
 
-  /// Calculates the distribution from the list of [results]
-  void run(List<AnalysisResult> results, int totalGenesCount) {
-    Map<int, int> counts = {};
-    Map<int, Set<String>> geneCounts = {};
 
-    for (final result in results) {
-      final position = result.position -
-          (alignMarker != null ? result.gene.markers[alignMarker]! : 0);
-      if (position < min || position > max) {
-        continue;
-      }
-      final intervalIndex = (position - min) ~/ bucketSize;
-      counts[intervalIndex] = (counts[intervalIndex] ?? 0) + 1;
-      if (geneCounts[intervalIndex] == null) {
-        geneCounts[intervalIndex] = {};
-      }
-      geneCounts[intervalIndex]!.add(result.gene.geneId);
-    }
-    _counts = counts;
-    _genes = {
-      for (final key in geneCounts.keys) key: geneCounts[key]!,
-    };
-    _totalCount = results.length;
-    _totalGenesCount = totalGenesCount;
-    _totalGenesWithMotifCount =
-        results.map((result) => result.gene.geneId).toSet().length;
-  }
   Map<String, dynamic> toJson() {
     return {
       'min': min,
@@ -110,14 +84,24 @@ class Distribution {
   }
 
   static Distribution fromJson(Map<String, dynamic> json) {
-    final distribution = Distribution(
+    print("🔍 DEBUG: Decoding Distribution JSON: $json");
+
+    return Distribution(
       min: json['min'] as int,
       max: json['max'] as int,
-      bucketSize: json['bucketSize'] as int,
-      alignMarker: json['alignMarker'] as String?,
+      bucketSize: json['bucket_size'] as int,
+      alignMarker: json['align_marker'] as String?,
       name: json['name'] as String,
-      color: json['color'] != null ? Color(json['color'] as int) : null,
-    );
-    return distribution;
+      color: json['color'] != null ? Color(int.parse(json['color'].replaceFirst("#", "0xff"))) : null,
+    )
+      .._totalCount = json['total_count'] ?? 0
+      .._totalGenesCount = json['total_genes_count'] ?? 0
+      .._totalGenesWithMotifCount = json['total_genes_with_motif_count'] ?? 0
+      .._counts = json['data_points'] != null
+          ? {for (var dp in json['data_points']) dp['min']: dp['count']}
+          : {}
+      .._genes = {};
   }
+
+
 }
