@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:crypto/crypto.dart';
+import 'dart:ui';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -146,18 +146,6 @@ class ApiService {
     }
   }
 
-  /// Test session persistence by making two requests
-  Future<void> testSessionPersistence() async {
-    print("🔹 Testing session persistence...");
-    try {
-      await getRequest("analysis/organisms");
-      await getRequest("analysis/get_active_organism");
-      print("✅ Session persistence works correctly.");
-    } catch (e) {
-      print("❌ Session persistence test failed: $e");
-    }
-  }
-
   /// Fetch available organisms
   Future<List<Organism>> getOrganisms() async {
     final data = await getRequest("analysis/organisms");
@@ -175,6 +163,12 @@ class ApiService {
     print("📌 [GET ACTIVE ORGANISM] Fetching current organism...");
     return await getRequest("analysis/get_active_organism");
   }
+  /// Get the active organism
+  Future<Map<String, dynamic>> getActiveOrganismSourceGenesInformations() async {
+    print("📌 [GET ACTIVE ORGANISM SOURCE GENES] Fetching current organism...");
+    return await getRequest("analysis/get_active_organism_source_gene_informations");
+  }
+
 
   /// User login and store tokens
   Future<bool> login(String username, String password) async {
@@ -213,18 +207,19 @@ class ApiService {
     }));
   }
 
-
-  /// Fetches full details for a selected analysis
   Future<Map<String, dynamic>> fetchAnalysisDetails(int analysisId) async {
-    var data = await getRequest("analysis/history/16/");
+    var data = await getRequest("analysis/history/$analysisId/");
 
     return {
       "id": data["id"],
       "name": data["name"],
       "created_at": data["created_at"],
-      "results": _parseResults(data["results"]),  // Process results properly
+      "color": data["color"] != null ? Color(data["color"]) : null,
+      "distribution": data["distribution"],
     };
   }
+
+
 
   /// Helper method to parse the results field correctly
   List<Map<String, dynamic>> _parseResults(dynamic results) {
