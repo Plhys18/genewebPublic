@@ -1,12 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:geneweb/analysis/motif.dart';
+import 'package:geneweb/analysis/motif_presets.dart';
+import 'package:geneweb/genes/gene_list.dart';
+import 'package:geneweb/genes/gene_model.dart';
 import 'package:provider/provider.dart';
 import 'package:truncate/truncate.dart';
-import '../analysis/motif_presets.dart';
-import '../genes/gene_model.dart';
-import '../analysis/motif.dart';
 
+/// Widget shown below the Motif selection headline
+class MotifSubtitle extends StatelessWidget {
+  const MotifSubtitle({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final motifs = context.select<GeneModel, List<Motif>>((model) => model.getSelectedMotifs);
+    final expectedResults = context.select<GeneModel, int>((model) => model.expectedSeriesCount);
+    if (expectedResults > 60 && motifs.length > 5) {
+      return Text('Analysis would result in $expectedResults series, reduce the number of selected motifs');
+    }
+    return motifs.isEmpty
+        ? const Text('Choose motifs to analyze or enter a custom motif')
+        : motifs.length == 1
+        ? Text(truncate('${motifs.first.name} (${motifs.first.definitions.join(', ')})', 100))
+        : Text('${motifs.length} motifs');
+  }
+}
+
+/// Widget that builds the panel with motif selection
 class MotifPanel extends StatefulWidget {
-  final Function(List<Motif>) onChanged;
+  final Function(List<Motif> motif) onChanged;
 
   const MotifPanel({super.key, required this.onChanged});
 
@@ -36,10 +57,14 @@ class _MotifPanelState extends State<MotifPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final motifs = context.select<GeneModel, List<Motif>>((model) => model.getAllMotifs);
-    final customMotifs = motifs.where((m) => m.isCustom).toSet();
-    final presets = List.of(MotifPresets.presets).where((e) => e.isPublic).toSet();
-    
+    final motifs = _model.getAllMotifs;
+    if (motifs.isEmpty) return const Center(child: Text('Load source data first'));
+    final selectedMotifs = _model.getSelectedMotifs;
+    print("DEBUG: Building motifPanel with selected motifs ${selectedMotifs}");
+    final customMotifs = motifs.where((m) => m.isCustom).toList();
+
+    final presets = List.of(MotifPresets.presets).where((e) => e.isPublic).toList();
+
     return Align(
       alignment: Alignment.topLeft,
       child: Form(
@@ -60,17 +85,13 @@ class _MotifPanelState extends State<MotifPanel> {
                   onToggle: (bool value) => _handlePresetToggled(m, value),
                   isSelected: true,
                 )),
-                if (!_showEditor)
-                  TextButton(
-                      onPressed: _handleOpenEditor,
-                      child: const Text('Add custom motif…'))
+                if (!_showEditor) TextButton(onPressed: _handleOpenEditor, child: const Text('Add custom motif…'))
               ],
             ),
             if (_showEditor) ...[
               _buildMotifEditor(),
               const SizedBox(height: 16),
-              Text(
-                  'R = AG, Y = CT, W = AT, S = GC, M = AC, K = GT, B = CGT, D = AGT, H = ACT, V = ACG, N = ACGT',
+              Text('R = AG, Y = CT, W = AT, S = GC, M = AC, K = GT, B = CGT, D = AGT, H = ACT, V = ACG, N = ACGT',
                   style: Theme.of(context).textTheme.labelMedium!),
               const SizedBox(height: 16),
             ],
@@ -85,7 +106,7 @@ class _MotifPanelState extends State<MotifPanel> {
                 ...presets.map((m) => _MotifCard(
                   motif: m,
                   onToggle: (bool value) => _handlePresetToggled(m, value),
-                  isSelected: motifs.contains(m),
+                  isSelected: selectedMotifs.contains(m),
                 )),
               ],
             ),
@@ -140,8 +161,7 @@ class _MotifPanelState extends State<MotifPanel> {
             maxLines: null,
             readOnly: true,
             enabled: false,
-            decoration: const InputDecoration(
-                labelText: "Reverse complements (read only)"),
+            decoration: const InputDecoration(labelText: "Reverse complements (read only)"),
           ),
         ),
         ElevatedButton(onPressed: _handleAddMotif, child: const Text('ADD')),
@@ -153,9 +173,8 @@ class _MotifPanelState extends State<MotifPanel> {
     final error = _validateMotifDefinition(_customMotifDefinition);
     setState(() => _customMotifError = error);
     if (error == null) {
-      final motif = Motif(
-          name: _customMotifName ?? 'Unnamed motif',
-          definitions: _getDefinitions(_customMotifDefinition!));
+      final motif =
+      Motif(name: _customMotifName ?? 'Unnamed motif', definitions: _getDefinitions(_customMotifDefinition!));
       _reverseComplementsController.text = motif.reverseDefinitions.join('\n');
     } else {
       _reverseComplementsController.text = '';
@@ -163,12 +182,7 @@ class _MotifPanelState extends State<MotifPanel> {
   }
 
   List<String> _getDefinitions(String raw) {
-    return raw
-        .toUpperCase()
-        .split('\n')
-        .map((line) => line.trim())
-        .where((line) => line.isNotEmpty)
-        .toList();
+    return raw.toUpperCase().split('\n').map((line) => line.trim()).where((line) => line.isNotEmpty).toList();
   }
 
   String? _validateMotifDefinition(String? value) {
@@ -180,11 +194,16 @@ class _MotifPanelState extends State<MotifPanel> {
   }
 
   void _handlePresetToggled(Motif motif, bool value) {
-    setState(() {
-      _model.toggleMotifSelected(motif, value);
-    });
-    widget.onChanged(_model.getSelectedMotifs);
+    final newMotifs = Set.of(_model.getSelectedMotifs);
+    if (value) {
+      newMotifs.add(motif);
+    } else {
+      newMotifs.remove(motif);
+    }
+    print("Toggling motif: ${motif.name} → ${value ? "SELECTED" : "DESELECTED"} motif list ${newMotifs}");
+    _model.setMotifs(newMotifs.toList());
   }
+
 
   void _handleOpenEditor() {
     setState(() => _showEditor = true);
@@ -196,11 +215,9 @@ class _MotifPanelState extends State<MotifPanel> {
   void _handleAddMotif() {
     if (_formKey.currentState!.validate()) {
       final definitions = _customMotifDefinition!.toUpperCase().split('\n');
-      final name =
-      (_customMotifName ?? '') != '' ? _customMotifName : definitions.first;
-      final motif =
-      Motif(name: name!, definitions: definitions, isCustom: true);
-      _model.setMotifs([motif, ..._model.getAllMotifs]);
+      final name = (_customMotifName ?? '') != '' ? _customMotifName : definitions.first;
+      final motif = Motif(name: name!, definitions: definitions, isCustom: true);
+      _model.addMotif(motif);
     }
     setState(() => _showEditor = false);
   }
@@ -210,12 +227,7 @@ class _MotifCard extends StatelessWidget {
   final Motif motif;
   final Function(bool value) onToggle;
   final bool isSelected;
-
-  const _MotifCard({
-    required this.motif,
-    required this.onToggle,
-    required this.isSelected,
-  });
+  const _MotifCard({required this.motif, required this.onToggle, required this.isSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -234,26 +246,16 @@ class _MotifCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Checkbox(
-                      value: isSelected,
-                      onChanged: (value) => onToggle(value!),
-                    ),
+                    Checkbox(value: isSelected, onChanged: (value) => onToggle(value!)),
                     Expanded(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(truncate(motif.name, 20), style: textTheme.titleSmall),
-                      ),
-                    ),
+                        child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(truncate(motif.name, 20), style: textTheme.titleSmall))),
                   ],
                 ),
                 const SizedBox(height: 8),
-                FittedBox(
-                  child: Text(
-                    truncate(motif.definitions.join(', '), 25),
-                    style: textTheme.labelSmall,
-                  ),
-                ),
+                FittedBox(child: Text(truncate(motif.definitions.join(', '), 25), style: textTheme.labelSmall)),
               ],
             ),
           ),

@@ -2,7 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/organism.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:geneweb/utilities/api_service.dart';
+import 'package:provider/provider.dart';
 
+import '../genes/gene_list.dart';
+/// Widget shown just below the panel headline
+class SourceSubtitle extends StatelessWidget {
+  const SourceSubtitle({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final sourceGenesLength = context.select<GeneModel, int?>((model) => model.sourceGenesLength);
+    final sourceStageKeysLength = context.select<GeneModel, int?>((model) => model.sourceGenesKeysLength);
+    final name = context.select<GeneModel, String?>((model) => model.name);
+    return sourceGenesLength == null
+        ? const Text(
+        'Motif positions are mapped relative to the transcription start sites (TSS) or translation start site (ATG)')
+        : Wrap(
+      children: [
+        Text('$name', style: const TextStyle(fontStyle: FontStyle.italic)),
+        Text(', $sourceGenesLength genes, $sourceStageKeysLength stages'),
+      ],
+    );
+  }
+}
 class SourcePanel extends StatefulWidget {
   const SourcePanel({super.key, required this.onShouldClose});
 
@@ -87,9 +109,9 @@ class _SourcePanelState extends State<SourcePanel> {
 
   Future<void> _handleSelectOrganism(Organism organism) async {
     try {
+      var model = GeneModel.of(context);
       setState(() => _loadingMessage = "Setting active organism: ${organism.name}…");
-      final model = GeneModel.of(context);
-      await model.setOrganism(organism.name);
+      model.setOrganism(organism.name);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Now working with ${organism.name}.")));
       widget.onShouldClose();
     } catch (error) {

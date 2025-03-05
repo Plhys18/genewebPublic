@@ -1,7 +1,7 @@
-
 import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/analysis_options.dart';
 import 'package:geneweb/analysis/motif.dart';
+import 'package:geneweb/genes/gene_list.dart';
 import 'package:geneweb/genes/stage_selection.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:geneweb/screens/analysis_screen.dart';
@@ -9,7 +9,10 @@ import 'package:geneweb/widgets/analysis_options_panel.dart';
 import 'package:geneweb/widgets/motif_panel.dart';
 import 'package:geneweb/widgets/stage_panel.dart';
 import 'package:geneweb/widgets/source_panel.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+/// Widget that builds the contents of the Home Screen
 class Home extends StatefulWidget {
   const Home({super.key});
 
@@ -18,11 +21,34 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  late final GeneModel _model = GeneModel.of(context);
-  int _index = 0;
+  late final _model = GeneModel.of(context);
+
+  late int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    /*
+    for (final motif in Presets.analyzedMotifs) {
+      debugPrint(motif.name);
+      debugPrint(motif.definitions.join(','));
+      debugPrint(motif.reverseDefinitions.join(','));
+      debugPrint('\n');
+    }
+    */
+  }
 
   @override
   Widget build(BuildContext context) {
+    final organismAndStagesFromBe = context.select<GeneModel, String?>((model) => model.organismAndStagesFromBe);
+    // final organismAndStages =
+    // context.select<GeneModel, String?>((model) => '${model.name} ${model.sourceGenes?.stageKeys.join('+')}');
+
+    final sourceGenesLength = context.select<GeneModel, int?>((model) => model.sourceGenesLength);
+    final motifs = context.select<GeneModel, List<Motif>>((model) => model.getAllMotifs);
+    final filter = context.select<GeneModel, StageSelection?>((model) => model.getStageSelectionClass);
+    final expectedResults = context.select<GeneModel, int>((model) => model.expectedSeriesCount);
+
     return SingleChildScrollView(
       child: Column(
         children: [
@@ -35,46 +61,71 @@ class _HomeState extends State<Home> {
             steps: <Step>[
               Step(
                 title: const Text('Species'),
-                subtitle: Text(_model.name ?? 'Select an organism'),
-                content: SourcePanel(
-                  onShouldClose: () => _handleStepTapped(1),
-                ),
-                state: _model.name == "" ? StepState.indexed : StepState.complete,
+                subtitle: const SourceSubtitle(),
+                content: SourcePanel(onShouldClose: () => _handleStepTapped(1)),
+                state: sourceGenesLength == null
+                    ? StepState.indexed
+                    : sourceGenesLength == 0
+                    ? StepState.error
+                    : StepState.complete,
               ),
               Step(
-                title: const Text('Genomic Interval'),
-                content: AnalysisOptionsPanel(
-                  initialOptions: _model.initialOptions,
-                  onChanged: _handleAnalysisOptionsChanged,
-                ),
-                state: _model.analysisOptions == null ? StepState.indexed : StepState.complete,
+                title: const Text('Genomic interval'),
+                subtitle: const AnalysisOptionsSubtitle(),
+                content:
+                AnalysisOptionsPanel(key: ValueKey(organismAndStagesFromBe), onChanged: _handleAnalysisOptionsChanged),
+                state: sourceGenesLength == null ? StepState.indexed : StepState.complete,
               ),
               Step(
-                title: const Text('Motif Selection'),
-                content: MotifPanel(
-                  onChanged: _handleMotifsChanged,
-                ),
-                state: _model.getSelectedMotifs.isEmpty ? StepState.indexed : StepState.complete,
+                title: const Text('Analyzed motifs'),
+                subtitle: const MotifSubtitle(),
+                content: MotifPanel(key: ValueKey(organismAndStagesFromBe), onChanged: _handleMotifsChanged),
+                state: expectedResults > 60 && motifs.length > 5
+                    ? StepState.error
+                    : motifs.isEmpty
+                    ? StepState.indexed
+                    : StepState.complete,
               ),
               Step(
-                title: const Text('Developmental Stages'),
-                content: StagePanel(
-                  onChanged: _handleStageSelectionChanged,
-                ),
-                state: _model.getStageSelectionClass == null ? StepState.indexed : StepState.complete,
+                title: const Text('Developmental stages'),
+                subtitle: const StageSubtitle(),
+                content: StagePanel(key: ValueKey(organismAndStagesFromBe), onChanged: _handleStageSelectionChanged),
+                state: _model.getSelectedStages.isEmpty ||
+                    expectedResults > 60 && (filter?.selectedStages.length ?? 0) > 5
+                    ? StepState.error
+                    : StepState.indexed,
               ),
             ],
           ),
-          ElevatedButton(
-            onPressed: () async {
-              await _model.analyze();
-              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AnalysisScreen()));
-            },
-            child: const Text('Run Analysis'),
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 16),
+          InkWell(
+            onTap: () => launchUrl(Uri.parse('https://elixir-europe.org/')),
+            child: Image.asset('assets/logo_elixir.png', height: 64),
           ),
+          const SizedBox(height: 16),
         ],
       ),
     );
+  }
+
+  bool _isStepAllowed(int nextStep) {
+    final model = GeneModel.of(context);
+    switch (nextStep) {
+      case 0: // source data
+        return true;
+      case 1: // analysis options
+        return model.sourceGenesLength != null;
+      case 2: // motif
+        return model.sourceGenesLength != null;
+      case 3: // stage
+        return model.sourceGenesLength != null;
+      case 4: // analysis
+        return model.sourceGenesLength != null && model.expectedSeriesCount > 0 && model.expectedSeriesCount <= 60;
+      default:
+        return false;
+    }
   }
 
   void _handleStepTapped(int index) {
@@ -83,65 +134,33 @@ class _HomeState extends State<Home> {
     }
   }
 
-  void _handleStepCancel() {
-    if (_index > 0) setState(() => _index -= 1);
-  }
-
   Future<void> _handleStepContinue() async {
     final nextStep = _index + 1;
-
     if (nextStep == 4) {
-      // _model.addAnalysisToHistory({
-      //   "organism": _model.name,
-      //   "motifs": _model.motifs.map((m) => m.toJson()).toList(),
-      //   "stages": _model.stageSelection?.selectedStages ?? [],
-      //   "options": {
-      //     "min": _model.analysisOptions.min,
-      //     "max": _model.analysisOptions.max,
-      //     "bucketSize": _model.analysisOptions.bucketSize,
-      //     "alignMarker": _model.analysisOptions.alignMarker,
-      //   },
-      // });
-
+      await Navigator.of(context).push(MaterialPageRoute(builder: (context) => const AnalysisScreen()));
       _model.removeAnalyses();
-
-      await Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const AnalysisScreen()),
-      );
       return;
     }
-
     if (_isStepAllowed(nextStep)) {
       setState(() => _index = nextStep);
     }
   }
 
-
-  bool _isStepAllowed(int nextStep) {
-    final model = GeneModel.of(context);
-    switch (nextStep) {
-      case 0:
-      case 1:
-      case 2:
-      case 3:
-        return model.name != null;
-      case 4:
-        return model.name != null && model.expectedSeriesCount > 0;
-      default:
-        return false;
+  void _handleStepCancel() {
+    if (_index > 0) {
+      setState(() => _index -= 1);
     }
   }
 
-  void _handleStageSelectionChanged(List<String> selectedStages) {
-    _model.setSelectedStages(selectedStages);
+  void _handleStageSelectionChanged(StageSelection? selection) {
+    GeneModel.of(context).setSelectedStages(selection!.selectedStages);
   }
 
   void _handleMotifsChanged(List<Motif> motifs) {
-    _model.setMotifs(motifs);
+    GeneModel.of(context).setMotifs(motifs);
   }
 
   void _handleAnalysisOptionsChanged(AnalysisOptions options) {
-    _model.setOptions(options);
+    GeneModel.of(context).setOptions(options);
   }
-
 }
