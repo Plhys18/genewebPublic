@@ -22,6 +22,12 @@ class Series:
     def sum(self) -> float:
         return sum(self.values)
 
+    def to_dict(self) -> dict:
+        return {
+            "values": self.values,
+            "sum": self.sum
+        }
+
 class GeneList:
     """
     Holds a list of genes
@@ -35,10 +41,6 @@ class GeneList:
             colors: Optional[Dict[str, Any]],
             errors: List[Any]
     ):
-        """
-        Private constructor (like GeneList._ in Dart).
-        We keep transcriptionRates as a separate property, derived from `genes`.
-        """
         self.organism = organism
         self._genes = genes
         self.stages = stages
@@ -257,14 +259,11 @@ class GeneList:
         """
         assert stage in self.stageKeys, f"Unknown stage {stage}"
         if self.stages is not None:
-            # Use the preset stage membership
             assert stage in self.stages and len(self.stages[stage]) > 0, f"No genes for stage {stage}"
             ids = self.stages[stage]
             return self.copy_with(genes=[g for g in self.genes if g.geneId in ids])
         else:
-            # Use stageSelection logic with transcriptionRates
             assert stage in stageSelection.selectedStages
-            # Sort by expression level
             self.genes.sort(
                 key=lambda g: g.transcriptionRates[stage]
                 if stage in g.transcriptionRates else 0.0

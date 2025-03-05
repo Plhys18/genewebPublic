@@ -91,7 +91,6 @@ class GeneModel:
 
         self.sourceGenes = GeneList.from_list(genes=genes, errors=errors, organism=organism)
 
-    # ✅ Run the analysis (must have motifs & stages)
     async def analyze(self) -> bool:
         """
         Runs analysis using the set motifs, stages, and organism.
@@ -145,7 +144,7 @@ class GeneModel:
     def addAnalysisToHistory(self):
         self.analysesHistory.extend(self.analyses)
 
-    # ✅ Function to run analysis
+
 async def runAnalysis(params: Dict[str, Any]) -> "AnalysisSeries":
     """
     Runs a single motif analysis on a gene list.

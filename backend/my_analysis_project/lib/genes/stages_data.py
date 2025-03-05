@@ -81,12 +81,6 @@ class StagesData:
 # ---- ColorRowParser simulation ----
 
 class ColorRowParser:
-    """
-    Mimics the logic of color_row_parser in Dart.
-    If the row is recognized as a 'color row', we parse each cell
-    as a color or None. Otherwise, we return None.
-    """
-
     COLOR_REGEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
     @staticmethod
