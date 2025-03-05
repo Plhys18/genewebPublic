@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:geneweb/analysis/Analysis_history_entry.dart';
 import 'package:geneweb/analysis/analysis_options.dart';
 import 'package:geneweb/analysis/motif.dart';
-import 'package:geneweb/genes/gene_list.dart';
 import 'package:geneweb/genes/stage_selection.dart';
 import 'package:provider/provider.dart';
 
+import '../analysis/analysis_series.dart';
+import '../analysis/distribution.dart';
 import '../analysis/stage_and_color.dart';
 import '../utilities/api_service.dart';
 class GeneModel extends ChangeNotifier {
+  static GeneModel of(BuildContext context) =>
+      Provider.of<GeneModel>(context, listen: false);
   static const kAllStages = '__ALL__';
   String? name = "";
   final ApiService _apiService = ApiService();
@@ -15,29 +19,40 @@ class GeneModel extends ChangeNotifier {
   List<Motif> _allMotifs = [];
   List<Motif> _selectedMotifs = [];
   List<StageAndColor> _allStages = [];
-  List<Map<String, dynamic>> _analysesHistory = [];
-  final StageSelection _stageSelection = StageSelection();
+  List<AnalysisSeries> analyses = [];
+  List<AnalysisHistoryEntry> analysesHistory = [];
+
+  StageSelection _stageSelection = StageSelection();
 
   List<Motif> get getAllMotifs => _allMotifs;
   List<Motif> get getSelectedMotifs => _selectedMotifs;
   List<StageAndColor> get getAllStages => _allStages;
   List<String> get getSelectedStages => getStageSelectionClass.selectedStages;
 
-  List<Map<String, dynamic>> get getAnalysesHistory => _analysesHistory;
   StageSelection get getStageSelectionClass => _stageSelection;
 
-  AnalysisOptions? analysisOptions;
+  AnalysisOptions analysisOptions = AnalysisOptions();
 
   int get expectedSeriesCount =>
       getSelectedMotifs.length * (getStageSelectionClass.selectedStages.length);
 
-  get initialOptions => AnalysisOptions();
-
-  static GeneModel of(BuildContext context) =>
-      Provider.of<GeneModel>(context, listen: false);
+  List<String> _markers = [];
+  int? _sourceGenesLength;
+  int? _sourceGenesKeysLength;
+  int? _errorCount;
+  String _organismAndStagesFromBe = "";
+  get organismAndStagesFromBe => _organismAndStagesFromBe;
+  get sourceGenesLength => _sourceGenesLength;
+  get sourceGenesKeysLength => _sourceGenesKeysLength;
+  get markers => _markers;
+  get errorCount => _errorCount;
 
   void setMotifs(List<Motif> newMotifs) {
-    _allMotifs = newMotifs;
+    _selectedMotifs = newMotifs;
+    notifyListeners();
+  }
+  void addMotif(Motif motif) {
+    _allMotifs.add(motif);
     notifyListeners();
   }
 
@@ -61,9 +76,7 @@ class GeneModel extends ChangeNotifier {
   }
 
   void toggleStageSelection(String stage, bool value) {
-    print("🔍 DEBUG: Toggling stage $stage with value $value");
     if (value && !getSelectedStages.contains(stage)) {
-      print("🔍 DEBUG: Adding stage $stage to selected stages");
       _stageSelection.selectedStages.add(stage);
     }
     if (!value && getSelectedStages.contains(stage)) {
@@ -77,11 +90,24 @@ class GeneModel extends ChangeNotifier {
   }
 
   void addAnalysisToHistory(Map<String, dynamic> analysis) {
-    _analysesHistory.add(analysis);
-    notifyListeners();
+    try {
+      print("🔍 DEBUG: Adding analysis to history: $analysis");
+
+      if (!analysis.containsKey("name")) throw Exception("Missing 'name' field!");
+      // if (!analysis.containsKey("distribution")) throw Exception("Missing 'distribution' field!");
+
+      var parsedAnalysis = AnalysisHistoryEntry.fromJson(analysis);
+      analysesHistory = [...analysesHistory, parsedAnalysis];
+
+      print("✅ Analysis added successfully: ${parsedAnalysis.id}");
+      notifyListeners();
+    } catch (error) {
+      print("❌ ERROR IN ADD ANALYSIS TO HISTORY: $error");
+    }
   }
+
   void removeAnalyses() {
-    _analysesHistory.clear();
+    analyses.clear();
     notifyListeners();
   }
 
@@ -95,6 +121,12 @@ class GeneModel extends ChangeNotifier {
       await _apiService.setActiveOrganism(organismName);
       name = organismName;
       await fetchActiveOrganism();
+      await fetchSourceGenesInformations();
+      assert(_sourceGenesLength != null, "Source genes not set");
+      // for (var stageName in sourceGenes.defaultSelectedStageKeys)
+      //   {
+      //     toggleStageSelection(stageName, true);
+      //   }
     } catch (error) {
       throw Exception("Error setting active organism: $error");
     }
@@ -110,6 +142,7 @@ class GeneModel extends ChangeNotifier {
     }
   }
 
+
   void _processMotifsAndStages(Map<String, dynamic> data) {
     final motifsData = data["motifs"] as List<dynamic>;
     final newMotifs = motifsData.map((m) => Motif.fromJson(m)).toList();
@@ -122,22 +155,42 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> analyze() async {
+  void _processSourceGenesInformations(Map<String, dynamic> data) {
+    _sourceGenesLength = data["genes_length"] as int?;
+    _sourceGenesKeysLength = data["genes_keys_length"] as int?;
+    _organismAndStagesFromBe = data["organism_and_stages"] as String;
+    _markers = List<String>.from(data["markers"] ?? []);
+    _errorCount = data["error_count"] as int? ?? 0;
+    notifyListeners();
+  }
 
-    assert(getStageSelectionClass != null, "Stage selection must be set");
-    assert(getStageSelectionClass!.selectedStages.isNotEmpty, "No stages selected");
+
+  Future<void> fetchSourceGenesInformations() async {
+    try {
+      final data = await _apiService.getActiveOrganismSourceGenesInformations();
+      _processSourceGenesInformations(data);
+
+      assert (_sourceGenesLength != null, "Source genes not set");
+    } catch (error) {
+      print("❌ Error fetching active organism source genes: $error");
+    }
+  }
+
+  Future<bool> analyze() async {
+    assert(getStageSelectionClass.selectedStages.isNotEmpty, "No stages selected");
     assert(getSelectedMotifs.isNotEmpty, "No motifs selected");
-    print("🔍 DEBUG: Selected stages before sending: $getSelectedStages");
 
+    // Prepare request payload
     final params = {
       "color": "#FF0000",
-      "minimal": analysisOptions?.min ?? initialOptions.minilam,
-      "maximal": analysisOptions?.max ?? initialOptions.maximal,
-      "bucket_size": analysisOptions?.bucketSize ?? initialOptions.bucketSize,
+      "minimal": analysisOptions.min,
+      "maximal": analysisOptions.max,
+      "bucket_size": analysisOptions.bucketSize,
       "stroke": 4,
       "visible": true,
       "no_overlaps": true,
     };
+
     final payload = {
       "organism": name,
       "motifs": getSelectedMotifs.map((m) => m.name).toList(),
@@ -147,23 +200,26 @@ class GeneModel extends ChangeNotifier {
 
     try {
       print("🔹 Sending analysis request to backend with payload: $payload");
-      final response = await _apiService.postRequest(
-          "analysis/analyze/", payload);
+      final response = await _apiService.postRequest("analysis/analyze/", payload);
 
       if (response.containsKey("results")) {
-        print("✅ Analysis results received: ${response['results']
-            .length} entries");
+        print("✅ Analysis results received");
 
         addAnalysisToHistory({
-          "name": "Analysis for $name",
-          "results": response["results"],
-          "timestamp": DateTime.now().toIso8601String()
+          "name": response["results"]["name"],
+          "color": response["results"]["color"] != null
+              ? Color(response["results"]["color"])
+              : Colors.blue,
+          "distribution": response["results"]["distribution"],
+          "timestamp": DateTime.now().toIso8601String(),
         });
 
         notifyListeners();
         print("✅ Analysis successfully added to history.");
+        return true;
       } else {
         print("❌ Error: Unexpected response from backend: $response");
+        return false;
       }
     } catch (error) {
       print("❌ Error running analysis: $error");
@@ -171,9 +227,13 @@ class GeneModel extends ChangeNotifier {
     }
   }
 
+
   void setSelectedStages(List<String> list) {
+    print("Updating selected stages in GeneModel: $list");
     _stageSelection.selectedStages.clear();
     _stageSelection.selectedStages.addAll(list);
+    notifyListeners(); // 🚨 This MUST be called
   }
+
 
 }

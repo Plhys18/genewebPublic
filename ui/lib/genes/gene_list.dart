@@ -253,13 +253,11 @@ class GeneList extends Equatable {
       rate += list[i].transcriptionRates[transcriptionKey]!;
       i++;
     }
-    /*
     print('$rate <= $totalRate, $i th gene');
     final sequence = list.getRange(i - 10.clamp(0, list.length), (i + 10).clamp(0, list.length));
     for (final gene in sequence) {
       print('${gene.geneId} ${gene.transcriptionRates[transcriptionKey]!}');
     }
-    */
     return result.toList();
   }
 
@@ -303,37 +301,17 @@ class GeneList extends Equatable {
     return {
       'genes': genes.map((g) => g.toJson()).toList(),
       'errors': errors,
-      // Assuming stages is Map<String, Set<String>> – convert each Set to List.
       'stages': stages?.map((key, value) => MapEntry(key, value.toList())),
-      // Assuming colors is Map<String, Color> – convert each Color to its integer value.
-      'colors': colors?.map((key, value) => MapEntry(key, value.value)),
+      'colors': colors.map((key, value) => MapEntry(key, value.value)),
     };
   }
 
   static GeneList fromJson(Map<String, dynamic> json) {
     final genesJson = json['genes'] as List<dynamic>;
-    // Create GeneList from the genes list.
     final geneList = GeneList.fromList(
       genes: genesJson.map((g) => Gene.fromJson(g as Map<String, dynamic>)).toList(),
-      errors: json['errors'] as List<dynamic>? ?? [],
-      organism: null, // Organism can be set separately if needed.
+      errors: json['errors'] as List<dynamic>? ?? []
     );
-
-    // If stages are present, convert lists back to sets.
-    if (json['stages'] != null) {
-      final stagesMap = (json['stages'] as Map<String, dynamic>).map(
-            (key, value) => MapEntry(key, Set<String>.from(value as List<dynamic>)),
-      );
-      geneList.stages = stagesMap;
-    }
-
-    // Convert colors back from integer values to Color.
-    if (json['colors'] != null) {
-      final colorsMap = (json['colors'] as Map<String, dynamic>).map(
-            (key, value) => MapEntry(key, Color(value as int)),
-      );
-      geneList.colors = colorsMap;
-    }
     return geneList;
   }
 }

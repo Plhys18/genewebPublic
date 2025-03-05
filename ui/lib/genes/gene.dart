@@ -135,12 +135,12 @@ class Gene {
 
   static Gene fromJson(Map<String, dynamic> json) {
     return Gene._(
-      geneId: json['geneId'] as String,
-      data: json['data'] as String,
-      header: json['header'] as String,
-      notes: List<String>.from(json['notes'] as List),
-      transcriptionRates: Map<String, num>.from(json['transcriptionRates'] as Map),
-      markers: Map<String, int>.from(json['markers'] as Map),
+      geneId: json['geneId']?.toString() ?? "Unknown",
+      data: json['data']?.toString() ?? "",
+      header: json['header']?.toString() ?? "",
+      notes: (json['notes'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      transcriptionRates: (json['transcriptionRates'] as Map?)?.map((k, v) => MapEntry(k.toString(), v as num)) ?? {},
+      markers: (json['markers'] as Map?)?.map((k, v) => MapEntry(k.toString(), v as int)) ?? {},
     );
   }
 }
