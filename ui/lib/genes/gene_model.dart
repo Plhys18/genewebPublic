@@ -6,7 +6,6 @@ import 'package:geneweb/genes/stage_selection.dart';
 import 'package:provider/provider.dart';
 
 import '../analysis/analysis_series.dart';
-import '../analysis/distribution.dart';
 import '../analysis/stage_and_color.dart';
 import '../utilities/api_service.dart';
 class GeneModel extends ChangeNotifier {
@@ -89,17 +88,9 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addAnalysisToHistory(Map<String, dynamic> analysis) {
+  void addAnalysisToHistory(AnalysisHistoryEntry analysisHistoryEntry) {
     try {
-      print("🔍 DEBUG: Adding analysis to history: $analysis");
-
-      if (!analysis.containsKey("name")) throw Exception("Missing 'name' field!");
-      // if (!analysis.containsKey("distribution")) throw Exception("Missing 'distribution' field!");
-
-      var parsedAnalysis = AnalysisHistoryEntry.fromJson(analysis);
-      analysesHistory = [...analysesHistory, parsedAnalysis];
-
-      print("✅ Analysis added successfully: ${parsedAnalysis.id}");
+      analysesHistory = [...analysesHistory, analysisHistoryEntry];
       notifyListeners();
     } catch (error) {
       print("❌ ERROR IN ADD ANALYSIS TO HISTORY: $error");
@@ -136,12 +127,40 @@ class GeneModel extends ChangeNotifier {
     try {
       final data = await _apiService.getActiveOrganism();
       name = data["organism"];
+      fetchPastUserAnalyses();
+      print("DEBUG past analyses of user after fetching in fetchActiveOrganism: $analyses");
       _processMotifsAndStages(data);
     } catch (error) {
       print("❌ Error fetching active organism: $error");
     }
   }
 
+  /// Fetch past analyses of user
+  Future<void> fetchPastUserAnalyses() async {
+    try {
+      List<AnalysisHistoryEntry> list = await _apiService.fetchAnalyses();
+      List<int> listIds = list.map((entry) => entry.id).toList();
+      List<Future<AnalysisSeries>> futures = listIds.map((entry) => _apiService.fetchAnalysisDetails(entry)).toList();
+      List<AnalysisSeries> analysesDetails = await Future.wait(futures);
+      for (var analysis in analysesDetails) {
+        addFullAnalysis(analysis);
+      }
+    } catch (error) {
+      print("❌ Error fetching analyses: $error");
+    }
+  }
+
+  /// Fetch the list of analysis history
+  Future<void> fetchAnalysisHistory() async {
+    try {
+      print("🔍 Fetching analysis history...");
+      analysesHistory = await _apiService.fetchAnalyses();
+      notifyListeners();
+      print("✅ Analysis history loaded.");
+    } catch (error) {
+      print("❌ Error fetching analysis history: $error");
+    }
+  }
 
   void _processMotifsAndStages(Map<String, dynamic> data) {
     final motifsData = data["motifs"] as List<dynamic>;
@@ -176,6 +195,19 @@ class GeneModel extends ChangeNotifier {
     }
   }
 
+  void addFullAnalysis(AnalysisSeries analysisDetails) {
+    try {
+        print("🔍 DEBUG: Processing full analysis details: $analysisDetails");
+
+      analyses.add(analysisDetails);
+
+      print("✅ Full analysis stored with name: ${analysisDetails.motifName}");
+      notifyListeners();
+    } catch (error) {
+      print("❌ ERROR: Failed to parse full analysis details: $error");
+    }
+  }
+
   Future<bool> analyze() async {
     assert(getStageSelectionClass.selectedStages.isNotEmpty, "No stages selected");
     assert(getSelectedMotifs.isNotEmpty, "No motifs selected");
@@ -203,29 +235,23 @@ class GeneModel extends ChangeNotifier {
       final response = await _apiService.postRequest("analysis/analyze/", payload);
 
       if (response.containsKey("results")) {
-        print("✅ Analysis results received");
+        int? analysisId = await _apiService.fetchLatestAnalysisId();
+        if (analysisId == null) {
+          throw Exception("Analysis ID not found");
+        }
+        final AnalysisSeries analysisSeries = await _apiService.fetchAnalysisDetails(analysisId);
 
-        addAnalysisToHistory({
-          "name": response["results"]["name"],
-          "color": response["results"]["color"] != null
-              ? Color(response["results"]["color"])
-              : Colors.blue,
-          "distribution": response["results"]["distribution"],
-          "timestamp": DateTime.now().toIso8601String(),
-        });
-
+        addFullAnalysis(analysisSeries);
         notifyListeners();
-        print("✅ Analysis successfully added to history.");
         return true;
       } else {
-        print("❌ Error: Unexpected response from backend: $response");
         return false;
       }
     } catch (error) {
-      print("❌ Error running analysis: $error");
       throw Exception("Error running analysis: $error");
     }
   }
+
 
 
   void setSelectedStages(List<String> list) {

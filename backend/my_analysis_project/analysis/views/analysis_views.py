@@ -106,30 +106,31 @@ async def _async_run_analysis(request):
                 "name": analysis.name,
                 "color": analysis.color,
                 "distribution": {
-                "min": analysis.distribution.min,
-                "max": analysis.distribution.max,
-                "bucket_size": analysis.distribution.bucket_size,
-                "name": analysis.distribution.name,
-                "color": analysis.distribution.color,
-                "align_marker": analysis.distribution.align_marker,
-                "total_count": analysis.distribution.totalCount,
-                "total_genes_count": analysis.distribution.totalGenesCount,
-                "total_genes_with_motif_count": analysis.distribution.totalGenesWithMotifCount,
-                "data_points": [
-                    {
-                        "min": dp.min,
-                        "max": dp.max,
-                        "count": dp.count,
-                        "percent": dp.percent
-                    }
-                    for dp in analysis.distribution.dataPoints
-                ] if analysis.distribution.dataPoints else []
-},
-
+                    "min": analysis.distribution.min,
+                    "max": analysis.distribution.max,
+                    "bucket_size": analysis.distribution.bucket_size,
+                    "name": analysis.distribution.name,
+                    "color": analysis.distribution.color,
+                    "align_marker": analysis.distribution.align_marker,
+                    "total_count": analysis.distribution.totalCount,
+                    "total_genes_count": analysis.distribution.totalGenesCount,
+                    "total_genes_with_motif_count": analysis.distribution.totalGenesWithMotifCount,
+                    "data_points": [
+                        {
+                            "min": dp.min,
+                            "max": dp.max,
+                            "count": dp.count,
+                            "percent": dp.percent,
+                            "genes": list(dp.genes),
+                            "genes_percent": dp.genes_percent
+                        }
+                        for dp in analysis.distribution.dataPoints
+                    ] if analysis.distribution.dataPoints else []
+                },
             })
 
         # ✅ Save full results, but return only filtered data
-        await sync_to_async(save_analysis_history, thread_sensitive=True)(user, organism_name, results)
+        await sync_to_async(save_analysis_history, thread_sensitive=True)(user, organism_name, results, filtered_results)
 
         print(f"✅ DEBUG: Analysis completed successfully, saved to DB")
 
@@ -140,7 +141,7 @@ async def _async_run_analysis(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 
-def save_analysis_history(user, organism_name, results):
+def save_analysis_history(user, organism_name, results, filtered_results):
     """
     Saves the analysis history to the database in a synchronous manner.
     """
@@ -148,7 +149,8 @@ def save_analysis_history(user, organism_name, results):
         AnalysisHistory.objects.create(
             user=user,
             name=f"Analysis for {organism_name}",
-            results=results
+            results=results,
+            filtered_results=filtered_results
         )
         print(f"✅ DEBUG: Successfully saved analysis history for {user.username}")
     except Exception as e:
@@ -159,11 +161,13 @@ def save_analysis_history(user, organism_name, results):
 def get_analysis_details(request, analysis_id):
     """Returns detailed results for a specific analysis."""
     try:
+
         analysis = AnalysisHistory.objects.get(id=analysis_id, user=request.user)
         return JsonResponse({
+            "id": analysis_id,
             "name": analysis.name,
             "created_at": analysis.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-            "results": analysis.results
+            "results": analysis.filtered_results
         })
     except AnalysisHistory.DoesNotExist:
         return JsonResponse({"error": "Analysis not found"}, status=404)

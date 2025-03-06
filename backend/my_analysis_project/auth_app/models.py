@@ -35,7 +35,9 @@ class AnalysisHistory(models.Model):
     """
     Stores past analysis results for each user.
     """
+    id = models.AutoField(primary_key=True)
     user = models.ForeignKey(AppUser, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     results = models.JSONField(default=dict)
+    filtered_results = models.JSONField(default=dict)
     created_at = models.DateTimeField(auto_now_add=True)

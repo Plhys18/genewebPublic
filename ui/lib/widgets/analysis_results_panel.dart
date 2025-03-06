@@ -73,8 +73,10 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
       }
 
       if (analyses.isNotEmpty) {
+        final lastAnalysisId = analyses.last.id;
+        final analysisSeries = await ApiService().fetchAnalysisDetails(lastAnalysisId);
         setState(() {
-          _selectedAnalysisName = analyses.last["name"];
+          _selectedAnalysisName = analysisSeries.motifName;
         });
       }
 
@@ -94,6 +96,7 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
 
 
 
+
   @override
   Widget build(BuildContext context) {
     final motifs = context.select<GeneModel, List<Motif>>((model) => model.getSelectedMotifs);
@@ -103,7 +106,7 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
     context.select<GeneModel, List<AnalysisSeries>>((model) => model.analyses.where((a) => a.visible).toList());
     final expectedResults = context.select<GeneModel, int>((model) => model.expectedSeriesCount);
     final analysis = context.select<GeneModel, AnalysisSeries?>(
-            (model) => model.analyses.firstWhereOrNull((a) => a.name == _selectedAnalysisName));
+            (model) => model.analyses.firstWhereOrNull((a) => a.motifName == _selectedAnalysisName));
     final canAnalyzeErrors = [
       if (motifs.isEmpty) 'no motifs selected',
       if (filter?.selectedStages.isEmpty == true) 'no stages selected',
@@ -145,7 +148,7 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
                     spacing: 8,
                     children: [
                       Icon(Icons.check_box, color: colorScheme.outline),
-                      Text(analysis.name, style: textTheme.titleMedium),
+                      Text(analysis.motifName, style: textTheme.titleMedium),
                       if (_exportProgress != null)
                         _ExportIndicator(exportProgress: _exportProgress)
                       else
@@ -184,7 +187,7 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
     final analyses = context.select<GeneModel, List<AnalysisSeries>>((model) => model.analyses);
     assert(analyses.isNotEmpty);
     final analysis = context.select<GeneModel, AnalysisSeries?>(
-            (model) => model.analyses.firstWhereOrNull((a) => a.name == _selectedAnalysisName));
+            (model) => model.analyses.firstWhereOrNull((a) => a.motifName == _selectedAnalysisName));
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -216,7 +219,7 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
                   child: Row(
                     children: [
                       Expanded(child: _buildAnalysisRowSettings(analysis)),
-                      Expanded(child: DrillDownView(name: _selectedAnalysisName)),
+                      // Expanded(child: DrillDownView(name: _selectedAnalysisName)),
                     ],
                   ),
                 ),
@@ -422,7 +425,7 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
   void _updateAnalysis(GeneModel model, AnalysisSeries analysis) {
     model.analyses = ([
       for (final a in model.analyses)
-        if (a.name == analysis.name) analysis else a
+        if (a.motifName == analysis.motifName) analysis else a
     ]);
   }
 

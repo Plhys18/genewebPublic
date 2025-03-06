@@ -27,9 +27,9 @@ class AnalysisResult {
 
   static AnalysisResult fromJson(Map<String, dynamic> json) {
     return AnalysisResult(
-      position: json['position'],
-      rawPosition: json['rawPosition'],
-      motifName: json['motifName'],
+      motifName: json['name'] as String,
+      rawPosition: json['rawPosition'] as num,
+      position: json['position'] as num,
     );
   }
 }

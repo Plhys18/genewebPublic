@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../analysis/Analysis_history_entry.dart';
+import '../analysis/analysis_series.dart';
 import '../analysis/organism.dart';
 
 class ApiService {
@@ -21,8 +23,8 @@ class ApiService {
     _jwtToken = prefs.getString("jwt_access");
     _refreshToken = prefs.getString("jwt_refresh");
 
-    print("🔹 [JWT LOADED] Access Token: $_jwtToken");
-    print("🔹 [JWT LOADED] Refresh Token: $_refreshToken");
+    // print("🔹 [JWT LOADED] Access Token: $_jwtToken");
+    // print("🔹 [JWT LOADED] Refresh Token: $_refreshToken");
   }
 
   /// Save JWT tokens to storage
@@ -33,7 +35,7 @@ class ApiService {
     _jwtToken = accessToken;
     _refreshToken = refreshToken;
 
-    print("✅ [JWT SAVED] Access & Refresh tokens updated.");
+    // print("✅ [JWT SAVED] Access & Refresh tokens updated.");
   }
 
   /// Remove JWT tokens (logout)
@@ -44,7 +46,7 @@ class ApiService {
     _jwtToken = null;
     _refreshToken = null;
 
-    print("🚪 [LOGOUT] JWT tokens cleared.");
+    // print("🚪 [LOGOUT] JWT tokens cleared.");
   }
 
   /// Ensure URL formatting
@@ -58,7 +60,7 @@ class ApiService {
   /// Handle token refresh when access token expires (401)
   Future<bool> _refreshAccessToken() async {
     if (_refreshToken == null) {
-      print("❌ [TOKEN REFRESH FAILED] No refresh token available.");
+      // print("❌ [TOKEN REFRESH FAILED] No refresh token available.");
       return false;
     }
 
@@ -72,15 +74,15 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         await _saveJwtToken(data["access"], _refreshToken!);
-        print("🔄 [TOKEN REFRESH SUCCESS] New access token obtained.");
+        // print("🔄 [TOKEN REFRESH SUCCESS] New access token obtained.");
         return true;
       } else {
-        print("❌ [TOKEN REFRESH FAILED] Server rejected refresh request.");
+        // print("❌ [TOKEN REFRESH FAILED] Server rejected refresh request.");
         await _clearJwtToken(); // Force logout
         return false;
       }
     } catch (error) {
-      print("🚨 [TOKEN REFRESH ERROR] $error");
+      // print("🚨 [TOKEN REFRESH ERROR] $error");
       return false;
     }
   }
@@ -97,13 +99,10 @@ class ApiService {
       },
     );
 
-    print("🌐 [GET REQUEST] ${_fixUrl(endpoint)}");
-    print("🔹 Headers: ${response.request?.headers}");
-
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else if (response.statusCode == 401) {
-      print("⚠️ [401 UNAUTHORIZED] Trying to refresh token...");
+      // print("⚠️ [401 UNAUTHORIZED] Trying to refresh token...");
       final refreshed = await _refreshAccessToken();
       if (refreshed) {
         return getRequest(endpoint);
@@ -128,13 +127,13 @@ class ApiService {
       body: jsonEncode(body),
     );
 
-    print("🌐 [POST REQUEST] ${_fixUrl(endpoint)}");
-    print("🔹 Body: $body");
+    //print("🌐 [POST REQUEST] ${_fixUrl(endpoint)}");
+    //print("🔹 Body: $body");
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else if (response.statusCode == 401) {
-      print("⚠️ [401 UNAUTHORIZED] Trying to refresh token...");
+      //print("⚠️ [401 UNAUTHORIZED] Trying to refresh token...");
       final refreshed = await _refreshAccessToken();
       if (refreshed) {
         return postRequest(endpoint, body);
@@ -154,25 +153,25 @@ class ApiService {
 
   /// Set the active organism
   Future<Map<String, dynamic>> setActiveOrganism(String organismName) async {
-    print("🌍 [SET ORGANISM] Changing active organism to: $organismName");
+    //print("🌍 [SET ORGANISM] Changing active organism to: $organismName");
     return await postRequest("analysis/set_active_organism", {"organism": organismName});
   }
 
   /// Get the active organism
   Future<Map<String, dynamic>> getActiveOrganism() async {
-    print("📌 [GET ACTIVE ORGANISM] Fetching current organism...");
+    //print("📌 [GET ACTIVE ORGANISM] Fetching current organism...");
     return await getRequest("analysis/get_active_organism");
   }
   /// Get the active organism
   Future<Map<String, dynamic>> getActiveOrganismSourceGenesInformations() async {
-    print("📌 [GET ACTIVE ORGANISM SOURCE GENES] Fetching current organism...");
+    //print("📌 [GET ACTIVE ORGANISM SOURCE GENES] Fetching current organism...");
     return await getRequest("analysis/get_active_organism_source_gene_informations");
   }
 
 
   /// User login and store tokens
   Future<bool> login(String username, String password) async {
-    print("🔑 [LOGIN ATTEMPT] Username: $username");
+    //print("🔑 [LOGIN ATTEMPT] Username: $username");
 
     final response = await postRequest("auth/login", {
       'username': username,
@@ -181,42 +180,34 @@ class ApiService {
 
     if (response.containsKey("access")) {
       await _saveJwtToken(response["access"], response["refresh"]);
-      print("✅ [LOGIN SUCCESS] JWT tokens stored.");
+      //print("✅ [LOGIN SUCCESS] JWT tokens stored.");
       return true;
     } else {
-      print("❌ [LOGIN FAILED] Incorrect credentials.");
+      //print("❌ [LOGIN FAILED] Incorrect credentials.");
       return false;
     }
   }
 
   /// Logout (clear stored tokens)
   Future<void> logout() async {
-    print("🚪 [LOGOUT] Clearing stored credentials...");
+    //print("🚪 [LOGOUT] Clearing stored credentials...");
     await _clearJwtToken();
   }
 
-  Future<List<Map<String, dynamic>>> fetchAnalyses() async {
-    var data = await getRequest("analysis/history");
+  /// Fetch list of past analyses (history)
+  Future<List<AnalysisHistoryEntry>> fetchAnalyses() async {
+    final data = await getRequest("analysis/history");
 
-    return List<Map<String, dynamic>>.from(data["history"].map((entry) {
-      return {
-        "id": entry["id"] as int,
-        "name": entry["name"] as String,
-        "created_at": entry["created_at"] as String,
-      };
-    }));
+    return (data['history'] as List)
+        .map((entry) => AnalysisHistoryEntry.fromJson(entry))
+        .toList();
   }
 
-  Future<Map<String, dynamic>> fetchAnalysisDetails(int analysisId) async {
-    var data = await getRequest("analysis/history/$analysisId/");
 
-    return {
-      "id": data["id"],
-      "name": data["name"],
-      "created_at": data["created_at"],
-      "color": data["color"] != null ? Color(data["color"]) : null,
-      "distribution": data["distribution"],
-    };
+  /// **Fetch Analysis Details**
+  Future<AnalysisSeries> fetchAnalysisDetails(int analysisId) async {
+    final data = await getRequest("analysis/history/$analysisId/");
+    return AnalysisSeries.fromJson(data["results"]);
   }
 
 
@@ -235,4 +226,26 @@ class ApiService {
     }
     return [];
   }
+
+  /// Fetch the latest analysis ID from the user's analysis history
+  Future<int?> fetchLatestAnalysisId() async {
+    try {
+      final data = await getRequest("analysis/history");
+
+      if (data["history"].isEmpty) {
+        //print("📌 [FETCH LATEST ANALYSIS] No past analyses found.");
+        return null;
+      }
+
+      final latestEntry = data["history"].first;
+      final latestId = latestEntry["id"];
+
+      //print("✅ [LATEST ANALYSIS] ID: $latestId");
+      return latestId;
+    } catch (error) {
+      //print("❌ [ERROR FETCHING LATEST ANALYSIS] $error");
+      return null;
+    }
+  }
+
 }

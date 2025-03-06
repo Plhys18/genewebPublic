@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/analysis_result.dart';
 
+import 'analysis_series.dart';
 import 'distributionDataPoints.dart';
 
 /// Holds the result of series distribution
@@ -23,14 +24,13 @@ class Distribution {
   /// The color of the series
   final Color? color;
 
-  Map<int, int>? _counts;
+
+  late List<DistributionDataPoint> dataPoints;
 
   late int _totalCount;
 
   /// Total count of motifs
   int get totalCount => _totalCount;
-
-  Map<int, Set<String>>? _genes;
 
   late int _totalGenesCount;
 
@@ -49,23 +49,11 @@ class Distribution {
     this.alignMarker,
     required this.name,
     required this.color,
+    required int totalCount,
+    required int totalGenesCount,
+    required int totalGenesWithMotifCount,
+    required dataPoints,
   });
-
-  /// Returns the distribution as a list of [DistributionDataPoint]
-  List<DistributionDataPoint>? get dataPoints {
-    if (_counts == null || _genes == null) return null;
-    return [
-      for (var i = 0; i < (max - min) ~/ bucketSize; i++)
-        DistributionDataPoint(
-          min: min + i * bucketSize,
-          max: min + (i + 1) * bucketSize,
-          count: _counts![i] ?? 0,
-          percent: (_counts![i] ?? 0) / _totalCount,
-          genes: _genes![i] ?? {},
-          genesPercent: (_genes![i]?.length ?? 0) / _totalGenesCount,
-        ),
-    ];
-  }
 
 
   Map<String, dynamic> toJson() {
@@ -76,31 +64,28 @@ class Distribution {
       'alignMarker': alignMarker,
       'name': name,
       'color': color?.value,
-      'dataPoints': dataPoints?.map((dp) => dp.toJson()).toList(),
+      'dataPoints': dataPoints.map((dataPoint) => dataPoint.toJson()).toList(),
       'totalCount': totalCount,
       'totalGenesCount': totalGenesCount,
       'totalGenesWithMotifCount': totalGenesWithMotifCount,
     };
   }
 
-  static Distribution fromJson(Map<String, dynamic> json) {
-    print("🔍 DEBUG: Decoding Distribution JSON: $json");
-
+  factory Distribution.fromJson(Map<String, dynamic> json) {
     return Distribution(
       min: json['min'] as int,
       max: json['max'] as int,
       bucketSize: json['bucket_size'] as int,
-      alignMarker: json['align_marker'] as String?,
       name: json['name'] as String,
-      color: json['color'] != null ? Color(int.parse(json['color'].replaceFirst("#", "0xff"))) : null,
-    )
-      .._totalCount = json['total_count'] ?? 0
-      .._totalGenesCount = json['total_genes_count'] ?? 0
-      .._totalGenesWithMotifCount = json['total_genes_with_motif_count'] ?? 0
-      .._counts = json['data_points'] != null
-          ? {for (var dp in json['data_points']) dp['min']: dp['count']}
-          : {}
-      .._genes = {};
+      color: AnalysisSeries.parseColor(json['color']),
+      alignMarker: json['align_marker'] as String?,
+      totalCount: json['total_count'] as int,
+      totalGenesCount: json['total_genes_count'] as int,
+      totalGenesWithMotifCount: json['total_genes_with_motif_count'] as int,
+      dataPoints: (json['data_points'] as List<dynamic>)
+          .map((dataPoint) => DistributionDataPoint.fromJson(dataPoint as Map<String, dynamic>))
+          .toList(),
+    );
   }
 
 

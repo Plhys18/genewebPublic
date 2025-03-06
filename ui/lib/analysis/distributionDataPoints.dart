@@ -42,13 +42,13 @@ class DistributionDataPoint {
     };
   }
 
-  static DistributionDataPoint fromJson(Map<String, dynamic> json) {
+  factory DistributionDataPoint.fromJson(Map<String, dynamic> json) {
     return DistributionDataPoint(
       min: json['min'] as int,
       max: json['max'] as int,
       count: json['count'] as int,
       percent: (json['percent'] as num).toDouble(),
-      genes: Set<String>.from(json['genes'] as List),
+      genes: Set<String>.from(json['genes'] as List<dynamic>),
       genesPercent: (json['genesPercent'] as num).toDouble(),
     );
   }

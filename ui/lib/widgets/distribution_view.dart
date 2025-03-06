@@ -90,7 +90,7 @@ class _DistributionViewState extends State<DistributionView> {
                 [
                   for (final analysis in analyses)
                     charts.Series<DistributionDataPoint, int>(
-                      id: analysis.name,
+                      id: analysis.motifName,
                       data: analysis.distribution!.dataPoints!,
                       domainFn: (DistributionDataPoint point, i) => point.min,
                       measureFn: _measureFn,
@@ -98,7 +98,7 @@ class _DistributionViewState extends State<DistributionView> {
                       strokeWidthPxFn: (_, __) => analysis.stroke,
                       seriesColor: widget.focus == null
                           ? charts.ColorUtil.fromDartColor(analysis.color)
-                          : widget.focus == analysis.name
+                          : widget.focus == analysis.motifName
                           ? charts.ColorUtil.fromDartColor(analysis.color)
                           : charts.ColorUtil.fromDartColor(Colors.grey.withOpacity(0.1)),
                     ),

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/analysis_result.dart';
 import 'package:geneweb/analysis/distribution.dart';
+
 /// One series in the analysis
 class AnalysisSeries {
-  final String name;
-
-  /// The name of Motif that was searched
   final String motifName;
 
   /// The color of the series
@@ -17,70 +15,57 @@ class AnalysisSeries {
   /// Whether the series is visible
   final bool visible;
 
-  /// The results of the analysis (i.e. the motifs found in the genes)
-  final List<AnalysisResult> result;
-
   /// The distribution of the analysis
-  final Distribution? distribution;
+  final Distribution distribution;
 
   AnalysisSeries._({
     required this.motifName,
-    required this.name,
     required this.color,
     required this.stroke,
     this.visible = true,
-    required this.result,
-    this.distribution,
+    required this.distribution,
   });
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'motifName': motifName,
-      'color': color.value,
-      'stroke': stroke,
-      'visible': visible,
-      'result': result.map((r) => r.toJson()).toList(),
-      'distribution': distribution?.toJson(),
-    };
-  }
+
+  /// Returns a modified copy with optional changes
   AnalysisSeries copyWith({Color? color, int? stroke, bool? visible}) {
     return AnalysisSeries._(
-      name: name,
       motifName: motifName,
       color: color ?? this.color,
       stroke: stroke ?? this.stroke,
       visible: visible ?? this.visible,
-      result: result,
       distribution: distribution,
     );
   }
 
+  /// Converts the object into a JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      'motifNamename': motifName,
+      'color': color.value,
+      'stroke': stroke,
+      'visible': visible,
+      'distribution': distribution.toJson(),
+    };
+  }
+
+  /// Constructs an `AnalysisSeries` from JSON
   static AnalysisSeries fromJson(Map<String, dynamic> json) {
     return AnalysisSeries._(
-      name: json['name'] as String ?? "Unknown",
-      motifName: json['motifName'] as String,
-      color: Color(json['color'] as int),
-      stroke: json['stroke'] as int,
-      visible: json['visible'] as bool,
-      result: (json['result'] as List<AnalysisResult>?)
-          !.map((r) => AnalysisResult.fromJson(r as Map<String, dynamic>))
-          .toList(),
-      distribution: json['distribution'] != null
-          ? Distribution.fromJson(json['distribution'] as Map<String, dynamic>) : null,
+      motifName: json['name'] as String? ?? "Unknown",
+      color: parseColor(json['color']),
+      stroke: 4,
+      visible: true,
+      distribution: Distribution.fromJson(json['distribution']),
     );
   }
 
-
-}
-
-
-
-/// The result of a drill down
-class DrillDownResult {
-  final String pattern;
-  final int count;
-  final double? share;
-  final double? shareOfAll;
-
-  DrillDownResult(this.pattern, this.count, this.share, this.shareOfAll);
+  /// Parses a color from either an `int` or `String` hex format.
+  static Color parseColor(dynamic color) {
+    if (color == null) return Colors.black;
+    if (color is int) return Color(color);
+    if (color is String && color.startsWith("#")) {
+      return Color(int.parse(color.replaceFirst("#", "0xff")));
+    }
+    return Colors.black;
+  }
 }
