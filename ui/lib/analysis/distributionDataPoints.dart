@@ -14,7 +14,7 @@ class DistributionDataPoint {
   final double percent;
 
   /// The genes with the motif in the interval
-  final Set<String> genes;
+  final int genesCount;
 
   /// The percentage of genes with the motif in the interval
   final double genesPercent;
@@ -23,10 +23,10 @@ class DistributionDataPoint {
         required this.max,
         required this.count,
         required this.percent,
-        required this.genes,
+        required this.genesCount,
         required this.genesPercent});
 
-  int get genesCount => genes.length;
+  // int get genesCount => genes.length;
 
   String get label {
     return '<$min; $max)';
@@ -37,7 +37,7 @@ class DistributionDataPoint {
       'max': max,
       'count': count,
       'percent': percent,
-      'genes': genes.toList(),
+      'genesCount': genesCount,
       'genesPercent': genesPercent,
     };
   }
@@ -47,10 +47,13 @@ class DistributionDataPoint {
       min: json['min'] as int,
       max: json['max'] as int,
       count: json['count'] as int,
+      genesCount: json ['genesCount'] as int,
       percent: (json['percent'] as num).toDouble(),
-      genes: Set<String>.from(json['genes'] as List<dynamic>),
+      // genes: Set<String>.from(json['genes'] as List<dynamic>),
       genesPercent: (json['genesPercent'] as num).toDouble(),
     );
   }
+
+  get totalGenesCount => null;
 }
 

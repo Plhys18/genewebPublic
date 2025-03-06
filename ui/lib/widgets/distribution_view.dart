@@ -166,7 +166,7 @@ class _DistributionViewState extends State<DistributionView> {
 
   num? _measureFn(DistributionDataPoint point, int? index) {
     if (widget.groupByGenes) {
-      return widget.usePercentages ? (point.genesPercent * 100) : point.genesCount;
+      return widget.usePercentages ? (point.genesPercent * 100) : point.totalGenesCount;
     } else {
       return widget.usePercentages ? (point.percent * 100) : point.count;
     }

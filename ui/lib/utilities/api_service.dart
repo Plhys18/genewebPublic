@@ -195,20 +195,25 @@ class ApiService {
   }
 
   /// Fetch list of past analyses (history)
-  Future<List<AnalysisHistoryEntry>> fetchAnalyses() async {
-    final data = await getRequest("analysis/history");
 
-    return List<AnalysisHistoryEntry>.from(
-        data['history'].map((entry) => AnalysisHistoryEntry.fromJson(entry))
-    );
+  Future<List<AnalysisHistoryEntry>> fetchAnalyses() async {
+    final response = await getRequest("analysis/history");
+    final List<dynamic> data = response["history"];
+
+    return data.map((entry) => AnalysisHistoryEntry.fromJson(entry)).toList();
   }
+
 
   /// **Fetch Analysis Details**
-  Future<AnalysisSeries> fetchAnalysisDetails(int analysisId) async {
-    final data = await getRequest("analysis/history/$analysisId/");
-    return AnalysisSeries.fromJson(data["results"]);
-  }
 
+  Future<AnalysisSeries> fetchAnalysisDetails(int analysisId) async {
+  final data = await getRequest("analysis/history/$analysisId/");
+  if (data["results"] is Map) {
+  return AnalysisSeries.fromJson(data["results"]);
+  } else {
+  throw Exception("❌ Unexpected response format: ${data["results"]}");
+  }
+  }
 
 
   /// Helper method to parse the results field correctly

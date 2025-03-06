@@ -121,7 +121,7 @@ async def _async_run_analysis(request):
                             "max": dp.max,
                             "count": dp.count,
                             "percent": dp.percent,
-                            "genes": list(dp.genes),
+                            "genesCount": dp.genesCount,                            # "genes": list(dp.genes),
                             "genes_percent": dp.genes_percent
                         }
                         for dp in analysis.distribution.dataPoints

@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:faabul_color_picker/faabul_color_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:geneweb/analysis/Analysis_history_entry.dart';
 import 'package:geneweb/widgets/result_series_list.dart';
 import 'package:provider/provider.dart';
 import '../analysis/analysis_series.dart';
@@ -60,25 +61,16 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
   Future<void> _fetchAnalyses() async {
     print("Fetching analyses in AnalysisResultsPanel...");
     try {
-      final analyses = await ApiService().fetchAnalyses();
-
-      _model.removeAnalyses();
-      for (var analysis in analyses) {
-        _model.addAnalysisToHistory(analysis);
-      }
-
-      if (analyses.isNotEmpty) {
-        final lastAnalysisId = analyses.last.id;
-        final analysisSeries = await ApiService().fetchAnalysisDetails(lastAnalysisId);
-        setState(() {
-          _selectedAnalysisName = analysisSeries.motifName;
-        });
-      }
-
+      await GeneModel.of(context).fetchAnalyses();
+      List<dynamic> analysisList = GeneModel.of(context).fetchAnalyses() as List;
       setState(() {
         _loading = false;
       });
-
+      var AnalysisHistoryEntry = analysisList.lastOrNull;
+      if (AnalysisHistoryEntry) {
+        _selectedAnalysisName = AnalysisHistoryEntry.name;
+        await _model.loadAnalysis(AnalysisHistoryEntry);
+      }
     } catch (error) {
       setState(() {
         _error = "Error loading analyses: $error";
@@ -88,18 +80,19 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
   }
 
 
-
-
-
-
   @override
   Widget build(BuildContext context) {
     final motifs = context.select<GeneModel, List<Motif>>((model) => model.getSelectedMotifs);
+    print("DEBUG${motifs}");
     final filter = context.select<GeneModel, StageSelection?>((model) => model.getStageSelectionClass);
+    print("DEBUG${filter}");
     final analyses = context.select<GeneModel, List<AnalysisSeries>>((model) => model.analyses);
+    print("DEBUG${analyses}");
     final visibleAnalyses =
     context.select<GeneModel, List<AnalysisSeries>>((model) => model.analyses.where((a) => a.visible).toList());
+    print("DEBUG${visibleAnalyses}");
     final expectedResults = context.select<GeneModel, int>((model) => model.expectedSeriesCount);
+    print("DEBUG${expectedResults}");
     final analysis = context.select<GeneModel, AnalysisSeries?>(
             (model) => model.analyses.firstWhereOrNull((a) => a.motifName == _selectedAnalysisName));
     final canAnalyzeErrors = [
