@@ -55,7 +55,7 @@ class AnalysisSeries {
       color: parseColor(json['color']),
       stroke: 4,
       visible: true,
-      distribution: Distribution.fromJson(json['distribution']),
+      distribution: Distribution?.fromJson(json['distribution']),
     );
   }
 

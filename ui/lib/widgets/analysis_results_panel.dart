@@ -22,7 +22,7 @@ class AnalysisResultsPanel extends StatefulWidget {
 
 class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
   late final _scaffoldMessenger = ScaffoldMessenger.of(context);
-  late final _model = GeneModel.of(context);
+  late final _model = context.select<GeneModel, GeneModel>((model) => model);
   bool _usePercentages = true;
   bool _groupByGenes = true;
   bool _customAxis = false;
@@ -54,19 +54,20 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
 
   @override
   void initState() {
-    super.initState();
     _fetchAnalyses();
+    super.initState();
   }
 
   Future<void> _fetchAnalyses() async {
     print("Fetching analyses in AnalysisResultsPanel...");
     try {
-      await GeneModel.of(context).fetchAnalyses();
-      List<dynamic> analysisList = GeneModel.of(context).fetchAnalyses() as List;
+
+      List<dynamic> analysisList = await _model.fetchAnalyses() as List;
       setState(() {
         _loading = false;
       });
       var AnalysisHistoryEntry = analysisList.lastOrNull;
+      print("DEBUG: AnalysisHistoryEntry: $AnalysisHistoryEntry");
       if (AnalysisHistoryEntry) {
         _selectedAnalysisName = AnalysisHistoryEntry.name;
         await _model.loadAnalysis(AnalysisHistoryEntry);
@@ -82,19 +83,18 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final motifs = context.select<GeneModel, List<Motif>>((model) => model.getSelectedMotifs);
-    print("DEBUG${motifs}");
-    final filter = context.select<GeneModel, StageSelection?>((model) => model.getStageSelectionClass);
-    print("DEBUG${filter}");
-    final analyses = context.select<GeneModel, List<AnalysisSeries>>((model) => model.analyses);
-    print("DEBUG${analyses}");
+    final motifs = _model.getSelectedMotifs;
+    print("DEBUG MOTIFS${motifs}");
+    final filter = _model.getStageSelectionClass;
+    print("DEBUG FILTER${filter}");
+    final analyses = _model.analyses;
+    print("DEBUG ANALYSES${analyses}");
     final visibleAnalyses =
-    context.select<GeneModel, List<AnalysisSeries>>((model) => model.analyses.where((a) => a.visible).toList());
-    print("DEBUG${visibleAnalyses}");
-    final expectedResults = context.select<GeneModel, int>((model) => model.expectedSeriesCount);
-    print("DEBUG${expectedResults}");
-    final analysis = context.select<GeneModel, AnalysisSeries?>(
-            (model) => model.analyses.firstWhereOrNull((a) => a.motifName == _selectedAnalysisName));
+_model.analyses.where((a) => a.visible).toList();
+    print("DEBUG VISIBLE ANALYSES${visibleAnalyses}");
+    final expectedResults = _model.expectedSeriesCount;
+    print("DEBUG EXPECTED RESULT${expectedResults}");
+    final analysis = _model.analyses.firstWhereOrNull((a) => a.motifName == _selectedAnalysisName);
     final canAnalyzeErrors = [
       if (motifs.isEmpty) 'no motifs selected',
       if (filter?.selectedStages.isEmpty == true) 'no stages selected',

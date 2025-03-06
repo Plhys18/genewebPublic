@@ -1,5 +1,7 @@
 import json
 from django.http import JsonResponse
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.response import Response
 
 from my_analysis_project.auth_app.models import UserSelection
@@ -9,9 +11,28 @@ from my_analysis_project.lib.genes.gene_list import GeneList
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 
-from my_analysis_project.views import find_fasta_file
 
-
+@swagger_auto_schema(
+    method='get',
+    operation_description="Returns a list of predefined organisms.",
+    responses={
+        200: openapi.Response("Organisms List", openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "organisms": openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Items(type=openapi.TYPE_OBJECT, properties={
+                        "name": openapi.Schema(type=openapi.TYPE_STRING),
+                        "description": openapi.Schema(type=openapi.TYPE_STRING),
+                        "stages": openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_OBJECT))
+                    })
+                )
+            }
+        ))
+    }
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def list_organisms(request):
     """Returns a list of predefined organisms from `OrganismPresets`."""
     organisms_data = [

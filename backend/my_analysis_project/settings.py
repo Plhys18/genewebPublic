@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
+    'drf_yasg',
     # Local apps
     'my_analysis_project.analysis',
     'my_analysis_project.auth_app',
@@ -70,8 +71,16 @@ SIMPLE_JWT = {
     'SIGNING_KEY': SECRET_KEY,
 }
 
+JAZZMIN_SETTINGS = {
+    "site_title": "My Analysis Admin",
+    "site_header": "My Analysis",
+    "welcome_sign": "Welcome to My Analysis Dashboard",
+    "copyright": "My Analysis Project",
+    "show_ui_builder": False,
+}
+
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # Must be at the top
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

@@ -38,7 +38,7 @@ class DistributionDataPoint {
       'count': count,
       'percent': percent,
       'genesCount': genesCount,
-      'genesPercent': genesPercent,
+      'genes_Percent': genesPercent,
     };
   }
 
@@ -50,7 +50,7 @@ class DistributionDataPoint {
       genesCount: json ['genesCount'] as int,
       percent: (json['percent'] as num).toDouble(),
       // genes: Set<String>.from(json['genes'] as List<dynamic>),
-      genesPercent: (json['genesPercent'] as num).toDouble(),
+      genesPercent: (json['genes_percent'] as num).toDouble(),
     );
   }
 

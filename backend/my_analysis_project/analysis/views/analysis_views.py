@@ -1,4 +1,6 @@
 from django.http import JsonResponse
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from asgiref.sync import async_to_sync, sync_to_async
@@ -6,10 +8,26 @@ from asgiref.sync import async_to_sync, sync_to_async
 from my_analysis_project.lib.analysis.motif_presets import MotifPresets
 from my_analysis_project.lib.analysis.organism_presets import OrganismPresets
 from my_analysis_project.lib.genes.stage_selection import StageSelection, FilterStrategy, FilterSelection
-from my_analysis_project.views import find_fasta_file
 from my_analysis_project.auth_app.models import AnalysisHistory
 from my_analysis_project.lib.genes.gene_model import GeneModel
-
+@swagger_auto_schema(
+    method='post',
+    operation_description="Start an analysis with provided organism, motifs, and stages.",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'organism': openapi.Schema(type=openapi.TYPE_STRING),
+            'motifs': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_STRING)),
+            'stages': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_STRING)),
+            'params': openapi.Schema(type=openapi.TYPE_OBJECT)
+        },
+        required=['organism', 'motifs', 'stages']
+    ),
+    responses={
+        200: "Analysis started",
+        400: "Missing parameters"
+    }
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def run_analysis(request):
@@ -180,7 +198,13 @@ def cancel_analysis_view(request):
     """Cancels an ongoing analysis for the logged-in user"""
     return JsonResponse({"message": "Your analysis has been cancelled"}, status=200)
 
-
+@swagger_auto_schema(
+    method='get',
+    operation_description="Get user's analysis history.",
+    responses={
+        200: "History retrieved successfully",
+    }
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_analysis_history_list(request):

@@ -286,6 +286,7 @@ class GeneModel extends ChangeNotifier {
     _apiService.fetchAnalysisDetails(analysisHistoryEntry.id).then((analysis) {
       analyses.add(analysis);
     });
+    notifyListeners();
   }
 
 

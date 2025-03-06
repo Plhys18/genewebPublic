@@ -1,11 +1,10 @@
 from django.urls import path
-from my_analysis_project.analysis.views.analysis_views import (
-    cancel_analysis_view, run_analysis, get_analysis_history_list, get_analysis_details
-)
+
+from my_analysis_project.analysis.views.analysis_views import run_analysis, get_analysis_history_list, \
+    get_analysis_details, cancel_analysis_view
 from my_analysis_project.analysis.views.motif_views import get_motifs
-from my_analysis_project.analysis.views.organism_views import (
-    list_organisms, set_active_organism, get_active_organism, get_active_organism_source_gene_informations
-)
+from my_analysis_project.analysis.views.organism_views import list_organisms, set_active_organism, get_active_organism, \
+    get_active_organism_source_gene_informations
 from my_analysis_project.analysis.views.stage_views import get_active_stages
 
 urlpatterns = [

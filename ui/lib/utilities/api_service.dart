@@ -208,11 +208,7 @@ class ApiService {
 
   Future<AnalysisSeries> fetchAnalysisDetails(int analysisId) async {
   final data = await getRequest("analysis/history/$analysisId/");
-  if (data["results"] is Map) {
-  return AnalysisSeries.fromJson(data["results"]);
-  } else {
-  throw Exception("❌ Unexpected response format: ${data["results"]}");
-  }
+  return AnalysisSeries.fromJson(data);
   }
 
 
