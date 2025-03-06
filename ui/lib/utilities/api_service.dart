@@ -198,11 +198,10 @@ class ApiService {
   Future<List<AnalysisHistoryEntry>> fetchAnalyses() async {
     final data = await getRequest("analysis/history");
 
-    return (data['history'] as List)
-        .map((entry) => AnalysisHistoryEntry.fromJson(entry))
-        .toList();
+    return List<AnalysisHistoryEntry>.from(
+        data['history'].map((entry) => AnalysisHistoryEntry.fromJson(entry))
+    );
   }
-
 
   /// **Fetch Analysis Details**
   Future<AnalysisSeries> fetchAnalysisDetails(int analysisId) async {

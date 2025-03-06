@@ -43,7 +43,7 @@ class _HomeState extends State<Home> {
     final organismAndStagesFromBe = context.select<GeneModel, String?>((model) => model.organismAndStagesFromBe);
     // final organismAndStages =
     // context.select<GeneModel, String?>((model) => '${model.name} ${model.sourceGenes?.stageKeys.join('+')}');
-
+    final selectedMotifs = context.select<GeneModel, List<Motif>>((model) => model.getSelectedMotifs);
     final sourceGenesLength = context.select<GeneModel, int?>((model) => model.sourceGenesLength);
     final motifs = context.select<GeneModel, List<Motif>>((model) => model.getAllMotifs);
     final filter = context.select<GeneModel, StageSelection?>((model) => model.getStageSelectionClass);
@@ -80,7 +80,7 @@ class _HomeState extends State<Home> {
                 title: const Text('Analyzed motifs'),
                 subtitle: const MotifSubtitle(),
                 content: MotifPanel(key: ValueKey(organismAndStagesFromBe), onChanged: _handleMotifsChanged),
-                state: expectedResults > 60 && motifs.length > 5
+                state: (expectedResults > 60 && motifs.length > 5 ) || selectedMotifs.isEmpty
                     ? StepState.error
                     : motifs.isEmpty
                     ? StepState.indexed
@@ -138,7 +138,6 @@ class _HomeState extends State<Home> {
     final nextStep = _index + 1;
     if (nextStep == 4) {
       await Navigator.of(context).push(MaterialPageRoute(builder: (context) => const AnalysisScreen()));
-      _model.removeAnalyses();
       return;
     }
     if (_isStepAllowed(nextStep)) {

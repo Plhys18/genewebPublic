@@ -4,17 +4,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:geneweb/widgets/result_series_list.dart';
 import 'package:provider/provider.dart';
-import 'package:sanitize_filename/sanitize_filename.dart';
 import '../analysis/analysis_series.dart';
 import '../analysis/motif.dart';
-import '../genes/gene_list.dart';
 import '../genes/gene_model.dart';
 import '../genes/stage_selection.dart';
-import '../output/analysis_series_export.dart';
-import '../output/distributions_export.dart';
 import '../utilities/api_service.dart';
 import 'distribution_view.dart';
-import 'drill_down_view.dart';
 
 
 class AnalysisResultsPanel extends StatefulWidget {

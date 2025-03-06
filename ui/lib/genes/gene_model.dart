@@ -137,14 +137,37 @@ class GeneModel extends ChangeNotifier {
 
   /// Fetch past analyses of user
   Future<void> fetchPastUserAnalyses() async {
+    var list = [];
+    var listIds = [];
+    var futures = [];
     try {
-      List<AnalysisHistoryEntry> list = await _apiService.fetchAnalyses();
-      List<int> listIds = list.map((entry) => entry.id).toList();
-      List<Future<AnalysisSeries>> futures = listIds.map((entry) => _apiService.fetchAnalysisDetails(entry)).toList();
-      List<AnalysisSeries> analysesDetails = await Future.wait(futures);
+      list = await _apiService.fetchAnalyses();
+    }catch (error) {
+      print("❌ Error1 fetching past analyses of user: $error");
+    }
+
+    try {
+      listIds = list.map((entry) => entry.id).toList();
+    } catch (error) {
+      print("❌ Error2 fetching past analyses of user: $error");
+    }
+    try {
+     futures = listIds.map((entry) =>
+          _apiService.fetchAnalysisDetails(entry)).toList();
+    } catch (error) {
+      print("❌ Error3 fetching past analyses of user: $error");
+    }
+    try {
+      print("NO TO NENE TVL");
+      for (var id in listIds) {
+        await _apiService.fetchAnalysisDetails(id);
+      }
+      List<AnalysisSeries> analysesDetails = await Future.wait(futures as Iterable<Future<AnalysisSeries>>);
+      print("JAK TVL");
       for (var analysis in analysesDetails) {
         addFullAnalysis(analysis);
       }
+      print("DOPICI COZE");
     } catch (error) {
       print("❌ Error fetching analyses: $error");
     }
