@@ -106,9 +106,9 @@ class GeneModel:
         print(f"✅ DEBUG totalIterations : {totalIterations}")
         assert totalIterations > 0
 
-        iterations = 0
-
-        for motif in self._motifs:
+        tasks = []
+        for idx, motif in enumerate(self._motifs):
+            print(idx)
             print(f"DEBUG MOTIF: {motif.name}")
             for key in self._stageSelection.selectedStages:
                 filteredGenes = (
@@ -118,7 +118,7 @@ class GeneModel:
 
                 name = f"{'all' if key == '__ALL__' else key} - {motif.name}"
 
-                analysis = await runAnalysis({
+                task = runAnalysis({
                     'genes': filteredGenes,
                     'motif': motif,
                     'name': name,
@@ -128,9 +128,10 @@ class GeneModel:
                     'alignMarker': self.analysisOptions.alignMarker,
                 })
 
-                self.analyses.append(analysis)
-                iterations += 1
-                print(f"✅ DEBUG: Completed {iterations}/{totalIterations} iterations")
+                tasks.append(task)
+
+        results = await asyncio.gather(*tasks)
+        self.analyses.extend(results)
         return True
 
     @staticmethod

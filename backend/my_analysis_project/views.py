@@ -16,6 +16,7 @@ def find_fasta_file(organism_name: str) -> Optional[str]:
     data_dir = Path(settings.DATA_DIR)
     print(data_dir)
     for file in os.listdir(data_dir):
+        print(file.lower())
         if file.lower().startswith(organism_name.lower().replace(" ", "_")) and file.endswith(".fasta"):
             return str(data_dir / file)
     return None

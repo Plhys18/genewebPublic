@@ -109,7 +109,7 @@ def get_active_organism_source_gene_informations(request):
         selection = UserSelection.objects.filter(user=user).first()
         if not selection:
             return JsonResponse({"error": "No active organism selected"}, status=400)
-
+        print(user.username)
         file_path = find_fasta_file(selection.organism)
         if not file_path:
             return JsonResponse({"error": "Organism not found"}, status=404)
