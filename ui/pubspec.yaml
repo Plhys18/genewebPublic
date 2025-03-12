@@ -19,6 +19,7 @@ dependencies:
   file_picker: ^8.1.2
   excel: ^4.0.3
   universal_file: ^1.0.0
+  cupertino_icons: ^1.0.6
   faabul_color_picker: ^1.0.2
   archive: ^3.3.1
   truncate: ^3.0.1

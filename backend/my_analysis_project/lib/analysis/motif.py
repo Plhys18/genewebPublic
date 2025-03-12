@@ -129,42 +129,43 @@ class Motif:
     @staticmethod
     def _nucleotide_code_to_reg_exp_part(code: str) -> str:
         """
-        Maps a single IUPAC character to a part of a regex.
+        Maps a single IUPAC character to a part of a regex using match-case.
         """
-        if code == 'A':
-            return 'A'
-        elif code == 'G':
-            return 'G'
-        elif code == 'C':
-            return 'C'
-        elif code == 'T':
-            return 'T'
-        elif code == 'U':
-            return 'U'
-        elif code == 'R':
-            return '[RAG]'
-        elif code == 'Y':
-            return '[YCT]'
-        elif code == 'N':
-            return '.'  # Matches any single character
-        elif code == 'W':
-            return '[WAT]'
-        elif code == 'S':
-            return '[SGC]'
-        elif code == 'M':
-            return '[MAC]'
-        elif code == 'K':
-            return '[KGT]'
-        elif code == 'B':
-            return '[BSYKGCT]'
-        elif code == 'H':
-            return '[HMYWACT]'
-        elif code == 'D':
-            return '[DRKWAGT]'
-        elif code == 'V':
-            return '[VRSMAGC]'
-        else:
-            raise ValueError(f"Unsupported code `{code}`")
+        match code:
+            case 'A':
+                return 'A'
+            case 'G':
+                return 'G'
+            case 'C':
+                return 'C'
+            case 'T':
+                return 'T'
+            case 'U':
+                return 'U'
+            case 'R':
+                return '[RAG]'
+            case 'Y':
+                return '[YCT]'
+            case 'N':
+                return '.'
+            case 'W':
+                return '[WAT]'
+            case 'S':
+                return '[SGC]'
+            case 'M':
+                return '[MAC]'
+            case 'K':
+                return '[KGT]'
+            case 'B':
+                return '[BSYKGCT]'
+            case 'H':
+                return '[HMYWACT]'
+            case 'D':
+                return '[DRKWAGT]'
+            case 'V':
+                return '[VRSMAGC]'
+            case _:
+                raise ValueError(f"Unsupported code `{code}`")
 
     @staticmethod
     def drill_down_codes(code: str) -> Set[str]:

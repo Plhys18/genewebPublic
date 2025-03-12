@@ -37,23 +37,21 @@ class DistributionDataPoint {
       'max': max,
       'count': count,
       'percent': percent,
-      'genesCount': genesCount,
-      'genes_Percent': genesPercent,
+      'genes_count': genesCount,
+      'genes_percent': genesPercent,
     };
   }
 
   factory DistributionDataPoint.fromJson(Map<String, dynamic> json) {
+    // print("🔵 Parsing DistributionDataPoint from JSON: $json");
     return DistributionDataPoint(
       min: json['min'] as int,
       max: json['max'] as int,
       count: json['count'] as int,
-      genesCount: json ['genesCount'] as int,
+      genesCount: json ['genes_count'] as int,
       percent: (json['percent'] as num).toDouble(),
       // genes: Set<String>.from(json['genes'] as List<dynamic>),
       genesPercent: (json['genes_percent'] as num).toDouble(),
     );
   }
-
-  get totalGenesCount => null;
 }
-

@@ -84,7 +84,11 @@ class AnalysisSeries:
         definitions = {**motif.reg_exp, **motif.reverse_complement_reg_exp}
 
         for definition, regex in definitions.items():
-            matches = [m for m in re.finditer(regex, gene.data)]
+            matches = list(re.finditer(regex, gene.data))
+            # print(f"✅ DEBUG: Found {len(matches)} matches for motif `{definition}` in gene `{gene.geneId}`")
+            # for match in matches:
+                # print(f"    ➡️ Match at {match.start()} - {match.group(0)}")
+
             for match in matches:
                 mid_match_delta = len(match.group(0)) // 2
                 results.append(AnalysisResult(
@@ -102,7 +106,7 @@ class AnalysisSeries:
     def filter_overlapping_matches(results: List[AnalysisResult]) -> List[AnalysisResult]:
         """Filters out matches that overlap each other"""
         results.sort(key=lambda r: r.raw_position)
-
+        # print(f"✅ DEBUG: Sorted {len(results)} results by raw_position.")
         excluded_results = set()
         included_results = []
 

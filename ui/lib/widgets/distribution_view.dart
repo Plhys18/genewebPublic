@@ -66,7 +66,7 @@ class _DistributionViewState extends State<DistributionView> {
       return const Center(child: Text('No series enabled'));
     }
 
-    final distributions = analyses.map((a) => a.distribution!).toList();
+    final distributions = analyses.map((a) => a.distribution).toList();
     const defaultVerticalMin = 0;
     final defaultVerticalMax = _verticalMaximum(distributions);
     final defaultHorizontalMin = distributions.first.min;
@@ -90,15 +90,15 @@ class _DistributionViewState extends State<DistributionView> {
                 [
                   for (final analysis in analyses)
                     charts.Series<DistributionDataPoint, int>(
-                      id: analysis.motifName,
-                      data: analysis.distribution!.dataPoints!,
+                      id: analysis.analysisName,
+                      data: analysis.distribution.dataPoints,
                       domainFn: (DistributionDataPoint point, i) => point.min,
                       measureFn: _measureFn,
                       labelAccessorFn: (DistributionDataPoint point, _) => '<${point.min}; ${point.max})',
                       strokeWidthPxFn: (_, __) => analysis.stroke,
                       seriesColor: widget.focus == null
                           ? charts.ColorUtil.fromDartColor(analysis.color)
-                          : widget.focus == analysis.motifName
+                          : widget.focus == analysis.analysisName
                           ? charts.ColorUtil.fromDartColor(analysis.color)
                           : charts.ColorUtil.fromDartColor(Colors.grey.withOpacity(0.1)),
                     ),
@@ -166,7 +166,7 @@ class _DistributionViewState extends State<DistributionView> {
 
   num? _measureFn(DistributionDataPoint point, int? index) {
     if (widget.groupByGenes) {
-      return widget.usePercentages ? (point.genesPercent * 100) : point.totalGenesCount;
+      return widget.usePercentages ? (point.genesPercent * 100) : point.genesCount;
     } else {
       return widget.usePercentages ? (point.percent * 100) : point.count;
     }

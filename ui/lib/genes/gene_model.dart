@@ -36,6 +36,7 @@ class GeneModel extends ChangeNotifier {
       getSelectedMotifs.length * (getStageSelectionClass.selectedStages.length);
 
   List<String> _markers = [];
+  List<String> _defaultSelectedStageKeys = [];
   int? _sourceGenesLength;
   int? _sourceGenesKeysLength;
   int? _errorCount;
@@ -43,6 +44,7 @@ class GeneModel extends ChangeNotifier {
   get organismAndStagesFromBe => _organismAndStagesFromBe;
   get sourceGenesLength => _sourceGenesLength;
   get sourceGenesKeysLength => _sourceGenesKeysLength;
+  get defaultSelectedStageKeys => _defaultSelectedStageKeys;
   get markers => _markers;
   get errorCount => _errorCount;
 
@@ -114,10 +116,11 @@ class GeneModel extends ChangeNotifier {
       await fetchActiveOrganism();
       await fetchSourceGenesInformations();
       assert(_sourceGenesLength != null, "Source genes not set");
-      // for (var stageName in sourceGenes.defaultSelectedStageKeys)
-      //   {
-      //     toggleStageSelection(stageName, true);
-      //   }
+      for (var stageName in defaultSelectedStageKeys)
+      {
+        toggleStageSelection(stageName, true);
+      }
+      await fetchPastUserAnalyses();
     } catch (error) {
       throw Exception("Error setting active organism: $error");
     }
@@ -127,76 +130,46 @@ class GeneModel extends ChangeNotifier {
     try {
       final data = await _apiService.getActiveOrganism();
       name = data["organism"];
-      print("DEBUG past analyses of user after fetching in fetchActiveOrganism: $analyses");
+      // print("DEBUG past analyses of user after fetching in fetchActiveOrganism: $analyses");
       _processMotifsAndStages(data);
     } catch (error) {
-      print("❌ Error fetching active organism: $error");
+      // print("❌ Error fetching active organism: $error");
     }
   }
 
   Future<void> fetchAnalyses() async {
       analysesHistory= await _apiService.fetchAnalyses();
   }
-  // /// Fetch past analyses of user
-  // Future<void> fetchPastUserAnalyses() async {
-  //   var list = [];
-  //   var listIds = [];
-  //   var futures = [];
-  //   try {
-  //     list = await _apiService.fetchAnalyses();
-  //   }catch (error) {
-  //     print("❌ Error1 fetching past analyses of user: $error");
-  //   }
-  //
-  //   try {
-  //     listIds = list.map((entry) => entry.id).toList();
-  //   } catch (error) {
-  //     print("❌ Error2 fetching past analyses of user: $error");
-  //   }
-  //   try {
-  //    futures = listIds.map((entry) =>
-  //         _apiService.fetchAnalysisDetails(entry)).toList();
-  //   } catch (error) {
-  //     print("❌ Error3 fetching past analyses of user: $error");
-  //   }
-  //   try {
-  //     print("NO TO NENE TVL");
-  //     for (var id in listIds) {
-  //       await _apiService.fetchAnalysisDetails(id);
-  //     }
-  //     List<AnalysisSeries> analysesDetails = await Future.wait(futures as Iterable<Future<AnalysisSeries>>);
-  //     print("JAK TVL");
-  //     for (var analysis in analysesDetails) {
-  //       addFullAnalysis(analysis);
-  //     }
-  //     print("DOPICI COZE");
-  //   } catch (error) {
-  //     print("❌ Error fetching analyses: $error");
-  //   }
-  // }
 
-  /// Fetch the list of analysis history
-  Future<void> fetchAnalysisHistory() async {
+  Future<void> fetchPastUserAnalyses() async {
     try {
-      print("🔍 Fetching analysis history...");
-      var HistoryRecords = await _apiService.fetchAnalyses();
-      for(var record in HistoryRecords as List<dynamic>){
-        print("🔍 Fetching analysis history... $record");
-      }
-      for(var record in HistoryRecords as List<dynamic>){
-        analysesHistory.add(AnalysisHistoryEntry.fromJson(record));
-      }
+      analysesHistory = await _apiService.fetchAnalyses();
+      if( analysesHistory.isEmpty) return;
+      var lastHistoryEntry = analysesHistory.last;
+      final fullAnalysis = await _apiService.fetchAnalysisDetails(lastHistoryEntry.id);
+      analyses.add(fullAnalysis);
+
       notifyListeners();
-      print("✅ Analysis history loaded.");
     } catch (error) {
-      print("❌ Error fetching analysis history: $error");
+      print("❌ Error fetching past analyses: $error");
     }
   }
 
 
-
-  Future<void> fetchPastUserAnalyses() async {
-    await fetchAnalyses();
+  /// Fetch the list of analysis history
+  Future<void> fetchAnalysisHistory() async {
+    try {
+      // print("🔍 Fetching analysis history...");
+      var HistoryRecords = await _apiService.fetchAnalyses();
+      for(var record in HistoryRecords as List<dynamic>){
+        // print("🔍 Fetching analysis history... $record");
+        analysesHistory.add(AnalysisHistoryEntry.fromJson(record));
+      }
+      notifyListeners();
+      // print("✅ Analysis history loaded.");
+    } catch (error) {
+      // print("❌ Error fetching analysis history: $error");
+    }
   }
 
   void _processMotifsAndStages(Map<String, dynamic> data) {
@@ -217,6 +190,7 @@ class GeneModel extends ChangeNotifier {
     _organismAndStagesFromBe = data["organism_and_stages"] as String;
     _markers = List<String>.from(data["markers"] ?? []);
     _errorCount = data["error_count"] as int? ?? 0;
+    _defaultSelectedStageKeys = List<String>.from(data["default_selected_stage_keys"] ?? []);
     notifyListeners();
   }
 
@@ -236,12 +210,12 @@ class GeneModel extends ChangeNotifier {
     assert(getStageSelectionClass.selectedStages.isNotEmpty, "No stages selected");
     assert(getSelectedMotifs.isNotEmpty, "No motifs selected");
 
-    // Prepare request payload
     final params = {
       "color": "#FF0000",
       "minimal": analysisOptions.min,
       "maximal": analysisOptions.max,
       "bucket_size": analysisOptions.bucketSize,
+      "align_marker": analysisOptions.alignMarker,
       "stroke": 4,
       "visible": true,
       "no_overlaps": true,
@@ -258,20 +232,23 @@ class GeneModel extends ChangeNotifier {
     final response = await _apiService.postRequest("analysis/analyze/", payload);
 
     if (response.containsKey("results")) {
-      int? analysisId = await _apiService.fetchLatestAnalysisId();
-      if (analysisId == null) {
-        throw Exception("Analysis ID not found");
-      }
-      final AnalysisSeries analysisSeries = await _apiService.fetchAnalysisDetails(analysisId);
+      final dynamic results = response["results"];
 
-      analyses.add(analysisSeries);
+      if (results is List) {
+        analyses.addAll(results.map((e) => AnalysisSeries.fromJson(e as Map<String, dynamic>)));
+      } else if (results is Map<String, dynamic>) {
+        analyses.add(AnalysisSeries.fromJson(results));
+      } else {
+        throw Exception("Unexpected format for 'results'");
+      }
+
       notifyListeners();
       return true;
-      }
+    }
+
     return false;
 
   }
-
 
 
   void setSelectedStages(List<String> list) {

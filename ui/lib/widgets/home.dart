@@ -116,13 +116,13 @@ class _HomeState extends State<Home> {
       case 0: // source data
         return true;
       case 1: // analysis options
-        return model.sourceGenesLength != null;
+        return model.analyses.isNotEmpty || model.sourceGenesLength != null;
       case 2: // motif
-        return model.sourceGenesLength != null;
+        return model.analyses.isNotEmpty || model.sourceGenesLength != null;
       case 3: // stage
-        return model.sourceGenesLength != null;
+        return model.analyses.isNotEmpty || model.sourceGenesLength != null;
       case 4: // analysis
-        return model.sourceGenesLength != null && model.expectedSeriesCount > 0 && model.expectedSeriesCount <= 60;
+        return model.analyses.isNotEmpty || model.sourceGenesLength != null && model.expectedSeriesCount > 0 && model.expectedSeriesCount <= 60;
       default:
         return false;
     }

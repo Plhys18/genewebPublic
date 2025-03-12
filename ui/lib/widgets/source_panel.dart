@@ -51,7 +51,6 @@ class _SourcePanelState extends State<SourcePanel> {
     setState(() => _loading = true);
     try {
       final organisms = await _apiService.getOrganisms();
-
       setState(() {
         _organisms = organisms;
         _loading = false;

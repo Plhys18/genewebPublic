@@ -89,7 +89,6 @@ class _StagePanelState extends State<StagePanel> {
 
   @override
   Widget build(BuildContext context) {
-    print("Building StagePanel with selected stages: $_selectedStages");
     final textTheme = Theme.of(context).textTheme;
     final allStagesKeys = context.select<GeneModel, List<String>>(
           (model) => model.getAllStages.map((stageObj) => stageObj.stage).toList(),
@@ -222,7 +221,6 @@ class _StagePanelState extends State<StagePanel> {
   }
 
   void _handleChanged() {
-    print("Handling change: $_selectedStages → Sending to onChanged");
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
       widget.onChanged(StageSelection(
@@ -239,7 +237,6 @@ class _StagePanelState extends State<StagePanel> {
 
   void _handleToggle(String key, bool value) {
     setState(() {
-      print("Toggling stage: $key → ${value ? "SELECTED" : "DESELECTED"}");
       if (value) {
         _selectedStages.add(key);
       } else {

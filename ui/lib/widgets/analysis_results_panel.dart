@@ -9,6 +9,7 @@ import '../analysis/analysis_series.dart';
 import '../analysis/motif.dart';
 import '../genes/gene_model.dart';
 import '../genes/stage_selection.dart';
+import '../output/distributions_export.dart';
 import '../utilities/api_service.dart';
 import 'distribution_view.dart';
 
@@ -67,7 +68,7 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
         _loading = false;
       });
       var AnalysisHistoryEntry = analysisList.lastOrNull;
-      print("DEBUG: AnalysisHistoryEntry: $AnalysisHistoryEntry");
+      // print("DEBUG: AnalysisHistoryEntry: $AnalysisHistoryEntry");
       if (AnalysisHistoryEntry) {
         _selectedAnalysisName = AnalysisHistoryEntry.name;
         await _model.loadAnalysis(AnalysisHistoryEntry);
@@ -84,17 +85,17 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
   @override
   Widget build(BuildContext context) {
     final motifs = _model.getSelectedMotifs;
-    print("DEBUG MOTIFS${motifs}");
+    // print("DEBUG MOTIFS${motifs}");
     final filter = _model.getStageSelectionClass;
-    print("DEBUG FILTER${filter}");
+    // print("DEBUG FILTER${filter}");
     final analyses = _model.analyses;
-    print("DEBUG ANALYSES${analyses}");
+    // print("DEBUG ANALYSES${analyses}");
     final visibleAnalyses =
 _model.analyses.where((a) => a.visible).toList();
-    print("DEBUG VISIBLE ANALYSES${visibleAnalyses}");
+    // print("DEBUG VISIBLE ANALYSES${visibleAnalyses}");
     final expectedResults = _model.expectedSeriesCount;
-    print("DEBUG EXPECTED RESULT${expectedResults}");
-    final analysis = _model.analyses.firstWhereOrNull((a) => a.motifName == _selectedAnalysisName);
+    // print("DEBUG EXPECTED RESULT${expectedResults}");
+    final analysis = _model.analyses.firstWhereOrNull((a) => a.analysisName == _selectedAnalysisName);
     final canAnalyzeErrors = [
       if (motifs.isEmpty) 'no motifs selected',
       if (filter?.selectedStages.isEmpty == true) 'no stages selected',
@@ -136,7 +137,7 @@ _model.analyses.where((a) => a.visible).toList();
                     spacing: 8,
                     children: [
                       Icon(Icons.check_box, color: colorScheme.outline),
-                      Text(analysis.motifName, style: textTheme.titleMedium),
+                      Text(analysis.analysisName, style: textTheme.titleMedium),
                       if (_exportProgress != null)
                         _ExportIndicator(exportProgress: _exportProgress)
                       else
@@ -175,7 +176,7 @@ _model.analyses.where((a) => a.visible).toList();
     final analyses = context.select<GeneModel, List<AnalysisSeries>>((model) => model.analyses);
     assert(analyses.isNotEmpty);
     final analysis = context.select<GeneModel, AnalysisSeries?>(
-            (model) => model.analyses.firstWhereOrNull((a) => a.motifName == _selectedAnalysisName));
+            (model) => model.analyses.firstWhereOrNull((a) => a.analysisName == _selectedAnalysisName));
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -185,7 +186,7 @@ _model.analyses.where((a) => a.visible).toList();
             builder: (context, model, child) {
               return ResultSeriesList(
                 onSelected: _handleAnalysisSelected,
-                analyses: model.analyses, // ✅ Ensure it's pulling from GeneModel
+                analyses: model.analyses,
               );
             },
           ),
@@ -327,36 +328,48 @@ _model.analyses.where((a) => a.visible).toList();
   }
 
   void _handleAnalyze() async {
-    setState(() {
-      _loading = true;
-    });
+    try {
+      setState(() {
+        _loading = true;
+      });
 
-    final result = await _model.analyze();
+      final result = await _model.analyze();
 
-    setState(() {
-      _loading = false;
-    });
 
-    if (result) {
-      _scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Analysis complete')));
-    } else {
-      _scaffoldMessenger.showSnackBar(const SnackBar(backgroundColor: Colors.red, content: Text('Analysis cancelled/failed')));
+      //TODO not good to handle errors like that but for now it will do
+      if (result) {
+        _scaffoldMessenger.showSnackBar(
+            const SnackBar(content: Text('Analysis complete')));
+      } else {
+        _scaffoldMessenger.showSnackBar(const SnackBar(
+            backgroundColor: Colors.red,
+            content: Text('Analysis cancelled/failed')));
+      }
+    }
+    catch (error) {
+      _scaffoldMessenger.showSnackBar(SnackBar(
+          backgroundColor: Colors.red,
+          content: Text('Error running analysis: $error')));
+    }
+    finally {
+      setState(() {
+        _loading = false;
+      });
     }
   }
 
   Future<void> _handleExportAllSeries(BuildContext context) async {
-    // TODO uncomment this and class.... when figure out how and we ofc need to do it via the backend call into api
-    // setState(() => _exportProgress = 0);
-    // final output = DistributionsExport(_model.analyses.where((a) => a.visible).map((e) => e.distribution!).toList());
-    // final stageName = _model.getSelectedStages.length == 1
-    //     ? _model.getSelectedStages[0]
-    //     : '${_model.getSelectedStages.length} stages';
-    // final motifName = _model.getSelectedMotifs.length == 1 ? _model.getSelectedMotifs[0] : '${_model.getSelectedMotifs.length} motifs';
-    // final filename = 'distributions_${_model.name}_${motifName}_$stageName.xlsx';
-    // final data = await output.toExcel(filename, (progress) => setState(() => _exportProgress = progress));
-    // if (data == null) return;
-    // debugPrint('Saving $filename (${data.length} bytes)');
-    // setState(() => _exportProgress = null);
+    setState(() => _exportProgress = 0);
+    final output = DistributionsExport(_model.analyses.where((a) => a.visible).map((e) => e.distribution!).toList());
+    final stageName = _model.getSelectedStages.length == 1
+        ? _model.getSelectedStages[0]
+        : '${_model.getSelectedStages.length} stages';
+    final motifName = _model.getSelectedMotifs.length == 1 ? _model.getSelectedMotifs[0] : '${_model.getSelectedMotifs.length} motifs';
+    final filename = 'distributions_${_model.name}_${motifName}_$stageName.xlsx';
+    final data = await output.toExcel(filename, (progress) => setState(() => _exportProgress = progress));
+    if (data == null) return;
+    debugPrint('Saving $filename (${data.length} bytes)');
+    setState(() => _exportProgress = null);
   }
 
   void _setAxis(bool? value) {
@@ -413,24 +426,21 @@ _model.analyses.where((a) => a.visible).toList();
   void _updateAnalysis(GeneModel model, AnalysisSeries analysis) {
     model.analyses = ([
       for (final a in model.analyses)
-        if (a.motifName == analysis.motifName) analysis else a
+        if (a.analysisName == analysis.analysisName) analysis else a
     ]);
   }
 
   Future<void> _handleSetColor(AnalysisSeries analysis) async {
-    final model = GeneModel.of(context);
     final color = await showColorPickerDialog(context: context, selected: analysis.color);
-    _updateAnalysis(model, analysis.copyWith(color: color));
+    _updateAnalysis(_model, analysis.copyWith(color: color));
   }
 
   void _handleSetStroke(AnalysisSeries analysis, int? value) {
-    final model = GeneModel.of(context);
-    _updateAnalysis(model, analysis.copyWith(stroke: value ?? 4));
+    _updateAnalysis(_model, analysis.copyWith(stroke: value ?? 4));
   }
 
   void _handleSetVisibility(AnalysisSeries analysis, bool? value) {
-    final model = GeneModel.of(context);
-    _updateAnalysis(model, analysis.copyWith(visible: value ?? true));
+    _updateAnalysis(_model, analysis.copyWith(visible: value ?? true));
   }
 
   Future<void> _handleExportSingleSeries(AnalysisSeries analysis) async {

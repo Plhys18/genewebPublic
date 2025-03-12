@@ -16,7 +16,7 @@ ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,0.0.0.0,127.0.
 # For development, you might allow all origins.
 CORS_ALLOW_ALL_ORIGINS = os.environ.get('DJANGO_CORS_ALLOW_ALL', 'True') == 'True'
 if not CORS_ALLOW_ALL_ORIGINS:
-    CORS_ALLOWED_ORIGINS = os.environ.get('DJANGO_CORS_ALLOWED_ORIGINS', 'http://localhost:35525').split(',')
+    CORS_ALLOWED_ORIGINS = os.environ.get('DJANGO_CORS_ALLOWED_ORIGINS', 'https://localhost:35525').split(',')
 
 DATA_DIR = BASE_DIR / "data"
 

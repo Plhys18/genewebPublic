@@ -4,7 +4,7 @@ import 'package:geneweb/analysis/distribution.dart';
 
 /// One series in the analysis
 class AnalysisSeries {
-  final String motifName;
+  final String analysisName;
 
   /// The color of the series
   final Color color;
@@ -19,7 +19,7 @@ class AnalysisSeries {
   final Distribution distribution;
 
   AnalysisSeries._({
-    required this.motifName,
+    required this.analysisName,
     required this.color,
     required this.stroke,
     this.visible = true,
@@ -29,7 +29,7 @@ class AnalysisSeries {
   /// Returns a modified copy with optional changes
   AnalysisSeries copyWith({Color? color, int? stroke, bool? visible}) {
     return AnalysisSeries._(
-      motifName: motifName,
+      analysisName: analysisName,
       color: color ?? this.color,
       stroke: stroke ?? this.stroke,
       visible: visible ?? this.visible,
@@ -40,7 +40,7 @@ class AnalysisSeries {
   /// Converts the object into a JSON map
   Map<String, dynamic> toJson() {
     return {
-      'motifNamename': motifName,
+      'motifName': analysisName,
       'color': color.value,
       'stroke': stroke,
       'visible': visible,
@@ -50,11 +50,12 @@ class AnalysisSeries {
 
   /// Constructs an `AnalysisSeries` from JSON
   static AnalysisSeries fromJson(Map<String, dynamic> json) {
+    // print("🔵 Parsing AnalysisSeries from JSON: $json");
     return AnalysisSeries._(
-      motifName: json['name'] as String? ?? "Unknown",
+      analysisName: json['name'] as String? ?? "Unknown",
       color: parseColor(json['color']),
-      stroke: 4,
-      visible: true,
+      stroke: json['stroke'] as int? ?? 4,
+      visible: json['visible'] as bool? ?? true,
       distribution: Distribution?.fromJson(json['distribution']),
     );
   }
@@ -69,3 +70,4 @@ class AnalysisSeries {
     return Colors.black;
   }
 }
+

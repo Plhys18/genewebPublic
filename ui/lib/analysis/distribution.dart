@@ -52,8 +52,12 @@ class Distribution {
     required int totalCount,
     required int totalGenesCount,
     required int totalGenesWithMotifCount,
-    required dataPoints,
-  });
+    required this.dataPoints,
+  })  : _totalCount = totalCount,
+        _totalGenesCount = totalGenesCount,
+        _totalGenesWithMotifCount = totalGenesWithMotifCount;
+
+
 
 
   Map<String, dynamic> toJson() {
@@ -72,6 +76,7 @@ class Distribution {
   }
 
   factory Distribution.fromJson(Map<String, dynamic> json) {
+    // print("🔵 Parsing Distribution from JSON: $json");
     return Distribution(
       min: json['min'] as int,
       max: json['max'] as int,

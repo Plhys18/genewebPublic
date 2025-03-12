@@ -9,7 +9,6 @@ from my_analysis_project.lib.analysis.organism import Organism
 from my_analysis_project.lib.genes.gene_list import GeneList
 from my_analysis_project.lib.genes.stage_selection import StageSelection
 
-
 class AnalysisOptions:
     def __init__(
             self,
@@ -22,6 +21,15 @@ class AnalysisOptions:
         self.max = max_val
         self.bucketSize = bucket_size
         self.alignMarker = align_marker
+
+    @classmethod
+    def fromJson(cls, params):
+        return cls(
+            min_val=params.get("min", 0),
+            max_val=params.get("max", 10000),
+            bucket_size=params.get("bucket_size", 30),
+            align_marker=params.get("alignMarker", None)
+        )
 
 class GeneModel:
     """
@@ -44,14 +52,7 @@ class GeneModel:
         self.analyses: List["AnalysisSeries"] = []
         self.analysisProgress: Optional[float] = None
         self.analysesHistory: List["AnalysisSeries"] = []
-        self.analysisOptions = AnalysisOptions()
-        # ✅ Store analysis options (params)
-        self.analysisOptions = {
-            "min": -1000,
-            "max": 1000,
-            "bucket_size": 30,
-            "alignMarker": None
-        }
+        self.analysisOptions: Optional["AnalysisOptions"] = None
 
     # ✅ Set motifs (must be actual Motif objects)
     def setMotifs(self, newMotifs: List["Motif"]):
@@ -81,9 +82,9 @@ class GeneModel:
         Loads genes and transcript rates from FASTA data.
         """
         self.name = organism.name if organism else None
-
         takeSingleTranscript = organism.take_first_transcript_only if organism else True
-
+        print(f"✅ DEBUG: Loading FASTA data for organism: {self.name}")
+        print(f"✅ DEBUG: takeSingleTranscript is set to: {takeSingleTranscript}")
         genes, errors = await GeneList.parse_fasta(data)
 
         if takeSingleTranscript:
@@ -102,11 +103,13 @@ class GeneModel:
         assert len(self._motifs) > 0, "No motifs to analyze"
         print("✅ DEBUG: Stages and motifs are set starting analysis")
         totalIterations = len(self._stageSelection.selectedStages) * len(self._motifs)
+        print(f"✅ DEBUG totalIterations : {totalIterations}")
         assert totalIterations > 0
 
         iterations = 0
 
         for motif in self._motifs:
+            print(f"DEBUG MOTIF: {motif.name}")
             for key in self._stageSelection.selectedStages:
                 filteredGenes = (
                     self.sourceGenes if key == "__ALL__"
@@ -119,10 +122,10 @@ class GeneModel:
                     'genes': filteredGenes,
                     'motif': motif,
                     'name': name,
-                    'min': self.analysisOptions["min"],
-                    'max': self.analysisOptions["max"],
-                    'interval': self.analysisOptions["bucket_size"],
-                    'alignMarker': self.analysisOptions["alignMarker"]
+                    'min': self.analysisOptions.min,
+                    'max': self.analysisOptions.max,
+                    'interval': self.analysisOptions.bucketSize,
+                    'alignMarker': self.analysisOptions.alignMarker,
                 })
 
                 self.analyses.append(analysis)

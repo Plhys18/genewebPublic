@@ -5,10 +5,6 @@ from my_analysis_project.lib.analysis.analysis_result import AnalysisResult
 
 
 class Distribution:
-    """
-    Holds the result of series distribution
-    """
-
     def __init__(self,
                  min: int,
                  max: int,
@@ -16,14 +12,6 @@ class Distribution:
                  name: str,
                  color: Optional[str],
                  align_marker: Optional[str] = None):
-        """
-        :param min: The minimum position to include in the distribution
-        :param max: The maximum position to include in the distribution
-        :param bucket_size: The bucket size to use for the distribution
-        :param name: The name of the series
-        :param color: The color of the series (optional)
-        :param align_marker: The marker to which data is aligned (usually ATG or TSS)
-        """
         self.min = min
         self.max = max
         self.bucket_size = bucket_size
@@ -31,43 +19,38 @@ class Distribution:
         self.name = name
         self.color = color
 
-        self._counts: Optional[Dict[int, int]] = None
-        self._genes: Optional[Dict[int, Set[str]]] = None
+        self._counts: Dict[int, int] = {}
+        self._genes: Dict[int, Set[str]] = {}
         self._totalCount: int = 0
         self._totalGenesCount: int = 0
         self._totalGenesWithMotifCount: int = 0
 
     @property
     def totalCount(self) -> int:
-        """Total count of motifs"""
         return self._totalCount
 
     @property
     def totalGenesCount(self) -> int:
-        """Total count of genes"""
         return self._totalGenesCount
 
     @property
     def totalGenesWithMotifCount(self) -> int:
-        """Total count of genes with motif"""
         return self._totalGenesWithMotifCount
 
     @property
-    def dataPoints(self) -> Optional[List["DistributionDataPoint"]]:
-        """
-        Returns the distribution as a list of DistributionDataPoint
-        """
-        if self._counts is None or self._genes is None:
-            return None
+    def dataPoints(self) -> List["DistributionDataPoint"]:
+        if not self._counts or not self._genes:
+            return []
 
         data_points = []
         num_buckets = (self.max - self.min) // self.bucket_size
+
         for i in range(num_buckets):
             dp_min = self.min + i * self.bucket_size
             dp_max = self.min + (i + 1) * self.bucket_size
             count_value = self._counts.get(i, 0)
             genes_set = self._genes.get(i, set())
-
+            # print(f"✅ DEBUG: Data point {dp_min}-{dp_max}: count={count_value} genes set count {len(genes_set)}")
             data_points.append(
                 DistributionDataPoint(
                     min=dp_min,
@@ -81,20 +64,13 @@ class Distribution:
         return data_points
 
     def run(self, results: List["AnalysisResult"], total_genes_count: int) -> None:
-        """
-        Calculates the distribution from the list of results.
-        :param results: List of AnalysisResult
-        :param total_genes_count: total number of genes
-        """
         counts: Dict[int, int] = {}
         gene_counts: Dict[int, Set[str]] = {}
 
         for result in results:
-            # Subtract align_marker offset if provided
             offset = 0
             if self.align_marker is not None and self.align_marker in result.gene.markers:
                 offset = result.gene.markers[self.align_marker]
-
             position = result.position - offset
             if position < self.min or position > self.max:
                 continue
@@ -114,10 +90,7 @@ class Distribution:
         self._totalGenesCount = total_genes_count
         self._totalGenesWithMotifCount = len({r.gene.geneId for r in results})
 
-
-
     def to_dict(self) -> dict:
-        """Serializes the Distribution object to a dictionary."""
         return {
             "min": self.min,
             "max": self.max,
@@ -127,26 +100,23 @@ class Distribution:
             "align_marker": self.align_marker,
             "total_count": self._totalCount,
             "total_genes_count": self._totalGenesCount,
-            "total_genes_with_motif_count": self._totalGenesWithMotifCount
+            "total_genes_with_motif_count": self._totalGenesWithMotifCount,
         }
 
     @classmethod
     def from_dict(cls, data: dict) -> "Distribution":
-        """Deserializes a dictionary into a Distribution object."""
         return cls(
             min=data["min"],
             max=data["max"],
             bucket_size=data["bucket_size"],
             name=data["name"],
             color=data.get("color"),
-            align_marker=data.get("align_marker")
+            align_marker=data.get("align_marker"),
         )
+
 
 @dataclass
 class DistributionDataPoint:
-    """
-    Holds a datapoint of the distribution
-    """
     min: int
     max: int
     count: int
@@ -156,10 +126,8 @@ class DistributionDataPoint:
 
     @property
     def genesCount(self) -> int:
-        """Number of genes in the set"""
         return len(self.genes)
 
     @property
     def label(self) -> str:
-        """Interval label, e.g. '<0; 30)'"""
         return f"<{self.min}; {self.max})"

@@ -161,10 +161,10 @@ class _ResultSeriesListState extends State<ResultSeriesList> {
       children: [
         for (final analysis in analyses)
           ListTile(
-            key: Key(analysis.motifName),
-            onTap: () => _handleSelected(analysis.motifName),
+            key: Key(analysis.analysisName),
+            onTap: () => _handleSelected(analysis.analysisName),
             dense: true,
-            selected: analysis.motifName == _selected,
+            selected: analysis.analysisName == _selected,
             selectedTileColor: colorScheme.primaryContainer,
             selectedColor: colorScheme.onPrimaryContainer,
             leading: IconButton(
@@ -181,7 +181,7 @@ class _ResultSeriesListState extends State<ResultSeriesList> {
               )
                   : const Icon(Icons.visibility_off),
             ),
-            title: Text(analysis.motifName),
+            title: Text(analysis.analysisName),
             subtitle: Text(
               '${analysis.distribution!.totalCount} motifs in ${analysis.distribution!.totalGenesWithMotifCount} genes (of ${analysis.distribution!.totalGenesCount} genes)',
             ),
@@ -209,7 +209,7 @@ class _ResultSeriesListState extends State<ResultSeriesList> {
     final model = GeneModel.of(context);
     model.analyses = ([
       for (final a in model.analyses)
-        if (a.motifName == analysis.motifName) analysis.copyWith(visible: !analysis.visible) else a
+        if (a.analysisName == analysis.analysisName) analysis.copyWith(visible: !analysis.visible) else a
     ]);
   }
 }

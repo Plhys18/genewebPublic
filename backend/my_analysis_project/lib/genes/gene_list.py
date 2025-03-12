@@ -101,7 +101,6 @@ class GeneList:
         chunks = data.split('>')
         genes: List["Gene"] = []
         errors: List[Any] = []
-        cnt = 0
         for i, chunk in enumerate(chunks):
 
             if not chunk.strip():
@@ -109,7 +108,6 @@ class GeneList:
 
             lines = ('>' + chunk).split('\n')
             try:
-                from .genes import Gene
                 gene = Gene.from_fasta(lines)
                 genes.append(gene)
             except Exception as e:

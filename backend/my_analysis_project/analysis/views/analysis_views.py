@@ -9,7 +9,10 @@ from my_analysis_project.lib.analysis.motif_presets import MotifPresets
 from my_analysis_project.lib.analysis.organism_presets import OrganismPresets
 from my_analysis_project.lib.genes.stage_selection import StageSelection, FilterStrategy, FilterSelection
 from my_analysis_project.auth_app.models import AnalysisHistory
-from my_analysis_project.lib.genes.gene_model import GeneModel
+from my_analysis_project.lib.genes.gene_model import GeneModel, AnalysisOptions
+from my_analysis_project.views import find_fasta_file
+
+
 @swagger_auto_schema(
     method='post',
     operation_description="Start an analysis with provided organism, motifs, and stages.",
@@ -57,13 +60,17 @@ async def _async_run_analysis(request):
             print("❌ ERROR: No stages provided!")
             return JsonResponse({"error": "No stages provided"}, status=400)
 
+
         print(f"🔍 DEBUG: Extracted motif names: {motif_names}")
         print(f"🔍 DEBUG: Extracted stage names: {stage_names}")
 
         # ✅ Create GeneModel
         gene_model = GeneModel()
+        assert params
+        assert params
+        gene_model.analysisOptions = AnalysisOptions.fromJson(params)
         print(f"✅ DEBUG: Created GeneModel")
-
+        assert gene_model.analysisOptions
         real_motifs = [m for m in MotifPresets.get_presets() if m.name in motif_names]
         if not real_motifs:
             print("❌ ERROR: No valid motifs found in presets")
@@ -117,38 +124,11 @@ async def _async_run_analysis(request):
             print("❌ ERROR: Analysis failed")
             return JsonResponse({"error": "Analysis was cancelled or failed"}, status=500)
 
-        results = [analysis.to_dict() for analysis in gene_model.analyses]
-        filtered_results = []
-        for analysis in gene_model.analyses:
-            filtered_results.append({
-                "name": analysis.name,
-                "color": analysis.color,
-                "distribution": {
-                    "min": analysis.distribution.min,
-                    "max": analysis.distribution.max,
-                    "bucket_size": analysis.distribution.bucket_size,
-                    "name": analysis.distribution.name,
-                    "color": analysis.distribution.color,
-                    "align_marker": analysis.distribution.align_marker,
-                    "total_count": analysis.distribution.totalCount,
-                    "total_genes_count": analysis.distribution.totalGenesCount,
-                    "total_genes_with_motif_count": analysis.distribution.totalGenesWithMotifCount,
-                    "data_points": [
-                        {
-                            "min": dp.min,
-                            "max": dp.max,
-                            "count": dp.count,
-                            "percent": dp.percent,
-                            "genesCount": dp.genesCount,                            # "genes": list(dp.genes),
-                            "genes_percent": dp.genes_percent
-                        }
-                        for dp in analysis.distribution.dataPoints
-                    ] if analysis.distribution.dataPoints else []
-                },
-            })
+        # ✅ Process results
+        filtered_results = process_analysis_results(gene_model)
 
         # ✅ Save full results, but return only filtered data
-        await sync_to_async(save_analysis_history, thread_sensitive=True)(user, organism_name, results, filtered_results)
+        await sync_to_async(save_analysis_history, thread_sensitive=True)(user, organism_name, filtered_results)
 
         print(f"✅ DEBUG: Analysis completed successfully, saved to DB")
 
@@ -158,8 +138,41 @@ async def _async_run_analysis(request):
         print(f"❌ ERROR: {str(e)}")  # Debugging error
         return JsonResponse({"error": str(e)}, status=500)
 
+def process_analysis_results(gene_model):
+    filtered_results = []
 
-def save_analysis_history(user, organism_name, results, filtered_results):
+    for analysis in gene_model.analyses:
+        filtered_results.append({
+            "name": analysis.name,
+            "color": analysis.color,
+            "stroke": analysis.stroke,
+            "distribution": {
+                "min": analysis.distribution.min,
+                "max": analysis.distribution.max,
+                "bucket_size": analysis.distribution.bucket_size,
+                "name": analysis.distribution.name,
+                "color": analysis.distribution.color,
+                "align_marker": analysis.distribution.align_marker,
+                "total_count": analysis.distribution.totalCount,
+                "total_genes_count": analysis.distribution.totalGenesCount,
+                "total_genes_with_motif_count": analysis.distribution.totalGenesWithMotifCount,
+                "data_points": [
+                    {
+                        "min": dp.min,
+                        "max": dp.max,
+                        "count": dp.count,
+                        "percent": dp.percent,
+                        "genes_count": dp.genesCount,
+                        "genes_percent": dp.genes_percent
+                    }
+                    for dp in analysis.distribution.dataPoints
+                ] if analysis.distribution.dataPoints else []
+            },
+        })
+
+    return filtered_results
+
+def save_analysis_history(user, organism_name, filtered_results):
     """
     Saves the analysis history to the database in a synchronous manner.
     """
@@ -167,7 +180,6 @@ def save_analysis_history(user, organism_name, results, filtered_results):
         AnalysisHistory.objects.create(
             user=user,
             name=f"Analysis for {organism_name}",
-            results=results,
             filtered_results=filtered_results
         )
         print(f"✅ DEBUG: Successfully saved analysis history for {user.username}")

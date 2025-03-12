@@ -253,7 +253,6 @@ class GeneList extends Equatable {
       rate += list[i].transcriptionRates[transcriptionKey]!;
       i++;
     }
-    print('$rate <= $totalRate, $i th gene');
     final sequence = list.getRange(i - 10.clamp(0, list.length), (i + 10).clamp(0, list.length));
     for (final gene in sequence) {
       print('${gene.geneId} ${gene.transcriptionRates[transcriptionKey]!}');

@@ -60,7 +60,7 @@ class _MotifPanelState extends State<MotifPanel> {
     final motifs = _model.getAllMotifs;
     if (motifs.isEmpty) return const Center(child: Text('Load source data first'));
     final selectedMotifs = _model.getSelectedMotifs;
-    print("DEBUG: Building motifPanel with selected motifs ${selectedMotifs}");
+    // print("DEBUG: Building motifPanel with selected motifs ${selectedMotifs}");
     final customMotifs = motifs.where((m) => m.isCustom).toList();
 
     final presets = List.of(MotifPresets.presets).where((e) => e.isPublic).toList();
@@ -200,7 +200,6 @@ class _MotifPanelState extends State<MotifPanel> {
     } else {
       newMotifs.remove(motif);
     }
-    print("Toggling motif: ${motif.name} → ${value ? "SELECTED" : "DESELECTED"} motif list ${newMotifs}");
     _model.setMotifs(newMotifs.toList());
   }
 

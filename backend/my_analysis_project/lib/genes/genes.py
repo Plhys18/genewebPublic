@@ -7,9 +7,9 @@ class Gene:
     Holds a single gene data
     """
 
-    gene_id_reg_exp = re.compile(r"(?P<gene>[A-Za-z0-9+_\.]+)")
-    markers_reg_exp = re.compile(r";MARKERS (?P<json>\{.*\})$")
-    transcription_rates_reg_exp = re.compile(r";TRANSCRIPTION_RATES (?P<json>\{.*\})$")
+    gene_id_reg_exp = re.compile(r"(?P<gene>[A-Za-z0-9+_.]+)")
+    markers_reg_exp = re.compile(r";MARKERS (?P<json>\{.*})$")
+    transcription_rates_reg_exp = re.compile(r";TRANSCRIPTION_RATES (?P<json>\{.*})$")
 
     def __init__(
             self,
@@ -21,7 +21,6 @@ class Gene:
             markers: Optional[Dict[str, int]] = None,
     ):
         """
-        Private-style constructor to mirror `Gene._` in Dart.
         :param gene_id: Gene name, including splicing variant, e.g. 'ATG0001.1'
         :param data: Raw nucleotides data
         :param header: Header line (>GENE ID...)
@@ -40,9 +39,6 @@ class Gene:
 
     @classmethod
     def from_fasta(cls, lines: List[str]) -> "Gene":
-        """
-        Loads a Gene from FASTA file chunk
-        """
         header: Optional[str] = None
         gene_id: Optional[str] = None
         notes: List[str] = []
@@ -60,39 +56,44 @@ class Gene:
                 match = cls.gene_id_reg_exp.search(line)
                 if match:
                     gene_id = match.group("gene")
+                    # print(f"✅ DEBUG: Extracted gene_id = {gene_id} from header: {line}")
+                else:
+                    print(f"⚠️ WARNING: No gene_id found in header: {line}")
+
             elif line[0] == ';':
-                # Possibly transcription rates or markers
                 t_rates_match = cls.transcription_rates_reg_exp.search(line)
                 if t_rates_match:
                     transcription_rates_str = t_rates_match.group("json")
-                    if transcription_rates_str:
-                        transcription_rates = dict(
-                            (k, float(v))
-                            for k, v in json.loads(transcription_rates_str).items()
-                        )
+                    if transcription_rates_str and transcription_rates_str.strip():
+                        transcription_rates = {
+                            k: float(v) for k, v in json.loads(transcription_rates_str).items()
+                        }
 
                 markers_match = cls.markers_reg_exp.search(line)
                 if markers_match:
                     markers_str = markers_match.group("json")
-                    if markers_str:
-                        markers = dict(
-                            (k, int(v))
-                            for k, v in json.loads(markers_str).items()
-                        )
+                    if markers_str and markers_str.strip():
+                        markers = {
+                            k: int(v) for k, v in json.loads(markers_str).items()
+                        }
 
                 notes.append(line)
             else:
                 data_lines.append(line.strip().upper())
 
         if header is None or gene_id is None:
-            # For clarity, replicate the same error message
             raise Exception(f"Unable to parse: {lines}")
 
         sequence = "".join(data_lines)
-        # Validate the ATG marker if present
+
         if markers and "atg" in markers:
             atg_pos = markers["atg"]
-            codon = sequence[atg_pos - 1 : (atg_pos - 1) + 3]
+            # codon = sequence[atg_pos - 1 : (atg_pos - 1) + 3]
+            codon = sequence[atg_pos - 1: atg_pos - 1 + 3]
+            # print(f"✅ DEBUG: Extracted codon `{codon}` at ATG position {atg_pos} in sequence.")
+            if codon not in ("ATG", "CAT"):
+                print(f"❌ ERROR: Unexpected codon `{codon}` found at position {atg_pos}")
+
             if codon not in ("ATG", "CAT"):
                 raise ValueError(
                     f"{gene_id}: Expected `ATG`/`CAT` at ATG position of {atg_pos}, got `{codon}` instead."
@@ -103,8 +104,8 @@ class Gene:
             data=sequence,
             header=header,
             notes=notes,
-            transcription_rates=transcription_rates,
-            markers=markers,
+            transcription_rates=transcription_rates or {},
+            markers=markers or {},
         )
 
     def copy_with(

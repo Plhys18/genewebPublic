@@ -11,6 +11,8 @@ from my_analysis_project.lib.genes.gene_list import GeneList
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 
+from my_analysis_project.views import find_fasta_file
+
 
 @swagger_auto_schema(
     method='get',
@@ -121,11 +123,11 @@ def get_active_organism_source_gene_informations(request):
         unique_marker_names = sorted(set(
             marker for gene in gene_list.genes for marker in gene.markers.keys()
         ))
-
         return JsonResponse({
             "organism_name": selection.organism,
             "genes_length": len(gene_list.genes),
             "genes_keys_length": len(gene_list.stageKeys),
+            "default_selected_stage_keys": gene_list.defaultSelectedStageKeys,
             "organism_and_stages": organism_and_stages,
             "stages": gene_list.stageKeys,
             "colors": gene_list.colors,
