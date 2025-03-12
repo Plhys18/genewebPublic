@@ -12,7 +12,7 @@ class ApiService {
   factory ApiService() => _instance;
   ApiService._internal();
 
-  static const String _baseUrl = "http://localhost:8000/api";
+  static const String _baseUrl = "http://147.251.245.200:8000/api";
 
   String? _jwtToken;
   String? _refreshToken;
@@ -180,18 +180,27 @@ class ApiService {
   /// Fetch list of past analyse s (history)
 
   Future<List<AnalysisHistoryEntry>> fetchAnalyses() async {
-    final response = await getRequest("analysis/history");
-    final List<dynamic> data = response["history"];
+    final response = await getRequest("analysis/history/");
+    if (!response.containsKey("history")) {
+      throw Exception("❌ API response missing 'history' key");
+    }
 
-    return data.map((entry) => AnalysisHistoryEntry.fromJson(entry)).toList();
+    final List<dynamic> historyData = response["history"];
+    return historyData.map((entry) => AnalysisHistoryEntry.fromJson(entry)).toList();
   }
+
 
   /// **Fetch Analysis Details**
 
   Future<AnalysisSeries> fetchAnalysisDetails(int analysisId) async {
-  final data = await getRequest("analysis/history/$analysisId/");
-  return AnalysisSeries.fromJson(data);
+    final data = await getRequest("analysis/history/$analysisId/");
+    if (!data.containsKey("id") || !data.containsKey("name")) {
+      throw Exception("❌ Unexpected API response format: Missing 'id' or 'name'");
+    }
+
+    return AnalysisSeries.fromJson(data);
   }
+
 
 
   /// Fetch the latest analysis ID from the user's analysis history

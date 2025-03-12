@@ -172,6 +172,7 @@ def process_analysis_results(gene_model):
 
     return filtered_results
 
+
 def save_analysis_history(user, organism_name, filtered_results):
     """
     Saves the analysis history to the database in a synchronous manner.
@@ -185,23 +186,6 @@ def save_analysis_history(user, organism_name, filtered_results):
         print(f"✅ DEBUG: Successfully saved analysis history for {user.username}")
     except Exception as e:
         print(f"❌ ERROR saving analysis history: {str(e)}")
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def get_analysis_details(request, analysis_id):
-    """Returns detailed results for a specific analysis."""
-    try:
-
-        analysis = AnalysisHistory.objects.get(id=analysis_id, user=request.user)
-        return JsonResponse({
-            "id": analysis_id,
-            "name": analysis.name,
-            "created_at": analysis.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-            "results": analysis.filtered_results
-        })
-    except AnalysisHistory.DoesNotExist:
-        return JsonResponse({"error": "Analysis not found"}, status=404)
-
 
 
 @api_view(["POST"])
@@ -233,3 +217,49 @@ def get_analysis_history_list(request):
             } for entry in history
         ]
     })
+@swagger_auto_schema(
+    method='get',
+    operation_description="Get user's analysis history (metadata only).",
+    responses={
+        200: "History retrieved successfully",
+    }
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_analysis_history_list(request):
+    """Returns a list of user's past analyses with metadata only."""
+    user = request.user
+    history = AnalysisHistory.objects.filter(user=user).order_by("-created_at")
+
+    return JsonResponse({
+        "history": [
+            {
+                "id": entry.id,
+                "name": entry.name,
+                "created_at": entry.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            } for entry in history
+        ]
+    })
+
+@swagger_auto_schema(
+    method='get',
+    operation_description="Get details of a specific analysis if it belongs to the user.",
+    responses={
+        200: "Analysis details retrieved successfully",
+        404: "Analysis not found"
+    }
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_analysis_details(request, analysis_id):
+    """Returns detailed results for a specific analysis if the user owns it."""
+    try:
+        analysis = AnalysisHistory.objects.get(id=analysis_id, user=request.user)
+        return JsonResponse({
+            "id": analysis.id,
+            "name": analysis.name,
+            "created_at": analysis.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "filtered_results": analysis.filtered_results
+        })
+    except AnalysisHistory.DoesNotExist:
+        return JsonResponse({"error": "Analysis not found"}, status=404)

@@ -144,9 +144,13 @@ class GeneModel extends ChangeNotifier {
   Future<void> fetchPastUserAnalyses() async {
     try {
       analysesHistory = await _apiService.fetchAnalyses();
-      if( analysesHistory.isEmpty) return;
-      var lastHistoryEntry = analysesHistory.last;
-      final fullAnalysis = await _apiService.fetchAnalysisDetails(lastHistoryEntry.id);
+      if (analysesHistory.isEmpty) return;
+
+      // Fetch the most recent analysis
+      final latestAnalysisEntry = analysesHistory.first;
+      print("✅ [FETCH LATEST ANALYSIS] ID: ${latestAnalysisEntry.id}");
+
+      final fullAnalysis = await _apiService.fetchAnalysisDetails(latestAnalysisEntry.id);
       analyses.add(fullAnalysis);
 
       notifyListeners();
@@ -154,6 +158,7 @@ class GeneModel extends ChangeNotifier {
       print("❌ Error fetching past analyses: $error");
     }
   }
+
 
 
   /// Fetch the list of analysis history
