@@ -1,4 +1,5 @@
 import json
+from concurrent.futures import ProcessPoolExecutor
 from typing import List, Dict, Optional, Any
 import re
 from collections import defaultdict
@@ -55,12 +56,15 @@ class AnalysisSeries:
     def run(cls, gene_list: GeneList, motif: Motif, name: str, color: str, minimal: int, maximal: int,
             bucket_size: int, align_marker: Optional[str] = None, no_overlaps: bool = True,
             stroke: int = 4, visible: bool = True):
-        """Runs the analysis on the given GeneList"""
+        """Runs the analysis in parallel using multiple CPU cores"""
 
-        # Find matches
+        # Parallelize motif matching across genes
         results = []
-        for gene in gene_list.genes:
-            results.extend(cls._find_matches(gene, motif, no_overlaps))
+        with ProcessPoolExecutor() as executor:
+            futures = {executor.submit(cls._find_matches, gene, motif, no_overlaps): gene for gene in
+                       gene_list.genes}
+            for future in futures:
+                results.extend(future.result())
 
         # Calculate the distribution
         distribution = Distribution(min=minimal, max=maximal, bucket_size=bucket_size, align_marker=align_marker,

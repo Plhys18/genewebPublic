@@ -25,10 +25,10 @@ class AnalysisOptions:
     @classmethod
     def fromJson(cls, params):
         return cls(
-            min_val=params.get("min", 0),
-            max_val=params.get("max", 10000),
+            min_val=params.get("minimal", 0),
+            max_val=params.get("maximal", 10000),
             bucket_size=params.get("bucket_size", 30),
-            align_marker=params.get("alignMarker", None)
+            align_marker=params.get("align_marker", None)
         )
 
 class GeneModel:
