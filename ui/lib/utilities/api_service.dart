@@ -12,7 +12,7 @@ class ApiService {
   factory ApiService() => _instance;
   ApiService._internal();
 
-  static const String _baseUrl = "http://147.251.245.200:8000/api";
+  static const String _baseUrl = "http://0.0.0.0:8000/api";
 
   String? _jwtToken;
   String? _refreshToken;

@@ -73,7 +73,6 @@ def set_active_organism(request):
 @permission_classes([IsAuthenticated])
 def get_active_organism(request):
     user = request.user
-    print(f"🔹 Getting active organism for user: {user.username}")
 
     selection = UserSelection.objects.filter(user=user).first()
     if not selection:
@@ -88,16 +87,12 @@ def get_active_organism(request):
         print("❌ Organism not found in presets!")
         return Response({"error": "Organism not found"}, status=404)
 
-    print(f"✅ Organism found: {organism.name}")
 
     response_data = {
         "organism": organism.name,
         "motifs": [{"name": m.name, "definitions": m.definitions} for m in MotifPresets.get_presets()],
-        "stages": [{"stage": s.stage, "color": s.color} for s in organism.stages],
-        "private": organism.public,
+        "stages": [{"stage": s.stage, "color": s.color } for s in organism.stages],
     }
-    print(f"🔹 Sending response: {organism.stages, organism}")
-    print(f"📤 Sending response: {response_data}")
     return Response(response_data)
 
 

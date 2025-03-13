@@ -94,13 +94,12 @@ async def _async_run_analysis(request):
 
         print(f"✅ DEBUG: Final valid stages: {selected_stages}")
 
-        # ✅ Convert `selected_stages` into a `StageSelection` object
         stage_selection = StageSelection(
             selectedStages=selected_stages,
-            strategy=FilterStrategy.top,  # Default filtering strategy
-            selection=FilterSelection.percentile,  # Default selection strategy
-            percentile=0.9,  # Default percentile threshold
-            count=3200  # Default count
+            strategy=FilterStrategy.top,
+            selection=FilterSelection.percentile,
+            percentile=0.9,
+            count=3200
         )
 
         print(f"✅ DEBUG: Created StageSelection object: {stage_selection}")
