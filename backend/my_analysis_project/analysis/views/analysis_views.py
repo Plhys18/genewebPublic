@@ -1,3 +1,5 @@
+from concurrent.futures import ThreadPoolExecutor
+
 from django.http import JsonResponse
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -138,40 +140,42 @@ async def _async_run_analysis(request):
         print(f"❌ ERROR: {str(e)}")  # Debugging error
         return JsonResponse({"error": str(e)}, status=500)
 
-def process_analysis_results(gene_model):
-    filtered_results = []
 
-    for analysis in gene_model.analyses:
-        filtered_results.append({
-            "name": analysis.name,
-            "color": analysis.color,
-            "stroke": analysis.stroke,
-            "distribution": {
-                "min": analysis.distribution.min,
-                "max": analysis.distribution.max,
-                "bucket_size": analysis.distribution.bucket_size,
-                "name": analysis.distribution.name,
-                "color": analysis.distribution.color,
-                "align_marker": analysis.distribution.align_marker,
-                "total_count": analysis.distribution.totalCount,
-                "total_genes_count": analysis.distribution.totalGenesCount,
-                "total_genes_with_motif_count": analysis.distribution.totalGenesWithMotifCount,
-                "data_points": [
-                    {
-                        "min": dp.min,
-                        "max": dp.max,
-                        "count": dp.count,
-                        "percent": dp.percent,
-                        "genes_count": dp.genesCount,
-                        "genes_percent": dp.genes_percent
-                    }
-                    for dp in analysis.distribution.dataPoints
-                ] if analysis.distribution.dataPoints else []
-            },
-        })
+def process_single_analysis(analysis):
+    return {
+        "name": analysis.name,
+        "color": analysis.color,
+        "stroke": analysis.stroke,
+        "distribution": {
+            "min": analysis.distribution.min,
+            "max": analysis.distribution.max,
+            "bucket_size": analysis.distribution.bucket_size,
+            "name": analysis.distribution.name,
+            "color": analysis.distribution.color,
+            "align_marker": analysis.distribution.align_marker,
+            "total_count": analysis.distribution.totalCount,
+            "total_genes_count": analysis.distribution.totalGenesCount,
+            "total_genes_with_motif_count": analysis.distribution.totalGenesWithMotifCount,
+            "data_points": [
+                {
+                    "min": dp.min,
+                    "max": dp.max,
+                    "count": dp.count,
+                    "percent": dp.percent,
+                    "genes_count": dp.genesCount,
+                    "genes_percent": dp.genes_percent
+                }
+                for dp in analysis.distribution.dataPoints
+            ] if analysis.distribution.dataPoints else []
+        },
+    }
+
+
+def process_analysis_results(gene_model):
+    with ThreadPoolExecutor() as executor:
+        filtered_results = list(executor.map(process_single_analysis, gene_model.analyses))
 
     return filtered_results
-
 
 def save_analysis_history(user, organism_name, filtered_results):
     """
