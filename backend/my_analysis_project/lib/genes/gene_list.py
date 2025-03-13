@@ -123,31 +123,22 @@ class GeneList:
             errors: List[Any]
     ) -> Tuple[List["Gene"], List[Any]]:
         """
-        Takes the first transcript from each gene only
+        Takes the first transcript from each gene only (optimized version).
         """
         from collections import defaultdict
-        keys = defaultdict(list)
+        gene_dict = defaultdict(list)
+        gene_lookup = {gene.geneId: gene for gene in genes}
 
         for gene in genes:
-            code = gene.geneCode
-            keys[code].append(gene.geneId)
+            gene_dict[gene.geneCode].append(gene.geneId)
 
-        merged: List["Gene"] = []
-        cnt = 0
-        key_list = list(keys.keys())
+        merged = []
+        for gene_ids in gene_dict.values():
+            first_gene_id = min(gene_ids)
+            merged.append(gene_lookup[first_gene_id])
 
-        for i, key in enumerate(key_list):
-
-            keys[key].sort()
-            first = keys[key][0]
-            merged.append(next(g for g in genes if g.geneId == first))
-
-        print(
-            f".fasta transcript filtering completed with {len(merged)} genes "
-            f"and {len(errors)} errors"
-        )
+        print(f".fasta transcript filtering completed with {len(merged)} genes and {len(errors)} errors")
         return merged, errors
-
     @classmethod
     def from_list(
             cls,
@@ -377,8 +368,6 @@ class GeneList:
             async with aiofiles.open(file_path, 'r') as f:
                 data = await f.read()
                 print(f"[DEBUG] File read complete. Data size: {len(data)} bytes")
-
-            last_update_time = time.time()
 
             print("[DEBUG] Starting FASTA parsing...")
             genes, errors = await cls.parse_fasta(data)
