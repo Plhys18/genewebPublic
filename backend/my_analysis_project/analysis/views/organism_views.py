@@ -94,8 +94,9 @@ def get_active_organism(request):
         "organism": organism.name,
         "motifs": [{"name": m.name, "definitions": m.definitions} for m in MotifPresets.get_presets()],
         "stages": [{"stage": s.stage, "color": s.color} for s in organism.stages],
+        "private": organism.public,
     }
-
+    print(f"🔹 Sending response: {organism.stages, organism}")
     print(f"📤 Sending response: {response_data}")
     return Response(response_data)
 

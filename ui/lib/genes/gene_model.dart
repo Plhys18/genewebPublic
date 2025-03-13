@@ -260,7 +260,7 @@ class GeneModel extends ChangeNotifier {
     print("Updating selected stages in GeneModel: $list");
     _stageSelection.selectedStages.clear();
     _stageSelection.selectedStages.addAll(list);
-    notifyListeners(); // 🚨 This MUST be called
+    notifyListeners();
   }
 
   loadAnalysis(analysisHistoryEntry) {

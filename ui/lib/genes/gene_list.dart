@@ -174,7 +174,7 @@ class GeneList extends Equatable {
   /// Get keys for stages that should be selected by default
   List<String> get defaultSelectedStageKeys {
     final keys = stageKeys;
-    if (organism?.stages.isNotEmpty == true) {
+    if (organism!.stages.isNotEmpty) {
       return organism!.stages
           .where((s) => s.isCheckedByDefault && keys.contains(s.stage))
           .map((s) => s.stage)
