@@ -40,6 +40,7 @@ void main(List<String> arguments) async {
     fallbackTranscriptParser: organism.fallbackTranscriptParser,
     seqIdTransformer: organism.seqIdTransformer,
     linesPreprocessor: organism.gffLinesPreprocessor,
+    transcriptSeparator: organism.transcriptSeparator,
   );
   print('Loaded `${inputFilesConfiguration.gffFile.path}` with ${gff.genes.length} genes');
   print(' - ${gff.genes.where((g) => g.startCodon() != null).length} with start_codon');
@@ -99,9 +100,10 @@ void main(List<String> arguments) async {
   // Save validation results
   final validationOutputFile = File('$outputPath/$organismFolderName${useTss ? '-with-tss' : ''}.errors.csv');
   final errors = [
-    ['gene_id', 'errors'],
+    ['gene_id', 'strand', 'errors'],
     for (final gene in gff.genes)
-      if (gene.errors!.isNotEmpty) [gene.transcriptId, gene.errors!.map((e) => e.message).join(' | ')],
+      if (gene.errors!.isNotEmpty)
+        [gene.transcriptId, gene.strand?.name, gene.errors!.map((e) => e.message).join(' | ')],
   ];
   validationOutputFile.writeAsStringSync(ListToCsvConverter().convert(errors));
   print('Wrote errors to `${validationOutputFile.path}`');

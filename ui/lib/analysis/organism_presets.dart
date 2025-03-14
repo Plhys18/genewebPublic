@@ -84,6 +84,19 @@ class OrganismPresets {
   static final List<Organism> kOrganisms = [
     Organism(
       public: true,
+      name: 'Chara braunii',
+      filename: 'Chara_braunii.fasta.zip',
+      description: 'ATG',
+      stages: [
+        StageAndColor('Antheridia', Colors.indigo),
+        StageAndColor('Oogonia', Colors.orange),
+        StageAndColor('Zygotes', Colors.brown),
+        StageAndColor('Vegetative_tissue', Colors.green),
+      ],
+      takeFirstTranscriptOnly: false,
+    ),
+    Organism(
+      public: true,
       name: 'Marchantia polymorpha',
       filename: 'Marchantia_polymorpha-with-tss.fasta.zip',
       description: 'ATG, TSS',
@@ -143,6 +156,7 @@ class OrganismPresets {
         StageAndColor('Spores', const Color(0xffFFC002)),
       ],
       takeFirstTranscriptOnly: false,
+      public: true,
     ),
     Organism(
       name: 'Azolla filiculoides',

@@ -70,8 +70,8 @@ class FastaGenerator {
 
       final before = wholeSequence.substring(max(0, startCodonBegin - basesBeforeAtg), startCodonBegin);
       final codon = wholeSequence.substring(startCodonBegin, startCodonEnd);
-      final after =
-          wholeSequence.substring(startCodonEnd + 1, min(wholeSequence.length, startCodonEnd + basesAfterAtg + 1));
+      final after = wholeSequence.substring((startCodonEnd + 1).clamp(0, wholeSequence.length),
+          (startCodonEnd + basesAfterAtg + 1).clamp(0, wholeSequence.length));
       // (reversed) sequence with area before, codon and after the codon
       final sequence = gene.strand == Strand.forward
           ? '$before$codon$after'
