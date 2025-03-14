@@ -10,12 +10,6 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 # Hosts settings
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '147.251.245.200,localhost,0.0.0.0,127.0.0.1').split(',')
 
-# CORS settings (using django-cors-headers)
-# For development, you might allow all origins.
-CORS_ALLOW_ALL_ORIGINS = os.environ.get('DJANGO_CORS_ALLOW_ALL', 'True') == 'True'
-if not CORS_ALLOW_ALL_ORIGINS:
-    CORS_ALLOWED_ORIGINS = os.environ.get('DJANGO_CORS_ALLOWED_ORIGINS', 'https://localhost:35525').split(',')
-
 DATA_DIR = BASE_DIR / "data"
 
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
@@ -23,10 +17,19 @@ SESSION_COOKIE_AGE = 86400  # 1-day
 AUTH_USER_MODEL = "auth_app.AppUser"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
-SESSION_COOKIE_SECURE = False
+# SECURITY SETTINGS: Enforce HTTPS
+SECURE_SSL_REDIRECT = True  # Redirect HTTP to HTTPS
+SESSION_COOKIE_SECURE = True  # Ensure session cookies are sent over HTTPS
+CSRF_COOKIE_SECURE = True  # Ensure CSRF cookies are sent over HTTPS
+SECURE_HSTS_SECONDS = 31536000  # Enable HTTP Strict Transport Security (1 year)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
 
 INSTALLED_APPS = [
     # Django core apps
+    'django_extensions',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -35,7 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     # Third-party apps
-    "jazzmin",
+    'jazzmin',
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
@@ -45,7 +48,7 @@ INSTALLED_APPS = [
     'my_analysis_project.auth_app',
 
 ]
-INSTALLED_APPS += []
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -113,7 +116,12 @@ DATABASES = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
-}
+}\
+
+CORS_ALLOWED_ORIGINS = [
+    "https://golemdeployjakub.netlify.app",  # Netlify frontend
+    "https://backend.yourdomain.com"  # Backend HTTPS
+]
 
 # Password validation (default validators)
 AUTH_PASSWORD_VALIDATORS = [

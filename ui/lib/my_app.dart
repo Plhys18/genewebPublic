@@ -13,6 +13,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool? _isSignedIn;
+  bool? _isPublicSite;
 
   // This widget is the root of your application.
   @override
@@ -31,7 +32,7 @@ class _MyAppState extends State<MyApp> {
           appBarTheme: const AppBarTheme(backgroundColor: Color(0xffA0CB85)),
           useMaterial3: true,
         ),
-        home: _isSignedIn == true ? const HomeScreen() : const LockScreen(),
+        home: (_isPublicSite == true || _isSignedIn == true) ? const HomeScreen() : const LockScreen(),
       ),
     );
   }

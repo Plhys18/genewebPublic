@@ -1,3 +1,4 @@
+import json
 from concurrent.futures import ThreadPoolExecutor
 
 from django.http import JsonResponse
@@ -34,10 +35,36 @@ from my_analysis_project.views import find_fasta_file
     }
 )
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
 def run_analysis(request):
     """Runs an analysis and stores the results in the database."""
     return async_to_sync(_async_run_analysis)(request)  # Convert async to sync
+
+
+
+@swagger_auto_schema(
+    method='post',
+    operation_description="Start an analysis with provided organism, motifs, and stages.",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            "organism": openapi.Schema(type=openapi.TYPE_STRING),
+            "motifs": openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_STRING)),
+            "stages": openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_STRING)),
+            "params": openapi.Schema(type=openapi.TYPE_OBJECT),
+        },
+        required=["organism", "motifs", "stages"],
+    ),
+    responses={
+        200: "Analysis started",
+        400: "Missing parameters",
+        403: "Access denied",
+        404: "Organism not found",
+    },
+)
+@api_view(["POST"])
+def run_analysis(request):
+    """Runs an analysis and stores the results in the database."""
+    return async_to_sync(_async_run_analysis)(request)
 
 
 async def _async_run_analysis(request):
@@ -45,100 +72,77 @@ async def _async_run_analysis(request):
     Handles the async analysis workflow and stores results in the database.
     """
     try:
-        user = request.user
-        data = request.data
-        print(f"🔍 DEBUG: Received request payload: {data}")
+        user = request.user if request.user.is_authenticated else None
+        data = json.loads(request.body)
 
         organism_name = data.get("organism")
-        motif_names = data.get("motifs", [])  # Get list of motif names
-        stage_names = data.get("stages", [])  # Get list of stage names
+        motif_names = data.get("motifs", [])
+        stage_names = data.get("stages", [])
         params = data.get("params", {})
 
+        if not organism_name:
+            return JsonResponse({"error": "Missing organism name"}, status=400)
         if not motif_names:
-            print("❌ ERROR: No motifs provided!")
             return JsonResponse({"error": "No motifs provided"}, status=400)
-
         if not stage_names:
-            print("❌ ERROR: No stages provided!")
             return JsonResponse({"error": "No stages provided"}, status=400)
 
+        # ✅ Fetch Organism
+        organism = next((org for org in OrganismPresets.k_organisms if org.name == organism_name), None)
+        if not organism:
+            return JsonResponse({"error": "Organism not found"}, status=404)
 
-        print(f"🔍 DEBUG: Extracted motif names: {motif_names}")
-        print(f"🔍 DEBUG: Extracted stage names: {stage_names}")
+        # ✅ Check Access Permissions
+        if not organism.public and not user:
+            return JsonResponse({"error": "Access denied"}, status=403)
+
+        # ✅ Fetch Valid Motifs
+        real_motifs = [m for m in MotifPresets.get_presets() if m.name in motif_names]
+        if not real_motifs:
+            return JsonResponse({"error": "No valid motifs found in presets"}, status=400)
+
+        # ✅ Fetch Valid Stages
+        available_stages = {stage.stage for stage in organism.stages}
+        selected_stages = [stage for stage in stage_names if stage in available_stages]
+
+        if not selected_stages:
+            return JsonResponse({"error": "No valid stages found"}, status=400)
 
         # ✅ Create GeneModel
         gene_model = GeneModel()
-        assert params
-        assert params
         gene_model.analysisOptions = AnalysisOptions.fromJson(params)
-        print(f"✅ DEBUG: Created GeneModel")
-        assert gene_model.analysisOptions
-        real_motifs = [m for m in MotifPresets.get_presets() if m.name in motif_names]
-        if not real_motifs:
-            print("❌ ERROR: No valid motifs found in presets")
-            return JsonResponse({"error": "No valid motifs found in presets"}, status=400)
-
-        print(f"✅ DEBUG: Resolved motifs from presets: {real_motifs}")
-
-        # ✅ Fetch Stages From Organism Presets (If Needed)
-        organism = next((org for org in OrganismPresets.k_organisms if org.name == organism_name), None)
-        if organism:
-            available_stages = set(stage.stage for stage in organism.stages)
-            selected_stages = [stage for stage in stage_names if stage in available_stages]
-        else:
-            selected_stages = stage_names
-
-        if not selected_stages:
-            print("❌ ERROR: No valid stages found")
-            return JsonResponse({"error": "No valid stages found"}, status=400)
-
-        print(f"✅ DEBUG: Final valid stages: {selected_stages}")
 
         stage_selection = StageSelection(
             selectedStages=selected_stages,
             strategy=FilterStrategy.top,
             selection=FilterSelection.percentile,
             percentile=0.9,
-            count=3200
+            count=3200,
         )
 
-        print(f"✅ DEBUG: Created StageSelection object: {stage_selection}")
-
-        # ✅ Set motifs and stages in GeneModel
         gene_model.setMotifs(real_motifs)
         gene_model.setStageSelection(stage_selection)
 
-        # ✅ Load the gene list
+        # ✅ Load Gene List
         file_path = find_fasta_file(organism_name)
         if not file_path:
-            print("❌ ERROR: Organism file not found")
             return JsonResponse({"error": "Organism file not found"}, status=404)
 
-        print(f"✅ Found FASTA file at: {file_path}")
-
         await gene_model.loadFastaFromFile(file_path, organism)
-        print("✅ DEBUG: Loaded FASTA file into GeneModel")
 
-        # ✅ Run the analysis
+        # ✅ Run the Analysis
         success = await gene_model.analyze()
         if not success:
-            print("❌ ERROR: Analysis failed")
             return JsonResponse({"error": "Analysis was cancelled or failed"}, status=500)
 
-        # ✅ Process results
+        # ✅ Process & Save Results
         filtered_results = process_analysis_results(gene_model)
-
-        # ✅ Save full results, but return only filtered data
         await sync_to_async(save_analysis_history, thread_sensitive=True)(user, organism_name, filtered_results)
-
-        print(f"✅ DEBUG: Analysis completed successfully, saved to DB")
 
         return JsonResponse({"message": "Analysis complete", "results": filtered_results}, status=200)
 
     except Exception as e:
-        print(f"❌ ERROR: {str(e)}")  # Debugging error
         return JsonResponse({"error": str(e)}, status=500)
-
 
 def process_single_analysis(analysis):
     return {
@@ -192,7 +196,6 @@ def save_analysis_history(user, organism_name, filtered_results):
 
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
 def cancel_analysis_view(request):
     """Cancels an ongoing analysis for the logged-in user"""
     return JsonResponse({"message": "Your analysis has been cancelled"}, status=200)
@@ -220,17 +223,21 @@ def get_analysis_history_list(request):
             } for entry in history
         ]
     })
+
 @swagger_auto_schema(
     method='get',
-    operation_description="Get user's analysis history (metadata only).",
+    operation_description="Get user's analysis history.",
     responses={
         200: "History retrieved successfully",
+        403: "Access denied",
     }
 )
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
 def get_analysis_history_list(request):
-    """Returns a list of user's past analyses with metadata only."""
+    """Returns a list of the user's past analyses with metadata only."""
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Access denied"}, status=403)
+
     user = request.user
     history = AnalysisHistory.objects.filter(user=user).order_by("-created_at")
 
@@ -249,13 +256,16 @@ def get_analysis_history_list(request):
     operation_description="Get details of a specific analysis if it belongs to the user.",
     responses={
         200: "Analysis details retrieved successfully",
+        403: "Access denied",
         404: "Analysis not found"
     }
 )
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
 def get_analysis_details(request, analysis_id):
     """Returns detailed results for a specific analysis if the user owns it."""
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Access denied"}, status=403)
+
     try:
         analysis = AnalysisHistory.objects.get(id=analysis_id, user=request.user)
         return JsonResponse({

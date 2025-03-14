@@ -22,14 +22,12 @@ class AppUser(AbstractUser):
     """
     pass  # We can extend this later if needed
 
-class UserSelection(models.Model):
-    """
-    Stores the user’s last selected organism, motifs, and stages.
-    """
-    user = models.ForeignKey(AppUser, on_delete=models.CASCADE)
-    organism = models.CharField(max_length=255)
-    selected_motifs = models.JSONField(default=list)  # Store list of motif names
-    selected_stages = models.JSONField(default=list)  # Store list of stage names
+# class UserSelection(models.Model):
+#     """
+#     Stores the user’s last selected organism, motifs, and stages.
+#     """
+#     user = models.ForeignKey(AppUser, on_delete=models.CASCADE)
+#     organism = models.CharField(max_length=255)
 
 class AnalysisHistory(models.Model):
     """

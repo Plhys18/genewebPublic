@@ -2,7 +2,7 @@ import json
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from my_analysis_project.auth_app.models import AppUser, UserSelection
+from my_analysis_project.auth_app.models import AppUser
 from my_analysis_project.lib.analysis.motif_presets import MotifPresets
 from my_analysis_project.lib.analysis.organism_presets import OrganismPresets
 from drf_yasg.utils import swagger_auto_schema
@@ -86,26 +86,26 @@ def get_available_data(request):
     ]
     return JsonResponse({"organisms": organisms, "motifs": motifs})
 
-@csrf_exempt
-@login_required
-def store_user_selection(request):
-    """Stores the user's selected organism, motifs, and stages in the database."""
-    try:
-        data = json.loads(request.body)
-        user = request.user
-
-        organism = data.get("organism")
-        motifs = data.get("motifs", [])
-        stages = data.get("stages", [])
-
-        if not organism:
-            return JsonResponse({"error": "Missing organism"}, status=400)
-
-        selection, created = UserSelection.objects.update_or_create(
-            user=user,
-            defaults={"organism": organism, "selected_motifs": motifs, "selected_stages": stages},
-        )
-
-        return JsonResponse({"message": "Selection saved successfully"})
-    except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
+# @csrf_exempt
+# @login_required
+# def store_user_selection(request):
+#     """Stores the user's selected organism, motifs, and stages in the database."""
+#     try:
+#         data = json.loads(request.body)
+#         user = request.user
+#
+#         organism = data.get("organism")
+#         motifs = data.get("motifs", [])
+#         stages = data.get("stages", [])
+#
+#         if not organism:
+#             return JsonResponse({"error": "Missing organism"}, status=400)
+#
+#         selection, created = UserSelection.objects.update_or_create(
+#             user=user,
+#             defaults={"organism": organism, "selected_motifs": motifs, "selected_stages": stages},
+#         )
+#
+#         return JsonResponse({"message": "Selection saved successfully"})
+#     except Exception as e:
+#         return JsonResponse({"error": str(e)}, status=500)
