@@ -19,7 +19,7 @@ fi
 
 # build
 echo "Running build..."
-flutter build web --release --web-renderer canvaskit --pwa-strategy none
+flutter build web --release --pwa-strategy none
 if [ $? -ne 0 ]; then
     echo "Error: Flutter build failed."
     exit 1
