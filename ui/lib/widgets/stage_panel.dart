@@ -93,7 +93,7 @@ class _StagePanelState extends State<StagePanel> {
     final allStagesKeys = context.select<GeneModel, List<String>>(
           (model) => model.getAllStages.map((stageObj) => stageObj.stage).toList(),
     );
-    final allowFilter = context.select<GeneModel, bool>((model) => model.getAllStages.isEmpty);
+    const allowFilter = true;
     final stageColors = context.select<GeneModel, Map<String, Color>>(
           (model) => model.getAllStages.asMap().map(
             (index, stageObj) => MapEntry(stageObj.stage, stageObj.color),
