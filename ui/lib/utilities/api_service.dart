@@ -12,7 +12,7 @@ class ApiService {
   factory ApiService() => _instance;
   ApiService._internal();
 
-  static const String _baseUrl = "https://golembackend.duckdns.org:8000";
+  static const String _baseUrl = "https://golembackend.duckdns.org:8000/api/";
 
   String? _jwtToken;
   String? _refreshToken;
