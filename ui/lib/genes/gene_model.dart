@@ -56,6 +56,10 @@ class GeneModel extends ChangeNotifier {
     _allMotifs.add(motif);
     notifyListeners();
   }
+  void setAnalyses(List<AnalysisSeries> newAnalyses) {
+    analyses = newAnalyses;
+    notifyListeners();
+  }
 
   void toggleMotifSelected(Motif motif, bool value) {
     if ( !value && getSelectedMotifs.contains(motif)) {

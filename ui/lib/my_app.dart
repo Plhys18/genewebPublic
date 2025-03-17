@@ -13,7 +13,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool? _isSignedIn;
-  bool? _isPublicSite;
+  bool? _isPublicSite = true;
 
   // This widget is the root of your application.
   @override

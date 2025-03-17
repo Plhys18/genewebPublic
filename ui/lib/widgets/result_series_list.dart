@@ -183,7 +183,7 @@ class _ResultSeriesListState extends State<ResultSeriesList> {
             ),
             title: Text(analysis.analysisName),
             subtitle: Text(
-              '${analysis.distribution!.totalCount} motifs in ${analysis.distribution!.totalGenesWithMotifCount} genes (of ${analysis.distribution!.totalGenesCount} genes)',
+              '${analysis.distribution.totalCount} motifs in ${analysis.distribution.totalGenesWithMotifCount} genes (of ${analysis.distribution.totalGenesCount} genes)',
             ),
           ),
       ],

@@ -15,7 +15,7 @@ DATA_DIR = BASE_DIR / "data"
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_COOKIE_AGE = 86400  # 1-day
 AUTH_USER_MODEL = "auth_app.AppUser"
-SESSION_COOKIE_HTTPONLY = True
+# SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 # SECURITY SETTINGS: Enforce HTTPS
 SECURE_SSL_REDIRECT = True  # Redirect HTTP to HTTPS
@@ -119,8 +119,7 @@ DATABASES = {
 }\
 
 CORS_ALLOWED_ORIGINS = [
-    "https://golemdeployjakub.netlify.app",  # Netlify frontend
-    "https://backend.yourdomain.com"  # Backend HTTPS
+    "https://golemdeployjakub.netlify.app",
 ]
 
 # Password validation (default validators)

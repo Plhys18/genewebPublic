@@ -424,15 +424,17 @@ _model.analyses.where((a) => a.visible).toList();
   }
 
   void _updateAnalysis(GeneModel model, AnalysisSeries analysis) {
-    model.analyses = ([
+    List<AnalysisSeries> newList = ([
       for (final a in model.analyses)
         if (a.analysisName == analysis.analysisName) analysis else a
     ]);
+    model.setAnalyses(newList);
   }
 
   Future<void> _handleSetColor(AnalysisSeries analysis) async {
     final color = await showColorPickerDialog(context: context, selected: analysis.color);
     _updateAnalysis(_model, analysis.copyWith(color: color));
+
   }
 
   void _handleSetStroke(AnalysisSeries analysis, int? value) {
