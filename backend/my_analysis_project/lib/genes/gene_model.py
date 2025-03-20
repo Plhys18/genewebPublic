@@ -108,8 +108,6 @@ class GeneModel:
 
         tasks = []
         for idx, motif in enumerate(self._motifs):
-            print(idx)
-            print(f"DEBUG MOTIF: {motif.name}")
             for key in self._stageSelection.selectedStages:
                 filteredGenes = (
                     self.sourceGenes if key == "__ALL__"

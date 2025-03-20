@@ -59,6 +59,19 @@ class OrganismPresets:
     k_organisms = [
         Organism(
             public=True,
+            name='Chara braunii',
+            filename='Chara_braunii.fasta.zip',
+            description='ATG',
+            stages=[
+                StageAndColor('Antheridia', "#4B0082"),  # Indigo
+                StageAndColor('Oogonia', "#FFA500"),  # Orange
+                StageAndColor('Zygotes', "#A52A2A"),  # Brown
+                StageAndColor('Vegetative_tissue', "#008000"),  # Green
+            ],
+            take_first_transcript_only=False,
+        ),
+        Organism(
+            public=True,
             name="Marchantia polymorpha",
             filename="Marchantia_polymorpha-with-tss.fasta.zip",
             description="ATG, TSS",

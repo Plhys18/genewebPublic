@@ -337,16 +337,30 @@ class GeneList:
             i += 1
         return result
 
-    def _colors_from_stages(self) -> Dict[str, Any]:
+    def _colors_from_stages(self) -> Dict[str, str]:
         """
-        If the organism has known stages, build stage->color map
+        If the organism has known stages, build stage->color map.
+        If a stage does not have a predefined color, assign a random one.
         """
         if self.organism and len(self.organism.stages) > 0:
-            d = {}
-            for s in self.organism.stages:
-                d[s.stage] = s.color
-            return d
+            result = {stage.stage: stage.color for stage in self.organism.stages}
+
+            # Assign colors to any missing stage
+            for stage in self.stageKeys:
+                if stage not in result:
+                    result[stage] = self._random_color(stage)
+
+            return result
         return {}
+
+    def _random_color(self, stage: str) -> str:
+        """
+        Generates a deterministic hex color based on the stage name.
+        """
+        import random
+        random.seed(hash(stage))  # Stable color based on stage name
+        r, g, b = random.randint(50, 200), random.randint(50, 200), random.randint(50, 200)
+        return f"#{r:02X}{g:02X}{b:02X}"
 
     def _stroke_from_stages(self) -> Dict[str, int]:
         """

@@ -1,18 +1,20 @@
 import json
-from concurrent.futures import ThreadPoolExecutor
 
+from asgiref.sync import async_to_sync, sync_to_async
 from django.http import JsonResponse
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from exceptiongroup import catch
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from asgiref.sync import async_to_sync, sync_to_async
+from pandas import DataFrame
 
+from my_analysis_project.analysis.views.analysis_utils import save_analysis_history, process_analysis_results
+from my_analysis_project.auth_app.models import AnalysisHistory
 from my_analysis_project.lib.analysis.motif_presets import MotifPresets
 from my_analysis_project.lib.analysis.organism_presets import OrganismPresets
-from my_analysis_project.lib.genes.stage_selection import StageSelection, FilterStrategy, FilterSelection
-from my_analysis_project.auth_app.models import AnalysisHistory
 from my_analysis_project.lib.genes.gene_model import GeneModel, AnalysisOptions
+from my_analysis_project.lib.genes.stage_selection import StageSelection, FilterStrategy, FilterSelection
 from my_analysis_project.views import find_fasta_file
 
 
@@ -76,48 +78,53 @@ async def _async_run_analysis(request):
         data = json.loads(request.body)
 
         organism_name = data.get("organism")
-        motif_names = data.get("motifs", [])
-        stage_names = data.get("stages", [])
+        selected_motifs_names = data.get("motifs", [])
+        selected_stage_names = data.get("stages", [])
         params = data.get("params", {})
 
         if not organism_name:
             return JsonResponse({"error": "Missing organism name"}, status=400)
-        if not motif_names:
+        if not selected_motifs_names:
             return JsonResponse({"error": "No motifs provided"}, status=400)
-        if not stage_names:
+        if not selected_stage_names:
             return JsonResponse({"error": "No stages provided"}, status=400)
+        #TODO sanitize users input or we can end up in jail
 
-        # ✅ Fetch Organism
+            # ✅ Fetch Organism
         organism = next((org for org in OrganismPresets.k_organisms if org.name == organism_name), None)
         if not organism:
             return JsonResponse({"error": "Organism not found"}, status=404)
 
         # ✅ Check Access Permissions
-        if not organism.public and not user:
-            return JsonResponse({"error": "Access denied"}, status=403)
+        # if not organism.public and not user:
+        #     return JsonResponse({"error": "Access denied"}, status=403)
 
         # ✅ Fetch Valid Motifs
-        real_motifs = [m for m in MotifPresets.get_presets() if m.name in motif_names]
+        real_motifs = [m for m in MotifPresets.get_presets() if m.name in selected_motifs_names]
         if not real_motifs:
             return JsonResponse({"error": "No valid motifs found in presets"}, status=400)
 
-        # ✅ Fetch Valid Stages
-        available_stages = {stage.stage for stage in organism.stages}
-        selected_stages = [stage for stage in stage_names if stage in available_stages]
 
-        if not selected_stages:
-            return JsonResponse({"error": "No valid stages found"}, status=400)
+        # ✅ Extract Filtering Strategy from Request
+        strategy_str = params.get("strategy", "top")
+        selection_str = params.get("selection", "percentile")
+        percentile = float(params.get("percentile", 0.9))
+        count = int(params.get("count", 3200))
+
+        # ✅ Convert String to Enum
+        strategy = FilterStrategy.top if strategy_str == "top" else FilterStrategy.bottom
+        selection = FilterSelection.percentile if selection_str == "percentile" else FilterSelection.fixed
 
         # ✅ Create GeneModel
         gene_model = GeneModel()
         gene_model.analysisOptions = AnalysisOptions.fromJson(params)
 
         stage_selection = StageSelection(
-            selectedStages=selected_stages,
-            strategy=FilterStrategy.top,
-            selection=FilterSelection.percentile,
-            percentile=0.9,
-            count=3200,
+            selectedStages=selected_stage_names,
+            strategy=strategy,
+            selection=selection,
+            percentile=percentile,
+            count=count,
         )
 
         gene_model.setMotifs(real_motifs)
@@ -144,67 +151,28 @@ async def _async_run_analysis(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-def process_single_analysis(analysis):
-    return {
-        "name": analysis.name,
-        "color": analysis.color,
-        "stroke": analysis.stroke,
-        "distribution": {
-            "min": analysis.distribution.min,
-            "max": analysis.distribution.max,
-            "bucket_size": analysis.distribution.bucket_size,
-            "name": analysis.distribution.name,
-            "color": analysis.distribution.color,
-            "align_marker": analysis.distribution.align_marker,
-            "total_count": analysis.distribution.totalCount,
-            "total_genes_count": analysis.distribution.totalGenesCount,
-            "total_genes_with_motif_count": analysis.distribution.totalGenesWithMotifCount,
-            "data_points": [
-                {
-                    "min": dp.min,
-                    "max": dp.max,
-                    "count": dp.count,
-                    "percent": dp.percent,
-                    "genes_count": dp.genesCount,
-                    "genes_percent": dp.genes_percent
-                }
-                for dp in analysis.distribution.dataPoints
-            ] if analysis.distribution.dataPoints else []
-        },
+
+@swagger_auto_schema(
+    method='post',
+    operation_description="Cancel an ongoing analysis for the logged-in user.",
+    responses={
+        200: openapi.Response("Analysis cancelled successfully"),
+        403: "Access denied"
     }
-
-
-def process_analysis_results(gene_model):
-    with ThreadPoolExecutor() as executor:
-        filtered_results = list(executor.map(process_single_analysis, gene_model.analyses))
-
-    return filtered_results
-
-def save_analysis_history(user, organism_name, filtered_results):
-    """
-    Saves the analysis history to the database in a synchronous manner.
-    """
-    try:
-        AnalysisHistory.objects.create(
-            user=user,
-            name=f"Analysis for {organism_name}",
-            filtered_results=filtered_results
-        )
-        print(f"✅ DEBUG: Successfully saved analysis history for {user.username}")
-    except Exception as e:
-        print(f"❌ ERROR saving analysis history: {str(e)}")
-
+)
 
 @api_view(["POST"])
 def cancel_analysis_view(request):
     """Cancels an ongoing analysis for the logged-in user"""
+    #TODO implement this
     return JsonResponse({"message": "Your analysis has been cancelled"}, status=200)
 
 @swagger_auto_schema(
     method='get',
-    operation_description="Get user's analysis history.",
+    operation_description="Retrieve a list of the user's past analyses.",
     responses={
-        200: "History retrieved successfully",
+        200: openapi.Response("Analysis history retrieved successfully"),
+        403: "Access denied"
     }
 )
 @api_view(["GET"])
@@ -226,36 +194,9 @@ def get_analysis_history_list(request):
 
 @swagger_auto_schema(
     method='get',
-    operation_description="Get user's analysis history.",
+    operation_description="Retrieve details of a specific analysis by ID.",
     responses={
-        200: "History retrieved successfully",
-        403: "Access denied",
-    }
-)
-@api_view(["GET"])
-def get_analysis_history_list(request):
-    """Returns a list of the user's past analyses with metadata only."""
-    if not request.user.is_authenticated:
-        return JsonResponse({"error": "Access denied"}, status=403)
-
-    user = request.user
-    history = AnalysisHistory.objects.filter(user=user).order_by("-created_at")
-
-    return JsonResponse({
-        "history": [
-            {
-                "id": entry.id,
-                "name": entry.name,
-                "created_at": entry.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-            } for entry in history
-        ]
-    })
-
-@swagger_auto_schema(
-    method='get',
-    operation_description="Get details of a specific analysis if it belongs to the user.",
-    responses={
-        200: "Analysis details retrieved successfully",
+        200: openapi.Response("Analysis details retrieved successfully"),
         403: "Access denied",
         404: "Analysis not found"
     }
@@ -276,3 +217,45 @@ def get_analysis_details(request, analysis_id):
         })
     except AnalysisHistory.DoesNotExist:
         return JsonResponse({"error": "Analysis not found"}, status=404)
+
+
+
+
+@swagger_auto_schema(
+    method='get',
+    operation_description="Export analysis results in the specified format (CSV, JSON).",
+    manual_parameters=[
+        openapi.Parameter(
+            'format', openapi.IN_QUERY,
+            description="Format of the exported results. Options: csv, json",
+            type=openapi.TYPE_STRING,
+            default="csv"
+        )
+    ],
+    responses={
+        200: openapi.Response("Analysis results exported successfully"),
+        400: "Invalid format",
+        404: "Analysis not found"
+    }
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def export_analysis_results(request, analysis_id):
+    format_type = request.GET.get("format", "csv")
+
+    # analysis = AnalysisHistory.objects.get(id=analysis_id, user=request.user)
+    analysis = AnalysisHistory.get_latest_by(id=analysis_id, user=request.user)
+    if not analysis.filtered_results:
+        return JsonResponse({"error": "Analysis results not found"}, status=404)
+    df = DataFrame(analysis.filtered_results)
+
+    if format_type == "csv":
+        response = JsonResponse({"data": df.to_csv(index=False)})
+    elif format_type == "json":
+        response = JsonResponse({"data": df.to_json(orient="records")})
+    elif format_type == "xlsx":
+        response = JsonResponse({"error": "Excel export not implemented yet"}, status=400)
+    else:
+        response = JsonResponse({"error": "Invalid format"}, status=400)
+
+    return response
