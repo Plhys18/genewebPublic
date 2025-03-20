@@ -67,7 +67,7 @@ class Gene {
     );
   }
 
-  static final geneIdRegExp = RegExp(r"(?<gene>[A-Za-z0-9+_\.]+)");
+  static final geneIdRegExp = RegExp(r"(?<gene>[A-Za-z0-9+_\.\-]+)");
   static final markersRegExp = RegExp(r";MARKERS (?<json>\{.*\})$");
   static final transcriptionRatesRegExp =
       RegExp(r";TRANSCRIPTION_RATES (?<json>\{.*\})$");

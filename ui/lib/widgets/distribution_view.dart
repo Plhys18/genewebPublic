@@ -61,7 +61,7 @@ class _DistributionViewState extends State<DistributionView> {
   @override
   Widget build(BuildContext context) {
     final analyses =
-    context.select<GeneModel, List<AnalysisSeries>>((model) => model.analyses.where((a) => a.visible).toList());
+    context.select<GeneModel, List<AnalysisSeries>>((model) => model.getAnalyses.where((a) => a.visible).toList());
     if (analyses.isEmpty) {
       return const Center(child: Text('No series enabled'));
     }

@@ -85,17 +85,11 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
   @override
   Widget build(BuildContext context) {
     final motifs = _model.getSelectedMotifs;
-    // print("DEBUG MOTIFS${motifs}");
     final filter = _model.getStageSelectionClass;
-    // print("DEBUG FILTER${filter}");
-    final analyses = _model.analyses;
-    // print("DEBUG ANALYSES${analyses}");
-    final visibleAnalyses =
-_model.analyses.where((a) => a.visible).toList();
-    // print("DEBUG VISIBLE ANALYSES${visibleAnalyses}");
+    final analyses = _model.getAnalyses;
+    final visibleAnalyses = _model.getAnalyses.where((a) => a.visible).toList();
     final expectedResults = _model.expectedSeriesCount;
-    // print("DEBUG EXPECTED RESULT${expectedResults}");
-    final analysis = _model.analyses.firstWhereOrNull((a) => a.analysisName == _selectedAnalysisName);
+    final analysis = _model.getAnalyses.firstWhereOrNull((a) => a.analysisName == _selectedAnalysisName);
     final canAnalyzeErrors = [
       if (motifs.isEmpty) 'no motifs selected',
       if (filter?.selectedStages.isEmpty == true) 'no stages selected',
@@ -103,6 +97,7 @@ _model.analyses.where((a) => a.visible).toList();
     ];
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -112,57 +107,67 @@ _model.analyses.where((a) => a.visible).toList();
             Text('Analysis cannot be run: ${canAnalyzeErrors.join(', ')}', style: TextStyle(color: colorScheme.error)),
             const SizedBox(height: 16),
           ],
-          if (analyses.isEmpty) ...[
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loading ? null : _handleAnalyze, // ⛔ Disabled when _loading is true
-              child: const Text('Run Analysis'),
-            ),
+          const SizedBox(height: 16),
 
-            const SizedBox(height: 16),
-            if (expectedResults > 20) ...[
-              Text(
-                  'Warning: This analysis will produce $expectedResults series. Analysis may take a long time and consume a lot of system memory. Consider reducing the amount of motifs and/or stages.',
-                  style: TextStyle(color: colorScheme.error)),
-              const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              ElevatedButton(
+                onPressed: _loading ? null : _handleAnalyze,
+                child: const Text('Run Analysis'),
+              ),
+              if (analyses.isNotEmpty)
+                ElevatedButton(
+                    onPressed: _handleResetAnalyses,
+                    child: const Text('Close analysis')
+                ),
             ],
-          ]
-          else
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (analysis != null)
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
-                    children: [
-                      Icon(Icons.check_box, color: colorScheme.outline),
-                      Text(analysis.analysisName, style: textTheme.titleMedium),
+          ),
+
+          const SizedBox(height: 16),
+
+          if (expectedResults > 50) ...[
+            Text(
+                'Warning: This analysis will produce $expectedResults series. Analysis may take a long time and consume a lot of system memory. Consider reducing the amount of motifs and/or stages.',
+                style: TextStyle(color: colorScheme.error)),
+            const SizedBox(height: 16),
+          ],
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              if (analysis != null)
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  children: [
+                    Icon(Icons.check_box, color: colorScheme.outline),
+                    Text(analysis.analysisName, style: textTheme.titleMedium),
+                    if (_exportProgress != null)
+                      _ExportIndicator(exportProgress: _exportProgress)
+                    else
+                      TextButton(
+                          onPressed: () => _handleExportSingleSeries(analysis),
+                          child: const Text('Export this series')),
+                    TextButton(onPressed: () => _handleAnalysisSelected(null), child: const Text('Deselect')),
+                  ],
+                )
+              else
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    if (visibleAnalyses.isNotEmpty)
                       if (_exportProgress != null)
                         _ExportIndicator(exportProgress: _exportProgress)
                       else
                         TextButton(
-                            onPressed: () => _handleExportSingleSeries(analysis),
-                            child: const Text('Export this series')),
-                      TextButton(onPressed: () => _handleAnalysisSelected(null), child: const Text('Deselect')),
-                    ],
-                  )
-                else
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      if (visibleAnalyses.isNotEmpty)
-                        if (_exportProgress != null)
-                          _ExportIndicator(exportProgress: _exportProgress)
-                        else
-                          TextButton(
-                              onPressed: () => _handleExportAllSeries(context),
-                              child: Text('Export ${visibleAnalyses.length} series')),
-                    ],
-                  ),
-                TextButton(onPressed: _handleResetAnalyses, child: const Text('Close analysis')),
-              ],
-            ),
+                            onPressed: () => _handleExportAllSeries(context),
+                            child: Text('Export ${visibleAnalyses.length} series')),
+                  ],
+                ),
+            ],
+          ),
+
           if (analyses.isNotEmpty) ...[
             const Divider(height: 16),
             Expanded(child: _buildResults(context)),
@@ -172,11 +177,12 @@ _model.analyses.where((a) => a.visible).toList();
     );
   }
 
+
   Widget _buildResults(BuildContext context) {
-    final analyses = context.select<GeneModel, List<AnalysisSeries>>((model) => model.analyses);
+    final analyses = context.select<GeneModel, List<AnalysisSeries>>((model) => model.getAnalyses);
     assert(analyses.isNotEmpty);
     final analysis = context.select<GeneModel, AnalysisSeries?>(
-            (model) => model.analyses.firstWhereOrNull((a) => a.analysisName == _selectedAnalysisName));
+            (model) => model.getAnalyses.firstWhereOrNull((a) => a.analysisName == _selectedAnalysisName));
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -186,7 +192,8 @@ _model.analyses.where((a) => a.visible).toList();
             builder: (context, model, child) {
               return ResultSeriesList(
                 onSelected: _handleAnalysisSelected,
-                analyses: model.analyses,
+                onToggleVisibility: _handleSetVisibility,
+                analyses: model.getAnalyses,
               );
             },
           ),
@@ -333,10 +340,19 @@ _model.analyses.where((a) => a.visible).toList();
         _loading = true;
       });
 
+      if (_model.getAnalyses.isNotEmpty) {
+        bool? userConfirmed = await _showConfirmationDialog();
+        if (userConfirmed == false) {
+          setState(() {
+            _loading = false;
+          });
+          return;
+        }
+        _model.removeAnalyses();
+      }
+
       final result = await _model.analyze();
 
-
-      //TODO not good to handle errors like that but for now it will do
       if (result) {
         _scaffoldMessenger.showSnackBar(
             const SnackBar(content: Text('Analysis complete')));
@@ -345,22 +361,46 @@ _model.analyses.where((a) => a.visible).toList();
             backgroundColor: Colors.red,
             content: Text('Analysis cancelled/failed')));
       }
-    }
-    catch (error) {
+    } catch (error) {
       _scaffoldMessenger.showSnackBar(SnackBar(
           backgroundColor: Colors.red,
           content: Text('Error running analysis: $error')));
-    }
-    finally {
+    } finally {
       setState(() {
         _loading = false;
       });
     }
   }
 
+  Future<bool?> _showConfirmationDialog() async {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Confirm"),
+          content: const Text("You already have ongoing analyses. Do you want to remove them and run a new analysis?"),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false);  // User cancelled
+              },
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true);  // User confirmed
+              },
+              child: const Text("Confirm"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _handleExportAllSeries(BuildContext context) async {
     setState(() => _exportProgress = 0);
-    final output = DistributionsExport(_model.analyses.where((a) => a.visible).map((e) => e.distribution!).toList());
+    final output = DistributionsExport(_model.getAnalyses.where((a) => a.visible).map((e) => e.distribution!).toList());
     final stageName = _model.getSelectedStages.length == 1
         ? _model.getSelectedStages[0]
         : '${_model.getSelectedStages.length} stages';
@@ -391,6 +431,7 @@ _model.analyses.where((a) => a.visible).toList();
 
   void _handleResetAnalyses() {
     Navigator.of(context).pop();
+    // _model.removeAnalyses();
   }
 
   void _handleAnalysisSelected(String? selected) {
@@ -425,7 +466,7 @@ _model.analyses.where((a) => a.visible).toList();
 
   void _updateAnalysis(GeneModel model, AnalysisSeries analysis) {
     List<AnalysisSeries> newList = ([
-      for (final a in model.analyses)
+      for (final a in model.getAnalyses)
         if (a.analysisName == analysis.analysisName) analysis else a
     ]);
     model.setAnalyses(newList);

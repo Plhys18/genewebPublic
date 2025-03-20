@@ -1,7 +1,6 @@
-import 'dart:convert';
-import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
-
+import 'package:provider/provider.dart';
+import '../auth_provider.dart';
 import '../utilities/api_service.dart';
 import 'home_screen.dart';
 
@@ -88,6 +87,13 @@ class __LockState extends State<_Lock> {
               onPressed: _handleSubmit,
               icon: const Icon(Icons.arrow_forward),
             ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text("Cancel"),
+            ),
           ],
         ),
       ),
@@ -111,6 +117,7 @@ class __LockState extends State<_Lock> {
     final success = await ApiService().login(username, password);
 
     if (success) {
+      context.read<UserAuthProvider>().logIn();
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );

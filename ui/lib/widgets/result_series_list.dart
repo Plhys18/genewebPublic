@@ -141,9 +141,10 @@ import 'package:provider/provider.dart';
 
 /// Widget that builds the series and allows hide/show etc.
 class ResultSeriesList extends StatefulWidget {
-  const ResultSeriesList({super.key, required this.onSelected, required List<AnalysisSeries> analyses});
+  const ResultSeriesList({super.key, required this.onSelected, required this.onToggleVisibility, required List<AnalysisSeries> analyses});
 
   final Function(String? selected) onSelected;
+  final Function(AnalysisSeries analysis, bool value) onToggleVisibility;
 
   @override
   State<ResultSeriesList> createState() => _ResultSeriesListState();
@@ -155,7 +156,7 @@ class _ResultSeriesListState extends State<ResultSeriesList> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final analyses = context.select<GeneModel, List<AnalysisSeries>>((model) => model.analyses);
+    final analyses = context.select<GeneModel, List<AnalysisSeries>>((model) => model.getAnalyses);
     return ReorderableListView(
       onReorder: (oldIndex, newIndex) => _handleReorder(context, oldIndex, newIndex),
       children: [
@@ -191,13 +192,14 @@ class _ResultSeriesListState extends State<ResultSeriesList> {
   }
 
   void _handleReorder(BuildContext context, int oldIndex, int newIndex) {
-    final analyses = List<AnalysisSeries>.from(GeneModel.of(context).analyses);
+    final analyses = List<AnalysisSeries>.from(GeneModel.of(context).getAnalyses);
     if (oldIndex < newIndex) {
       newIndex -= 1;
     }
     final item = analyses.removeAt(oldIndex);
     analyses.insert(newIndex, item);
-    GeneModel.of(context).analyses = analyses;
+    GeneModel model = GeneModel.of(context);
+    model.setAnalyses(analyses);
   }
 
   void _handleSelected(String name) {
@@ -206,10 +208,8 @@ class _ResultSeriesListState extends State<ResultSeriesList> {
   }
 
   void _handleSetVisibility(BuildContext context, AnalysisSeries analysis) {
-    final model = GeneModel.of(context);
-    model.analyses = ([
-      for (final a in model.analyses)
-        if (a.analysisName == analysis.analysisName) analysis.copyWith(visible: !analysis.visible) else a
-    ]);
+    final newValue = !analysis.visible;
+    widget.onToggleVisibility(analysis, newValue);
   }
+
 }

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/organism.dart';
@@ -281,6 +283,11 @@ class GeneList extends Equatable {
       for (final stage in organism!.stages) {
         result[stage.stage] = stage.color;
       }
+      for (final stage in stageKeys) {
+        if (!result.containsKey(stage)) {
+          result[stage] = _randomColor(stage);
+        }
+      }
       return result;
     }
     return {};
@@ -303,6 +310,14 @@ class GeneList extends Equatable {
       'stages': stages?.map((key, value) => MapEntry(key, value.toList())),
       'colors': colors.map((key, value) => MapEntry(key, value.value)),
     };
+  }
+  Color _randomColor(String stage) {
+    final seed = stage.hashCode;
+    final random = Random(seed);
+    final hue = random.nextDouble() * 360;
+    final saturation = 0.35 + (random.nextDouble() * 0.2);
+    final lightness = 0.55 + (random.nextDouble() * 0.2);
+    return HSLColor.fromAHSL(1.0, hue, saturation, lightness).toColor();
   }
 
   static GeneList fromJson(Map<String, dynamic> json) {

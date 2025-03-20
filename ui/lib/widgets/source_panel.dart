@@ -25,6 +25,7 @@ class SourceSubtitle extends StatelessWidget {
     );
   }
 }
+
 class SourcePanel extends StatefulWidget {
   const SourcePanel({super.key, required this.onShouldClose});
 
@@ -39,18 +40,17 @@ class _SourcePanelState extends State<SourcePanel> {
   List<Organism> _organisms = [];
   bool _loading = true;
   String? _error;
-  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
     super.initState();
-    _fetchOrganisms();
+    fetchOrganisms();
   }
 
-  Future<void> _fetchOrganisms() async {
+  Future<void> fetchOrganisms() async {
     setState(() => _loading = true);
     try {
-      final organisms = await _apiService.getOrganisms();
+      final organisms = await ApiService().getOrganisms();
       setState(() {
         _organisms = organisms;
         _loading = false;
@@ -110,7 +110,7 @@ class _SourcePanelState extends State<SourcePanel> {
     try {
       var model = GeneModel.of(context);
       setState(() => _loadingMessage = "Setting active organism: ${organism.name}…");
-      model.setOrganism(organism.name);
+      model.fetchOrganismDetails(organism.name);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Now working with ${organism.name}.")));
       widget.onShouldClose();
     } catch (error) {

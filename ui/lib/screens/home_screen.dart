@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-
+import 'package:provider/provider.dart';
+import '../auth_provider.dart';
+import '../genes/gene_model.dart';
 import '../widgets/home.dart';
+import 'lock_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,13 +13,22 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String? _name;
-  bool _public = false;
   bool _loading = false;
 
-  @override
-  void initState() {
-    super.initState();
+  void _handleLogin() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LockScreen()),
+    );
+  }
+
+  void _handleLogout() {
+    context.read<UserAuthProvider>().logOut();
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LockScreen()),
+    );
+    context.read<GeneModel>().removeEverythingAssociatedWithCurrentSession();
   }
 
   @override
@@ -40,28 +52,56 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text('Gene regulatory elements',
-                        style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      'Gene regulatory elements',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                   ],
                 ),
               ),
             ),
             Expanded(
-                child: Align(
-                    alignment: Alignment.center,
-                    child: _loading
-                        ? const CircularProgressIndicator()
-                        : Text(_name ?? 'Unknown Organism',
-                        style: const TextStyle(fontStyle: FontStyle.italic)))),
+              child: Align(
+                alignment: Alignment.center,
+                child: _loading
+                    ? const CircularProgressIndicator()
+                    : Text(
+                context.select<GeneModel, String?>((model) => model.name) ?? 'Unknown Organism',
+                  style: const TextStyle(fontStyle: FontStyle.italic),
+                ),
+              ),
+            ),
             Expanded(
               child: Align(
                 alignment: Alignment.centerRight,
-                child: !_public ? const Text('private web') : const SizedBox.shrink(),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        context.watch<UserAuthProvider>().isLoggedIn
+                            ? Icons.logout
+                            : Icons.login,
+                      ),
+                      onPressed: context.watch<UserAuthProvider>().isLoggedIn
+                          ? _handleLogout
+                          : _handleLogin,
+                    ),
+                    Text(
+                      context.watch<UserAuthProvider>().isLoggedIn
+                          ? 'Log Out'
+                          : 'Log In',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
         ),
-        backgroundColor: _public ? null : const Color(0xffEC6138),
       ),
       body: const Home(),
     );

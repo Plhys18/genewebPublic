@@ -223,13 +223,16 @@ class _StagePanelState extends State<StagePanel> {
   void _handleChanged() {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      widget.onChanged(StageSelection(
+      final updatedSelection = StageSelection(
         selectedStages: List.from(_selectedStages),
         strategy: _strategy,
         selection: _selection,
         percentile: _percentile,
         count: _count,
-      ));
+      );
+
+      widget.onChanged(updatedSelection);
+      GeneModel.of(context).setStageSelection(updatedSelection);
     }
   }
 
