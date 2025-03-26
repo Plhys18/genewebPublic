@@ -2,7 +2,9 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.hashers import make_password
 
-from .models import AppUser
+from my_analysis_project.analysis.models import OrganismAccess, AnalysisHistory
+from my_analysis_project.auth_app.models import OrganismGroup, UserColorPreference
+
 
 class CustomUserAdmin(UserAdmin):
     """Customize the Django Admin User Interface"""
@@ -31,4 +33,31 @@ class CustomUserAdmin(UserAdmin):
         super().save_model(request, obj, form, change)
 
 
-admin.site.register(AppUser, CustomUserAdmin)
+class UserColorPreferenceAdmin(admin.ModelAdmin):
+    list_display = ('user', 'preference_type', 'name', 'color', 'stroke_width')
+    list_filter = ('preference_type', 'user')
+    search_fields = ('name', 'user__username')
+
+
+class OrganismGroupAdmin(admin.ModelAdmin):
+    list_display = ('name', 'description')
+    search_fields = ('name',)
+    filter_horizontal = ('members',)
+
+
+class OrganismAccessAdmin(admin.ModelAdmin):
+    list_display = ('organism_name', 'access_type', 'group', 'user')
+    list_filter = ('access_type',)
+    search_fields = ('organism_name', 'group__name', 'user__username')
+
+
+class AnalysisHistoryAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'name', 'created_at')
+    list_filter = ('user', 'created_at')
+    search_fields = ('name', 'user__username')
+    readonly_fields = ('created_at',)
+
+admin.site.register(UserColorPreference, UserColorPreferenceAdmin)
+admin.site.register(OrganismGroup, OrganismGroupAdmin)
+admin.site.register(OrganismAccess, OrganismAccessAdmin)
+admin.site.register(AnalysisHistory, AnalysisHistoryAdmin)

@@ -54,8 +54,6 @@ class OrganismPresets:
         StageAndColor("Egg", "#607D8B"),
     ]
 
-    # Now define the master list `k_organisms`.
-    # We'll match the same structure from Dart.
     k_organisms = [
         Organism(
             public=True,
@@ -121,6 +119,7 @@ class OrganismPresets:
             ],
         ),
         Organism(
+            public=True,
             name="Azolla filiculoides",
             filename="Azolla_filiculoides.fasta.zip",
             description="ATG",

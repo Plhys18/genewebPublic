@@ -8,7 +8,6 @@ class MotifPresets:
     See Motif
     """
 
-    # We statically define the presets list, then sort by name.
     @staticmethod
     def get_presets():
         presets = [

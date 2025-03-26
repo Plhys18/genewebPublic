@@ -1,17 +1,12 @@
-import json
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, logout
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from my_analysis_project.auth_app.models import AppUser
-from my_analysis_project.lib.analysis.motif_presets import MotifPresets
-from my_analysis_project.lib.analysis.organism_presets import OrganismPresets
-from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import authenticate
+
 
 # AUTHENTICATION
 @swagger_auto_schema(
@@ -67,7 +62,10 @@ def login_view(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def logout_view(request):
-    refresh_token = request.data.get("refresh")
-    token = RefreshToken(refresh_token)
-    token.blacklist()
-    return Response({"message": "Logged out successfully"})
+    if request.user.is_authenticated:
+        if hasattr(request.user, 'auth_token'):
+            request.user.auth_token.delete()
+        logout(request)
+        request.session.flush()
+        return JsonResponse({"success": True})
+    return JsonResponse({"success": False}, status=401)

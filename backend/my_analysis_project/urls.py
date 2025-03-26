@@ -1,8 +1,13 @@
+#my_analysis_project/urls.py
 from django.contrib import admin
 from django.urls import path, include, re_path
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework import permissions
+
+from my_analysis_project.auth_app.views.user_preferences import get_user_preferences, delete_color_preference, \
+    reset_color_preferences, set_color_preference
+from my_analysis_project.auth_app.views.user_profile_views import get_analysis_settings
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -62,7 +67,7 @@ This API follows a structured workflow where users interact with organisms, conf
     ),
     public=True,
     permission_classes=([permissions.AllowAny]),
-    url=" https://golembackend.duckdns.org ",
+    url="https://golembackend.duckdns.org/api/docs/",
 )
 
 
@@ -71,8 +76,25 @@ urlpatterns = [
     path('api/auth/', include('auth_app.urls')),
     path('api/analysis/', include('my_analysis_project.analysis.urls')),
 
-    # Swagger UI and Redoc
+    path('api/user/', include([
+        path('profile/', include([
+            path('', include('my_analysis_project.auth_app.profile_urls')),
+        ])),
+        path('preferences/', include([
+            path('', include('my_analysis_project.auth_app.preference_urls')),
+        ])),
+    ])),
+
+    path('api/analysis/settings/<int:analysis_id>/', get_analysis_settings, name='analysis_settings'),
+
+    path('api/preferences/', get_user_preferences, name='get_preferences'),
+    path('api/preferences/set/', set_color_preference, name='set_preference'),
+    path('api/preferences/delete/<int:preference_id>/', delete_color_preference, name='delete_preference'),
+    path('api/preferences/reset/', reset_color_preferences, name='reset_preferences'),
+
     path('api/docs/', schema_view.with_ui('swagger', cache_timeout=0), name='swagger-ui'),
     path('api/redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='redoc'),
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
 ]
+
+

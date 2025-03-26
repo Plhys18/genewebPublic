@@ -1,5 +1,6 @@
 import json
 from concurrent.futures import ProcessPoolExecutor
+from functools import partial
 from typing import List, Dict, Optional, Any
 import re
 from collections import defaultdict
@@ -56,17 +57,23 @@ class AnalysisSeries:
     def run(cls, gene_list: GeneList, motif: Motif, name: str, color: str, minimal: int, maximal: int,
             bucket_size: int, align_marker: Optional[str] = None, no_overlaps: bool = True,
             stroke: int = 4, visible: bool = True):
-        """Runs the analysis in parallel using multiple CPU cores"""
+        if len(gene_list.genes) < 10:
+            results = []
+            for gene in gene_list.genes:
+                results.extend(cls._find_matches(gene, motif, no_overlaps))
+        else:
+            import multiprocessing
+            optimal_workers = min(max(1, multiprocessing.cpu_count() - 1), len(gene_list.genes))
 
-        # Parallelize motif matching across genes
-        results = []
-        with ProcessPoolExecutor() as executor:
-            futures = {executor.submit(cls._find_matches, gene, motif, no_overlaps): gene for gene in
-                       gene_list.genes}
-            for future in futures:
-                results.extend(future.result())
+            chunk_size = max(1, len(gene_list.genes) // (optimal_workers * 4))
 
-        # Calculate the distribution
+            results = []
+            with ProcessPoolExecutor(max_workers=optimal_workers) as executor:
+                find_matches_fn = partial(cls._find_matches, motif=motif, no_overlaps=no_overlaps)
+
+                for batch_results in executor.map(find_matches_fn, gene_list.genes, chunksize=chunk_size):
+                    results.extend(batch_results)
+
         distribution = Distribution(min=minimal, max=maximal, bucket_size=bucket_size, align_marker=align_marker,
                                     name=name, color=color)
         distribution.run(results, len(gene_list.genes))
@@ -83,47 +90,53 @@ class AnalysisSeries:
 
     @staticmethod
     def _find_matches(gene, motif, no_overlaps) -> List[AnalysisResult]:
-        """Finds matches for the motif in the gene"""
-        results = []
-        definitions = {**motif.reg_exp, **motif.reverse_complement_reg_exp}
+        try:
+            results = []
+            definitions = {**motif.reg_exp, **motif.reverse_complement_reg_exp}
 
-        for definition, regex in definitions.items():
-            matches = list(re.finditer(regex, gene.data))
-            # print(f"✅ DEBUG: Found {len(matches)} matches for motif `{definition}` in gene `{gene.geneId}`")
-            # for match in matches:
-                # print(f"    ➡️ Match at {match.start()} - {match.group(0)}")
+            for definition, regex in definitions.items():
+                if isinstance(regex, str):
+                    compiled_regex = re.compile(regex)
+                else:
+                    compiled_regex = regex
 
-            for match in matches:
-                mid_match_delta = len(match.group(0)) // 2
-                results.append(AnalysisResult(
-                    gene=gene,
-                    motif=motif,
-                    raw_position=match.start(),
-                    position=match.start() + mid_match_delta,
-                    match=definition,
-                    matched_sequence=match.group(0),
-                ))
+                matches = list(compiled_regex.finditer(gene.data))
 
-        return AnalysisSeries.filter_overlapping_matches(results) if no_overlaps else results
+                for match in matches:
+                    mid_match_delta = len(match.group(0)) // 2
+                    results.append(AnalysisResult(
+                        gene=gene,
+                        motif=motif,
+                        raw_position=match.start(),
+                        position=match.start() + mid_match_delta,
+                        match=definition,
+                        matched_sequence=match.group(0),
+                    ))
+
+            if no_overlaps and results:
+                return AnalysisSeries.filter_overlapping_matches(results)
+            return results
+        except Exception as e:
+            logger.error(f"Error finding matches in gene {gene.geneId}: {e}")
+            return []
 
     @staticmethod
     def filter_overlapping_matches(results: List[AnalysisResult]) -> List[AnalysisResult]:
-        """Filters out matches that overlap each other"""
+        if not results:
+            return []
+
         results.sort(key=lambda r: r.raw_position)
-        # print(f"✅ DEBUG: Sorted {len(results)} results by raw_position.")
-        excluded_results = set()
+
         included_results = []
+        last_end_pos = -1
 
         for result in results:
-            if result in excluded_results:
-                continue
-            included_results.append(result)
-            excluded_results.update(
-                e for e in results
-                if
-                e != result and result.raw_position <= e.raw_position < result.raw_position + len(
-                    result.match)
-            )
+            current_start = result.raw_position
+            current_end = current_start + len(result.matched_sequence)
+
+            if current_start >= last_end_pos:
+                included_results.append(result)
+                last_end_pos = current_end
 
         return included_results
 
