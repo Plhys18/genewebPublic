@@ -10,6 +10,7 @@ import '../analysis/motif.dart';
 import '../genes/gene_model.dart';
 import '../genes/stage_selection.dart';
 import '../output/distributions_export.dart';
+import '../screens/analysis_list_screen.dart';
 import '../utilities/api_service.dart';
 import 'distribution_view.dart';
 
@@ -48,43 +49,52 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
     _horizontalAxisMaxController.dispose();
     super.dispose();
   }
-
+  void _navigateToAnalysisHistory() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AnalysisListScreen(),
+      ),
+    ).then((_) {
+      // Refresh when returning from analysis history
+      setState(() {});
+    });
+  }
   bool _loading = true;
   String? _error;
   double? _analysisProgress;
 
   @override
   void initState() {
-    _fetchAnalyses();
     super.initState();
+    _loading = false;
   }
 
-  Future<void> _fetchAnalyses() async {
-    print("Fetching analyses in AnalysisResultsPanel...");
-    try {
-
-      List<dynamic> analysisList = await _model.fetchAnalyses() as List;
-      setState(() {
-        _loading = false;
-      });
-      var AnalysisHistoryEntry = analysisList.lastOrNull;
-      // print("DEBUG: AnalysisHistoryEntry: $AnalysisHistoryEntry");
-      if (AnalysisHistoryEntry) {
-        _selectedAnalysisName = AnalysisHistoryEntry.name;
-        await _model.loadAnalysis(AnalysisHistoryEntry);
-      }
-    } catch (error) {
-      setState(() {
-        _error = "Error loading analyses: $error";
-        _loading = false;
-      });
-    }
-  }
+  // Future<void> _fetchAnalyses() async {
+  //   print("Fetching analyses in AnalysisResultsPanel...");
+  //   try {
+  //
+  //     List<dynamic> analysisList = await _model.fetchUserAnalysesHistory() as List;
+  //     setState(() {
+  //       _loading = false;
+  //     });
+  //     var AnalysisHistoryEntry = analysisList.lastOrNull;
+  //     if (AnalysisHistoryEntry) {
+  //       _selectedAnalysisName = AnalysisHistoryEntry.name;
+  //       await _model.loadAnalysis(AnalysisHistoryEntry);
+  //     }
+  //   } catch (error) {
+  //     setState(() {
+  //       _error = "Error loading analyses: $error";
+  //       _loading = false;
+  //     });
+  //   }
+  // }
 
 
   @override
   Widget build(BuildContext context) {
-    final motifs = _model.getSelectedMotifs;
+    final motifs = _model.getSelectedMotifsNames;
     final filter = _model.getStageSelectionClass;
     final analyses = _model.getAnalyses;
     final visibleAnalyses = _model.getAnalyses.where((a) => a.visible).toList();
@@ -116,11 +126,21 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
                 onPressed: _loading ? null : _handleAnalyze,
                 child: const Text('Run Analysis'),
               ),
-              if (analyses.isNotEmpty)
-                ElevatedButton(
-                    onPressed: _handleResetAnalyses,
-                    child: const Text('Close analysis')
-                ),
+              Row(
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _navigateToAnalysisHistory,
+                    icon: const Icon(Icons.history),
+                    label: const Text('View History'),
+                  ),
+                  const SizedBox(width: 8),
+                  if (analyses.isNotEmpty)
+                    ElevatedButton(
+                        onPressed: _handleResetAnalyses,
+                        child: const Text('Close Analysis')
+                    ),
+                ],
+              ),
             ],
           ),
 
@@ -404,7 +424,7 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
     final stageName = _model.getSelectedStages.length == 1
         ? _model.getSelectedStages[0]
         : '${_model.getSelectedStages.length} stages';
-    final motifName = _model.getSelectedMotifs.length == 1 ? _model.getSelectedMotifs[0] : '${_model.getSelectedMotifs.length} motifs';
+    final motifName = _model.getSelectedMotifsNames.length == 1 ? _model.getSelectedMotifsNames[0] : '${_model.getSelectedMotifsNames.length} motifs';
     final filename = 'distributions_${_model.name}_${motifName}_$stageName.xlsx';
     final data = await output.toExcel(filename, (progress) => setState(() => _exportProgress = progress));
     if (data == null) return;

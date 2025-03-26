@@ -63,4 +63,8 @@ class StageAndColor {
     }
 
 }
+
+  copyWith({required Color color}) {
+    return StageAndColor(stage, color, stroke: stroke, isCheckedByDefault: isCheckedByDefault);
+  }
 }

@@ -16,7 +16,7 @@ class GeneModel extends ChangeNotifier {
   String? name = "";
 
   List<Motif> _allMotifs = [];
-  List<Motif> _selectedMotifs = [];
+  List<String> _selectedMotifsNames = [];
   List<StageAndColor> _allStages = [];
   List<AnalysisSeries> _analyses = [];
   List<AnalysisHistoryEntry> _analysesHistory = [];
@@ -29,7 +29,7 @@ class GeneModel extends ChangeNotifier {
 
   StageSelection _stageSelection = StageSelection();
   List<Motif> get getAllMotifs => _allMotifs;
-  List<Motif> get getSelectedMotifs => _selectedMotifs;
+  List<String> get getSelectedMotifsNames => _selectedMotifsNames;
   List<StageAndColor> get getAllStages => _allStages;
   List<String> get getSelectedStages => getStageSelectionClass.selectedStages;
   List<AnalysisHistoryEntry> get getAnalysesHistory => _analysesHistory;
@@ -38,7 +38,7 @@ class GeneModel extends ChangeNotifier {
   AnalysisOptions analysisOptions = AnalysisOptions();
 
   int get expectedSeriesCount =>
-      getSelectedMotifs.length * (getStageSelectionClass.selectedStages.length);
+      getSelectedMotifsNames.length * (getStageSelectionClass.selectedStages.length);
 
 
   get organismAndStagesFromBe => _organismAndStagesFromBe;
@@ -49,8 +49,8 @@ class GeneModel extends ChangeNotifier {
   get errorCount => _errorCount;
   List<AnalysisSeries> get getAnalyses => _analyses;
 
-  void setMotifs(List<Motif> newMotifs) {
-    _selectedMotifs = newMotifs;
+  void setMotifs(List<String> newMotifs) {
+    _selectedMotifsNames = newMotifs;
     notifyListeners();
   }
   void addMotif(Motif motif) {
@@ -61,19 +61,22 @@ class GeneModel extends ChangeNotifier {
     _analyses = newAnalyses;
     notifyListeners();
   }
-
-  void toggleMotifSelected(Motif motif, bool value) {
-    if ( !value && getSelectedMotifs.contains(motif)) {
-      getSelectedMotifs.remove(motif);
+  void setStages(List<StageAndColor> stages) {
+    _allStages = stages;
+    notifyListeners();
+  }
+  void toggleMotifSelected(String motifName, bool value) {
+    if ( !value && getSelectedMotifsNames.contains(motifName)) {
+      getSelectedMotifsNames.remove(motifName);
     }
-    if ( value && !getSelectedMotifs.contains(motif)) {
-      getSelectedMotifs.add(motif);
+    if ( value && !getSelectedMotifsNames.contains(motifName)) {
+      getSelectedMotifsNames.add(motifName);
     }
     notifyListeners();
   }
 
   void cleanMotifsSelected() {
-    _selectedMotifs = [];
+    _selectedMotifsNames = [];
     notifyListeners();
   }
   void cleanAllMotifs() {
@@ -93,15 +96,6 @@ class GeneModel extends ChangeNotifier {
   void cleanSelectedStages() {
     getStageSelectionClass.selectedStages.clear();
     notifyListeners();
-  }
-
-  void addAnalysisToHistory(AnalysisHistoryEntry analysisHistoryEntry) {
-    try {
-      _analysesHistory = [..._analysesHistory, analysisHistoryEntry];
-      notifyListeners();
-    } catch (error) {
-      print("❌ ERROR IN ADD ANALYSIS TO HISTORY: $error");
-    }
   }
 
   void removeAnalyses() {
@@ -136,48 +130,7 @@ class GeneModel extends ChangeNotifier {
       throw Exception("Error fetching organism details: $error");
     }
   }
-
-
-
-  Future<void> fetchAnalyses() async {
-      _analysesHistory= await ApiService().fetchAnalyses();
-  }
-
-  Future<void> fetchPastUserAnalyses() async {
-    try {
-      _analysesHistory = await ApiService().fetchAnalyses();
-      if (_analysesHistory.isEmpty) return;
-
-      // Fetch the most recent analysis
-      final latestAnalysisEntry = _analysesHistory.first;
-      print("✅ [FETCH LATEST ANALYSIS] ID: ${latestAnalysisEntry.id}");
-
-      final fullAnalysis = await ApiService().fetchAnalysisDetails(latestAnalysisEntry.id);
-      _analyses.add(fullAnalysis);
-
-      notifyListeners();
-    } catch (error) {
-      print("❌ Error fetching past analyses: $error");
-    }
-  }
-
-
-
-  /// Fetch the list of analysis history
-  Future<void> fetchAnalysisHistory() async {
-    try {
-      // print("🔍 Fetching analysis history...");
-      var HistoryRecords = await ApiService().fetchAnalyses();
-      for(var record in HistoryRecords as List<dynamic>){
-        // print("🔍 Fetching analysis history... $record");
-        _analysesHistory.add(AnalysisHistoryEntry.fromJson(record));
-      }
-      notifyListeners();
-      // print("✅ Analysis history loaded.");
-    } catch (error) {
-      // print("❌ Error fetching analysis history: $error");
-    }
-  }
+  
 
   void _processMotifsAndStages(Map<String, dynamic> data) {
     cleanSelectedStages();
@@ -226,7 +179,7 @@ class GeneModel extends ChangeNotifier {
 
   Future<bool> analyze() async {
     assert(getStageSelectionClass.selectedStages.isNotEmpty, "No stages selected");
-    assert(getSelectedMotifs.isNotEmpty, "No motifs selected");
+    assert(getSelectedMotifsNames.isNotEmpty, "No motifs selected");
 
     final params = {
       "color": "#FF0000",
@@ -245,7 +198,7 @@ class GeneModel extends ChangeNotifier {
 
     final payload = {
       "organism": name,
-      "motifs": getSelectedMotifs.map((m) => m.name).toList(),
+      "motifs": getSelectedMotifsNames,
       "stages": getSelectedStages.toList(),
       "params": params,
     };
@@ -271,7 +224,68 @@ class GeneModel extends ChangeNotifier {
     return false;
 
   }
+  /// Fetches the user's analysis history from the backend
+  Future<List<AnalysisHistoryEntry>> fetchUserAnalysesHistory() async {
+    try {
+      _analysesHistory = await ApiService().fetchAnalysesHistory();
+      notifyListeners();
+      return _analysesHistory;
+    } catch (e) {
+      debugPrint('Error fetching analysis history: $e');
+      rethrow;
+    }
+  }
 
+  /// Loads the settings from a previous analysis without the results
+  Future<bool> loadAnalysisSettings(int analysisId) async {
+    try {
+      final response = await ApiService().fetchAnalysisSettings(analysisId);
+      if (response['motifs'] != null) {
+        var motifs = response['motifs'] as List;
+        List<String> mappedMotifs = motifs.map((m) => m.toString()).toList();
+        setMotifs(mappedMotifs);
+      }
+
+      if (response['stages'] != null) {
+        var stages = response['stages'] as List;
+        List<String> mappedStages = stages.map((s) => s.toString()).toList();
+        setSelectedStages(mappedStages);
+      }
+
+      if (response['options'] != null) {
+        final options = AnalysisOptions.fromJson(response['options']);
+        setOptions(options!);
+      }
+      return true;
+    } catch (e) {
+      debugPrint('Error loading analysis settings: $e');
+      return false;
+    }
+  }
+
+
+  Future<bool> loadAnalysis(AnalysisHistoryEntry analysis) async {
+    try {
+      await loadAnalysisSettings(analysis.id);
+
+      final response = await ApiService().getRequest('analysis/details/${analysis.id}');
+      //TODO code duplicity with ApiService
+      if (response != null && response['filtered_results'] != null) {
+        final resultsList = response['filtered_results'] as List;
+        final analysisSeries = resultsList.map((result) =>
+            AnalysisSeries.fromJson(result as Map<String, dynamic>)
+        ).toList();
+
+        setAnalyses(analysisSeries);
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error loading analysis: $e');
+      return false;
+    }
+  }
 
   void setSelectedStages(List<String> list) {
     print("Updating selected stages in GeneModel: $list");
@@ -280,17 +294,37 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  loadAnalysis(analysisHistoryEntry) {
-    print("🔍 Loading analysis with id: ${analysisHistoryEntry.id}");
-    ApiService().fetchAnalysisDetails(analysisHistoryEntry.id).then((analysis) {
-      _analyses.add(analysis);
-    });
-    notifyListeners();
-  }
-
   void setStageSelection(StageSelection selection) {
     _stageSelection = selection;
     notifyListeners();
+  }
+
+  Future<void> fetchPublicOrganisms() async {
+    try {
+      name = "";
+      _allStages.clear();
+      _analyses.clear();
+      _allMotifs.clear();
+      _selectedMotifsNames.clear();
+
+      final organisms = await ApiService().getOrganisms();
+      final isAuthenticated = ApiService().isAuthenticated;
+
+      debugPrint('Fetched ${organisms.length} organisms. Authenticated: $isAuthenticated');
+
+      notifyListeners();
+    } catch (error) {
+      debugPrint("Error fetching public organisms: $error");
+    }
+  }
+
+  Future<void> initializeData() async {
+    try {
+      removeEverythingAssociatedWithCurrentSession();
+      await fetchPublicOrganisms();
+    } catch (error) {
+      debugPrint("Error initializing data: $error");
+    }
   }
 
   void removeEverythingAssociatedWithCurrentSession() {
@@ -298,7 +332,17 @@ class GeneModel extends ChangeNotifier {
     _allStages.clear();
     _analyses.clear();
     _allMotifs.clear();
-    _selectedMotifs.clear();
+    _selectedMotifsNames.clear();
+    _analysesHistory.clear();
+    _markers.clear();
+    _defaultSelectedStageKeys.clear();
+    _sourceGenesLength = null;
+    _sourceGenesKeysLength = null;
+    _errorCount = null;
+    _organismAndStagesFromBe = "";
+    _stageSelection = StageSelection();
+    analysisOptions = AnalysisOptions();
+
     notifyListeners();
   }
 

@@ -12,7 +12,9 @@ class MotifSubtitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final motifs = context.select<GeneModel, List<Motif>>((model) => model.getSelectedMotifs);
+    final motifs = context.select<GeneModel, List<Motif>>((model) => model.getAllMotifs);
+    final selectedMotifsNames = context.select<GeneModel, List<String>>((model) => model.getSelectedMotifsNames);
+    final filteredMotifs = motifs.where((m) => selectedMotifsNames.contains(m.name)).toList();
     final expectedResults = context.select<GeneModel, int>((model) => model.expectedSeriesCount);
     if (expectedResults > 60 && motifs.length > 5) {
       return Text('Analysis would result in $expectedResults series, reduce the number of selected motifs');
@@ -20,14 +22,14 @@ class MotifSubtitle extends StatelessWidget {
     return motifs.isEmpty
         ? const Text('Choose motifs to analyze or enter a custom motif')
         : motifs.length == 1
-        ? Text(truncate('${motifs.first.name} (${motifs.first.definitions.join(', ')})', 100))
-        : Text('${motifs.length} motifs');
+        ? Text(truncate('${filteredMotifs.first.name} (${filteredMotifs.first.definitions.join(', ')})', 100))
+        : Text('${filteredMotifs.length} motifs');
   }
 }
 
 /// Widget that builds the panel with motif selection
 class MotifPanel extends StatefulWidget {
-  final Function(List<Motif> motif) onChanged;
+  final Function(List<String> motif) onChanged;
 
   const MotifPanel({super.key, required this.onChanged});
 
@@ -59,8 +61,7 @@ class _MotifPanelState extends State<MotifPanel> {
   Widget build(BuildContext context) {
     final motifs = _model.getAllMotifs;
     if (motifs.isEmpty) return const Center(child: Text('Load source data first'));
-    final selectedMotifs = _model.getSelectedMotifs;
-    // print("DEBUG: Building motifPanel with selected motifs ${selectedMotifs}");
+    final selectedMotifs = _model.getSelectedMotifsNames;
     final customMotifs = motifs.where((m) => m.isCustom).toList();
 
     final presets = List.of(MotifPresets.presets).where((e) => e.isPublic).toList();
@@ -82,7 +83,7 @@ class _MotifPanelState extends State<MotifPanel> {
               children: [
                 ...customMotifs.map((m) => _MotifCard(
                   motif: m,
-                  onToggle: (bool value) => _handlePresetToggled(m, value),
+                  onToggle: (bool value) => _handlePresetToggled(m.name, value),
                   isSelected: true,
                 )),
                 if (!_showEditor) TextButton(onPressed: _handleOpenEditor, child: const Text('Add custom motif…'))
@@ -105,8 +106,8 @@ class _MotifPanelState extends State<MotifPanel> {
               children: [
                 ...presets.map((m) => _MotifCard(
                   motif: m,
-                  onToggle: (bool value) => _handlePresetToggled(m, value),
-                  isSelected: selectedMotifs.contains(m),
+                  onToggle: (bool value) => _handlePresetToggled(m.name, value),
+                  isSelected: selectedMotifs.contains(m.name),
                 )),
               ],
             ),
@@ -193,12 +194,12 @@ class _MotifPanelState extends State<MotifPanel> {
     return Motif.validate(defs);
   }
 
-  void _handlePresetToggled(Motif motif, bool value) {
-    final newMotifs = Set.of(_model.getSelectedMotifs);
+  void _handlePresetToggled(String motifName, bool value) {
+    final newMotifs = _model.getSelectedMotifsNames.toSet();
     if (value) {
-      newMotifs.add(motif);
+      newMotifs.add(motifName);
     } else {
-      newMotifs.remove(motif);
+      newMotifs.remove(motifName);
     }
     _model.setMotifs(newMotifs.toList());
   }

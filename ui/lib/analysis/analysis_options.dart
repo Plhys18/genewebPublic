@@ -22,4 +22,14 @@ class AnalysisOptions {
       alignMarker: alignMarker ?? this.alignMarker,
     );
   }
+
+  static AnalysisOptions? fromJson(Map<String, dynamic> map) {
+    if (map.isEmpty) return null;
+    return AnalysisOptions(
+      min: map['min'] as int? ?? -1000,
+      max: map['max'] as int? ?? 1000,
+      bucketSize: map['bucketSize'] as int? ?? 30,
+      alignMarker: map['alignMarker'] as String?,
+    );
+  }
 }

@@ -1,30 +1,54 @@
-/// Represents a historical record of an analysis
+import 'package:geneweb/analysis/analysis_options.dart';
+
+/// Represents a historical analysis entry from the user's past analyses
 class AnalysisHistoryEntry {
-  /// The unique identifier for the history entry
   final int id;
   final String name;
-  final DateTime createdAt;
-
+  final String organismName;
+  final String createdAt;
+  final List<String> motifs;
+  final List<String> stages;
+  final Map<String, dynamic>? options;
 
   AnalysisHistoryEntry({
     required this.id,
     required this.name,
+    required this.organismName,
     required this.createdAt,
+    required this.motifs,
+    required this.stages,
+    this.options,
   });
 
-  /// Convert to a JSON-compatible map
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'created_at': createdAt.toIso8601String(),
-  };
-
-  /// Create an instance from a JSON-compatible map
+  /// Creates an AnalysisHistoryEntry from JSON
   factory AnalysisHistoryEntry.fromJson(Map<String, dynamic> json) {
     return AnalysisHistoryEntry(
       id: json['id'],
-      name: json['name'],
-      createdAt: DateTime.parse(json['created_at']),
+      name: json['name'] ?? 'Unnamed Analysis',
+      organismName: json['organism'] ?? '',
+      createdAt: json['created_at'] ?? '',
+      motifs: List<String>.from(json['motifs'] ?? []),
+      stages: List<String>.from(json['stages'] ?? []),
+      options: json['options'],
     );
+  }
+
+  /// Converts to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'organism': organismName,
+      'created_at': createdAt,
+      'motifs': motifs,
+      'stages': stages,
+      'options': options,
+    };
+  }
+
+  /// Gets the analysis options if available
+  AnalysisOptions? getAnalysisOptions() {
+    if (options == null) return null;
+    return AnalysisOptions.fromJson(options!);
   }
 }

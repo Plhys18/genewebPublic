@@ -51,15 +51,19 @@ class _SourcePanelState extends State<SourcePanel> {
     setState(() => _loading = true);
     try {
       final organisms = await ApiService().getOrganisms();
-      setState(() {
-        _organisms = organisms;
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _organisms = organisms;
+          _loading = false;
+        });
+      }
     } catch (error) {
-      setState(() {
-        _error = "Error loading organisms: $error";
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = "Error loading organisms: $error";
+          _loading = false;
+        });
+      }
     }
   }
 

@@ -43,7 +43,7 @@ class _HomeState extends State<Home> {
     final organismAndStagesFromBe = context.select<GeneModel, String?>((model) => model.organismAndStagesFromBe);
     // final organismAndStages =
     // context.select<GeneModel, String?>((model) => '${model.name} ${model.sourceGenes?.stageKeys.join('+')}');
-    final selectedMotifs = context.select<GeneModel, List<Motif>>((model) => model.getSelectedMotifs);
+    final selectedMotifs = context.select<GeneModel, List<String>>((model) => model.getSelectedMotifsNames);
     final sourceGenesLength = context.select<GeneModel, int?>((model) => model.sourceGenesLength);
     final motifs = context.select<GeneModel, List<Motif>>((model) => model.getAllMotifs);
     final filter = context.select<GeneModel, StageSelection?>((model) => model.getStageSelectionClass);
@@ -155,7 +155,7 @@ class _HomeState extends State<Home> {
     GeneModel.of(context).setSelectedStages(selection!.selectedStages);
   }
 
-  void _handleMotifsChanged(List<Motif> motifs) {
+  void _handleMotifsChanged(List<String> motifs) {
     GeneModel.of(context).setMotifs(motifs);
   }
 

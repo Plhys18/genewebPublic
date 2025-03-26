@@ -1,3 +1,4 @@
+import 'package:faabul_color_picker/faabul_color_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:geneweb/genes/stage_selection.dart';
@@ -5,6 +6,8 @@ import 'package:geneweb/genes/gene_list.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:provider/provider.dart';
 import 'package:truncate/truncate.dart';
+
+import '../utilities/api_service.dart';
 
 /// Widget that is shown just below the panel headline
 class StageSubtitle extends StatelessWidget {
@@ -74,7 +77,43 @@ class _StagePanelState extends State<StagePanel> {
       _updateStateFromModel();
     }
   }
+  Future<void> _handleStageColorChange(String stageName, Color color) async {
+    try {
+      final colorHex = '#${color.value.toRadixString(16).substring(2)}';
 
+      await ApiService().postRequest('preferences/set/', {
+        'type': 'stage',
+        'name': stageName,
+        'color': colorHex,
+        'stroke_width': 4,
+      });
+
+      final model = GeneModel.of(context);
+      final allStages = List.of(model.getAllStages);
+
+      for (int i = 0; i < allStages.length; i++) {
+        if (allStages[i].stage == stageName) {
+
+          final updatedStage = allStages[i].copyWith(color: color);
+          allStages[i] = updatedStage;
+          break;
+        }
+      }
+
+      model.setStages(allStages);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Color preference for $stageName saved')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving color preference: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
   void _updateStateFromModel() {
     final filter = GeneModel.of(context).getStageSelectionClass;
     _selectedStages = filter.selectedStages;
@@ -132,6 +171,7 @@ class _StagePanelState extends State<StagePanel> {
                     color: stageColors[key],
                     isSelected: _selectedStages.contains(key) == true,
                     onToggle: (value) => _handleToggle(key, value),
+                    onColorChange: (color) => _handleStageColorChange(key, color),
                   ),
               ],
             ),
@@ -256,8 +296,10 @@ class _StageCard extends StatelessWidget {
   final Color? color;
   final bool isSelected;
   final Function(bool value) onToggle;
-  const _StageCard({required this.name, required this.color, required this.isSelected, required this.onToggle});
+  final Function(Color color)? onColorChange;
+  const _StageCard({required this.name, required this.color, required this.isSelected, required this.onToggle, this.onColorChange});
 
+  @override
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -282,11 +324,62 @@ class _StageCard extends StatelessWidget {
                   style: textTheme.titleSmall?.copyWith(color: textColor),
                   maxLines: 3,
                 ),
-                Checkbox(value: isSelected, onChanged: (value) => onToggle(value!))
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Checkbox(
+                        value: isSelected,
+                        onChanged: (value) => onToggle(value!)
+                    ),
+                    if (onColorChange != null)
+                      InkWell(
+                        onTap: () => _showColorPicker(context),
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: backgroundColor,
+                            border: Border.all(color: Colors.white),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _handleSetColor(BuildContext context) async {
+    if (onColorChange == null) return;
+    final newColor = await showColorPickerDialog(context: context, selected: color ?? Colors.grey);
+    onColorChange!(newColor!);
+  }
+
+  void _showColorPicker(BuildContext context) {
+    if (onColorChange == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Choose color for $name'),
+        content: SingleChildScrollView(
+          child: ListTile(
+            title: const Text('Color'),
+            trailing: FaabulColorSample(color: color ?? Colors.grey),
+            onTap: () => _handleSetColor(context),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+        ],
       ),
     );
   }

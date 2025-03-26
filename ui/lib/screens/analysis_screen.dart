@@ -10,11 +10,11 @@ class AnalysisScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = context.select<GeneModel, String?>((model) => model.name) ?? 'Unknown';
-    final motifs = context.select<GeneModel, List<Motif>>((model) => model.getSelectedMotifs);
+    final motifs = context.select<GeneModel, List<String>>((model) => model.getSelectedMotifsNames);
     final stages = context.select<GeneModel, List<String>>(
             (model) => model.getStageSelectionClass.selectedStages);
     final stageName = stages.length == 1 ? stages.first : '${stages.length} stages';
-    final motifName = motifs.length == 1 ? motifs.first.name : '${motifs.length} motifs';
+    final motifName = motifs.length == 1 ? motifs.first : '${motifs.length} motifs';
 
     return Scaffold(
       appBar: AppBar(

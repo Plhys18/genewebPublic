@@ -13,6 +13,9 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        Provider<ApiService>(
+          create: (_) => ApiService(),
+        ),
         ChangeNotifierProvider(create: (context) => UserAuthProvider()),
         ChangeNotifierProvider(create: (context) => GeneModel()),
       ],
