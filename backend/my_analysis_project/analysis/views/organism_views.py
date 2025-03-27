@@ -1,4 +1,4 @@
-import json
+# my_analysis_project/analysis/views/organism_views.py
 from django.http import JsonResponse
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -11,8 +11,167 @@ from my_analysis_project.lib.analysis.organism_presets import OrganismPresets
 from my_analysis_project.lib.analysis.stage_and_color import StageAndColor
 from my_analysis_project.lib.genes.gene_list import GeneList
 from my_analysis_project.lib.genes.gene_model import GeneModel
-from my_analysis_project.analysis.models import OrganismAccess
+from my_analysis_project.analysis.models import OrganismAccess, MotifAccess
 from my_analysis_project.analysis.utils.file_utils import find_fasta_file
+
+
+def check_organism_access(user, organism):
+    if organism.public:
+        return True
+
+    if not user or not user.is_authenticated:
+        return False
+
+    user_access = OrganismAccess.objects.filter(
+        organism_name=organism.name,
+        access_type='user',
+        user=user
+    ).exists()
+
+    if user_access:
+        return True
+
+    if user.groups.exists():
+        user_groups = user.groups.all()
+        group_access = OrganismAccess.objects.filter(
+            organism_name=organism.name,
+            access_type='group',
+            group__in=user_groups
+        ).exists()
+        return group_access
+
+    return False
+
+
+def check_motif_access(user, motif):
+    """
+    Check if a user has access to a specific motif.
+
+    Args:
+        user: The user to check access for (can be None for anonymous users)
+        motif: The motif object to check access for
+
+    Returns:
+        bool: True if user has access, False otherwise
+    """
+    if not hasattr(motif, 'public') or motif.public:
+        return True
+
+    if not user:
+        return False
+
+    user_access = MotifAccess.objects.filter(
+        motif_name=motif.name,
+        access_type='user',
+        user=user
+    ).exists()
+
+    if user_access:
+        return True
+
+    user_groups = user.groups.all()
+    group_access = MotifAccess.objects.filter(
+        motif_name=motif.name,
+        access_type='group',
+        group__in=[g.id for g in user_groups]
+    ).exists()
+
+    return group_access
+
+
+def apply_user_preferences(user, organism):
+    """
+    Apply user color preferences to organism stages.
+
+    Args:
+        user: The authenticated user
+        organism: The organism object to modify
+
+    Returns:
+        Organism: A new organism object with user preferences applied
+    """
+    if not user:
+        return organism
+
+    stage_preferences = {
+        pref.name: pref for pref in UserColorPreference.objects.filter(
+            user=user,
+            preference_type='stage'
+        )
+    }
+
+    modified_stages = []
+    for stage in organism.stages:
+        if stage.stage in stage_preferences:
+            pref = stage_preferences[stage.stage]
+            modified_stage = StageAndColor(
+                stage.stage,
+                color=pref.color,
+                stroke=pref.stroke_width,
+                is_checked_by_default=stage.is_checked_by_default
+            )
+            modified_stages.append(modified_stage)
+        else:
+            modified_stages.append(stage)
+
+    return Organism(
+        name=organism.name,
+        filename=organism.filename,
+        description=organism.description,
+        public=organism.public,
+        take_first_transcript_only=organism.take_first_transcript_only,
+        stages=modified_stages
+    )
+
+
+def prepare_stage_data(organism, gene_list, user=None):
+    """
+    Prepare stage data with user preferences applied.
+
+    Args:
+        organism: The organism object
+        gene_list: The gene list data
+        user: The authenticated user (optional)
+
+    Returns:
+        list: Processed stage data
+    """
+    stages_data = {}
+
+    for stage in organism.stages:
+        stages_data[stage.stage] = {"stage": stage.stage, "color": stage.color}
+
+        if user:
+            try:
+                pref = UserColorPreference.objects.get(
+                    user=user,
+                    preference_type='stage',
+                    name=stage.stage
+                )
+                stages_data[stage.stage]["color"] = pref.color
+                stages_data[stage.stage]["stroke"] = pref.stroke_width
+            except UserColorPreference.DoesNotExist:
+                pass
+
+    detected_stages = set(gene_list.stageKeys)
+    for stage in detected_stages:
+        if stage not in stages_data:
+            color = GeneModel.randomColorOf(stage)
+            stages_data[stage] = {"stage": stage, "color": color}
+
+            if user:
+                try:
+                    pref = UserColorPreference.objects.get(
+                        user=user,
+                        preference_type='stage',
+                        name=stage
+                    )
+                    stages_data[stage]["color"] = pref.color
+                    stages_data[stage]["stroke"] = pref.stroke_width
+                except UserColorPreference.DoesNotExist:
+                    pass
+
+    return list(stages_data.values())
 
 
 @swagger_auto_schema(
@@ -37,70 +196,15 @@ from my_analysis_project.analysis.utils.file_utils import find_fasta_file
 @api_view(["GET"])
 def list_organisms(request):
     user = request.user if request.user.is_authenticated else None
-    all_organisms = OrganismPresets.k_organisms
-    accessible_organisms = []
+    best_organisms = {}
 
-    for organism in all_organisms:
-        has_access = False
+    for organism in OrganismPresets.k_organisms:
+        if check_organism_access(user, organism):
+            current_best = best_organisms.get(organism.name)
 
-        if organism.public:
-            has_access = True
-        elif user:
-            user_access = OrganismAccess.objects.filter(
-                organism_name=organism.name,
-                access_type='user',
-                user=user
-            ).exists()
-
-            if user_access:
-                has_access = True
-            else:
-                user_groups = user.groups.all()
-                group_access = OrganismAccess.objects.filter(
-                    organism_name=organism.name,
-                    access_type='group',
-                    group__in=[g.id for g in user_groups]
-                ).exists()
-
-                if group_access:
-                    has_access = True
-
-        if has_access:
-            if user:
-                stage_preferences = {
-                    pref.name: pref for pref in UserColorPreference.objects.filter(
-                        user=user,
-                        preference_type='stage'
-                    )
-                }
-
-                modified_stages = []
-                for stage in organism.stages:
-                    if stage.stage in stage_preferences:
-                        pref = stage_preferences[stage.stage]
-                        modified_stage = StageAndColor(
-                            stage.stage,
-                            color=pref.color,
-                            stroke=pref.stroke_width,
-                            is_checked_by_default=stage.is_checked_by_default
-                        )
-                        modified_stages.append(modified_stage)
-                    else:
-                        modified_stages.append(stage)
-
-
-                modified_organism = Organism(
-                    name=organism.name,
-                    filename=organism.filename,
-                    description=organism.description,
-                    public=organism.public,
-                    take_first_transcript_only=organism.take_first_transcript_only,
-                    stages=modified_stages
-                )
-
-                accessible_organisms.append(modified_organism)
-            else:
-                accessible_organisms.append(organism)
+            if current_best is None or (organism.public and not current_best.public):
+                modified_organism = apply_user_preferences(user, organism)
+                best_organisms[organism.name] = modified_organism
 
     organisms_data = [
         {
@@ -109,74 +213,53 @@ def list_organisms(request):
             "description": organism.description,
             "stages": [{"stage": stage.stage, "color": stage.color} for stage in organism.stages],
         }
-        for organism in accessible_organisms
+        for organism in best_organisms.values()
     ]
 
     return JsonResponse({"organisms": organisms_data})
 
 
+
 @swagger_auto_schema(
-    method='post',
+    method='get',
     operation_description="Fetches stages and motifs for a given organism with access control.",
-    request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        properties={
-            "organism": openapi.Schema(type=openapi.TYPE_STRING)
-        },
-        required=["organism"]
-    ),
     responses={
         200: "Organism details",
         403: "Access denied",
         404: "Organism not found"
     }
 )
-@api_view(["POST"])
-def get_organism_details(request):
+@api_view(["GET"])
+def get_organism_details(request, name):
     try:
-        data = json.loads(request.body)
-        organism_name = data.get("organism")
+        organism_name = name
 
         if not organism_name:
-            return JsonResponse("Missing organism name", status=400)
+            return JsonResponse({"error": "Missing organism name"}, status=400)
 
-        organism = next((org for org in OrganismPresets.k_organisms if org.name == organism_name), None)
-        if not organism:
-            return JsonResponse("Organism not found", status=404)
+        matching_organisms = [org for org in OrganismPresets.k_organisms if org.name == organism_name]
+        if not matching_organisms:
+            return JsonResponse({"error": "Organism not found"}, status=404)
 
         user = request.user if request.user.is_authenticated else None
-        has_access = False
 
-        if organism.public:
-            print("Organism is public" + organism.name + " " + str(organism.public))
-            has_access = True
+        matching_organisms.sort(key=lambda o: not o.public)
 
-        elif user:
-            user_access = OrganismAccess.objects.filter(
-                organism_name=organism.name,
-                access_type='user',
-                user=user
-            ).exists()
+        accessible_organism = None
+        for org in matching_organisms:
+            if check_organism_access(user, org):
+                accessible_organism = org
+                break
 
-            if user_access:
-                has_access = True
-            else:
-                user_groups = user.groups.all()
-                group_access = OrganismAccess.objects.filter(
-                    organism_name=organism.name,
-                    access_type='group',
-                    group__in=[g.id for g in user_groups]
-                ).exists()
+        if not accessible_organism:
+            return JsonResponse({"error": "No access to this organism"}, status=403)
 
-                if group_access:
-                    has_access = True
+        organism = accessible_organism
 
-        if not has_access:
-            return JsonResponse({"error": "no access to this organism"}, status=500)
+        all_motifs = MotifPresets.get_presets()
+        accessible_motifs = [motif for motif in all_motifs if check_motif_access(user, motif)]
 
         motifs_data = []
-        has_access = False
-        #TODO do the same public check for motifs, i guess do it before the motifs preference. since its copy paste, maybe get it into new function.
         if user:
             motif_preferences = {
                 pref.name: pref for pref in UserColorPreference.objects.filter(
@@ -185,10 +268,11 @@ def get_organism_details(request):
                 )
             }
 
-            for motif in MotifPresets.get_presets():
+            for motif in accessible_motifs:
                 motif_data = {
                     "name": motif.name,
-                    "definitions": motif.definitions
+                    "definitions": motif.definitions,
+                    "public": not hasattr(motif, 'public') or motif.public
                 }
 
                 if motif.name in motif_preferences:
@@ -199,51 +283,21 @@ def get_organism_details(request):
                 motifs_data.append(motif_data)
         else:
             motifs_data = [
-                {"name": motif.name, "definitions": motif.definitions}
-                for motif in MotifPresets.get_presets()
+                {
+                    "name": motif.name,
+                    "definitions": motif.definitions,
+                    "public": not hasattr(motif, 'public') or motif.public
+                }
+                for motif in accessible_motifs
             ]
 
-        file_path = find_fasta_file(organism_name)
+        file_path = find_fasta_file(organism.filename.split('.')[0])
         if not file_path:
-            return JsonResponse({"error":"Organism file not found"}, status=404)
+            return JsonResponse({"error": "Organism file not found"}, status=404)
 
         gene_list = GeneList.load_from_file(str(file_path))
 
-        stages_data = {}
-        for stage in organism.stages:
-            stages_data[stage.stage] = {"stage": stage.stage, "color": stage.color}
-
-            if user:
-                try:
-                    pref = UserColorPreference.objects.get(
-                        user=user,
-                        preference_type='stage',
-                        name=stage.stage
-                    )
-                    stages_data[stage.stage]["color"] = pref.color
-                    stages_data[stage.stage]["stroke"] = pref.stroke_width
-                except UserColorPreference.DoesNotExist:
-                    pass
-
-        detected_stages = set(gene_list.stageKeys)
-        for stage in detected_stages:
-            if stage not in stages_data:
-                color = GeneModel.randomColorOf(stage)
-                stages_data[stage] = {"stage": stage, "color": color}
-
-                if user:
-                    try:
-                        pref = UserColorPreference.objects.get(
-                            user=user,
-                            preference_type='stage',
-                            name=stage
-                        )
-                        stages_data[stage]["color"] = pref.color
-                        stages_data[stage]["stroke"] = pref.stroke_width
-                    except UserColorPreference.DoesNotExist:
-                        pass
-
-        stages_list = list(stages_data.values())
+        stages_list = prepare_stage_data(organism, gene_list, user)
         organism_and_stages = f"{organism_name} {'+'.join(gene_list.stageKeys)}"
 
         return JsonResponse({
@@ -261,4 +315,4 @@ def get_organism_details(request):
         })
 
     except Exception as e:
-        return JsonResponse({"error":"str(e)"}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)

@@ -3,6 +3,7 @@ from typing import List, Optional, Dict, Any
 
 import aiofiles
 
+from my_analysis_project.analysis.utils.file_utils import logger
 from my_analysis_project.lib.analysis.analysis_series import AnalysisSeries
 from my_analysis_project.lib.analysis.motif import Motif
 from my_analysis_project.lib.analysis.organism import Organism
@@ -38,32 +39,28 @@ class GeneModel:
     """
 
     def __init__(self):
-        # ✅ Store the organism being analyzed
         self.name: Optional[str] = None
-
-        # ✅ Store the motifs & stages
         self._motifs: List["Motif"] = []
         self._stageSelection: Optional["StageSelection"] = None
-
-        # ✅ Store the FASTA file data (genes)
         self.sourceGenes: Optional["GeneList"] = None
-
-        # ✅ Store analysis results
         self.analyses: List["AnalysisSeries"] = []
         self.analysisProgress: Optional[float] = None
         self.analysesHistory: List["AnalysisSeries"] = []
         self.analysisOptions: Optional["AnalysisOptions"] = None
 
-    # ✅ Set motifs (must be actual Motif objects)
     def setMotifs(self, newMotifs: List["Motif"]):
         self._motifs = newMotifs
 
-    # ✅ Set selected stages (must be a StageSelection object)
     def setStageSelection(self, selection: Optional["StageSelection"]):
         print(f"✅ DEBUG: Setting stage selection inside of gene_model: {selection}")
         self._stageSelection = selection
 
-    # ✅ Load FASTA file data
+    def getMotifs(self) -> List["Motif"]:
+        return [name for name in self._motifs.name]
+    def getSelectedStages(self) -> Optional["StageSelection"]:
+        return self._stageSelection
+    def getOptions(self) -> Optional["AnalysisOptions"]:
+        return self.analysisOptions
     async def loadFastaFromFile(
             self,
             path: str,
@@ -93,45 +90,108 @@ class GeneModel:
         self.sourceGenes = GeneList.from_list(genes=genes, errors=errors, organism=organism)
 
     async def analyze(self) -> bool:
-        """
-        Runs analysis using the set motifs, stages, and organism.
-        """
-        print("✅ DEBUG: Running analysis")
-        print(f"✅ DEBUG: Stages: {self._stageSelection.selectedStages}")
-        print(f"✅ DEBUG: Stageslen: {len(self._stageSelection.selectedStages)}")
-        assert len(self._stageSelection.selectedStages) > 0, "No selected stages"
-        assert len(self._motifs) > 0, "No motifs to analyze"
-        print("✅ DEBUG: Stages and motifs are set starting analysis")
-        totalIterations = len(self._stageSelection.selectedStages) * len(self._motifs)
-        print(f"✅ DEBUG totalIterations : {totalIterations}")
-        assert totalIterations > 0
-
         tasks = []
-        for idx, motif in enumerate(self._motifs):
-            for key in self._stageSelection.selectedStages:
-                filteredGenes = (
-                    self.sourceGenes if key == "__ALL__"
-                    else self.sourceGenes.filter(stage=key, stageSelection=self._stageSelection)
-                )
+        try:
+            if not self._stageSelection or not self._stageSelection.selectedStages:
+                logger.error("No stages selected for analysis")
+                raise ValueError("No selected stages")
 
-                name = f"{'all' if key == '__ALL__' else key} - {motif.name}"
+            if not self._motifs:
+                logger.error("No motifs selected for analysis")
+                raise ValueError("No motifs to analyze")
 
-                task = runAnalysis({
-                    'genes': filteredGenes,
-                    'motif': motif,
-                    'name': name,
-                    'min': self.analysisOptions.min,
-                    'max': self.analysisOptions.max,
-                    'interval': self.analysisOptions.bucketSize,
-                    'alignMarker': self.analysisOptions.alignMarker,
-                })
+            if not self.sourceGenes:
+                logger.error("No gene data loaded")
+                raise ValueError("No gene data available")
 
-                tasks.append(task)
+            if not self.analysisOptions:
+                logger.error("No analysis options set")
+                raise ValueError("Analysis options not configured")
 
-        results = await asyncio.gather(*tasks)
-        self.analyses.extend(results)
-        return True
+            logger.info(
+                f"Starting analysis with {len(self._motifs)} motifs and {len(self._stageSelection.selectedStages)} stages")
 
+            total_tasks = len(self._stageSelection.selectedStages) * len(self._motifs)
+            completed_tasks = 0
+
+            color_preferences = {}
+
+            analysis_tasks = []
+            for motif in self._motifs:
+                for stage_key in self._stageSelection.selectedStages:
+                    filteredGenes = (
+                        self.sourceGenes if stage_key == "__ALL__"
+                        else self.sourceGenes.filter(stage=stage_key, stageSelection=self._stageSelection)
+                    )
+
+                    if not filteredGenes or not filteredGenes.genes:
+                        logger.warning(f"No genes found for stage '{stage_key}'")
+                        completed_tasks += 1
+                        self.analysisProgress = completed_tasks / total_tasks
+                        continue
+
+                    name = f"{'all' if stage_key == '__ALL__' else stage_key} - {motif.name}"
+                    color = color_preferences.get(f"{stage_key}_{motif.name}") or self.randomColorOf(name)
+
+                    task = self._create_analysis_task(
+                        genes=filteredGenes,
+                        motif=motif,
+                        name=name,
+                        color=color
+                    )
+                    analysis_tasks.append(task)
+
+            sem = asyncio.Semaphore(min(8, len(analysis_tasks)))
+
+            async def run_with_semaphore(task_fn):
+                async with sem:
+                    return await task_fn
+
+            # Create tasks with proper task tracking for cancellation
+            tasks = [asyncio.create_task(run_with_semaphore(t)) for t in analysis_tasks]
+
+            results = []
+            for i, task in enumerate(asyncio.as_completed(tasks)):
+                try:
+                    result = await task
+                    results.append(result)
+
+                    completed_tasks += 1
+                    self.analysisProgress = completed_tasks / total_tasks
+                    logger.debug(f"Analysis progress: {self.analysisProgress:.1%}")
+                except asyncio.CancelledError:
+                    logger.warning("Analysis task was cancelled")
+                    raise
+                except Exception as e:
+                    logger.exception(f"Error in analysis task: {e}")
+                    raise
+
+            self.analyses.extend(results)
+            self.analysisProgress = 1.0
+
+            return True
+
+        except Exception as e:
+            logger.exception(f"Error during analysis: {e}")
+            self.analysisProgress = None
+            return False
+        finally:
+            # Cancel any outstanding tasks
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+
+    async def _create_analysis_task(self, genes, motif, name, color):
+        return await runAnalysis({
+            'genes': genes,
+            'motif': motif,
+            'name': name,
+            'color': color,
+            'min': self.analysisOptions.min,
+            'max': self.analysisOptions.max,
+            'interval': self.analysisOptions.bucketSize,
+            'alignMarker': self.analysisOptions.alignMarker,
+        })
     @staticmethod
     def randomColorOf(text: str):
         hash_val = 0

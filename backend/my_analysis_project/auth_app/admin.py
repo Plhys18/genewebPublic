@@ -1,8 +1,9 @@
+# my_analysis_project/auth_app/admin.py
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.hashers import make_password
 
-from my_analysis_project.analysis.models import OrganismAccess, AnalysisHistory
+from my_analysis_project.analysis.models import OrganismAccess, AnalysisHistory, MotifAccess
 from my_analysis_project.auth_app.models import OrganismGroup, UserColorPreference
 
 
@@ -51,6 +52,12 @@ class OrganismAccessAdmin(admin.ModelAdmin):
     search_fields = ('organism_name', 'group__name', 'user__username')
 
 
+class MotifAccessAdmin(admin.ModelAdmin):
+    list_display = ('motif_name', 'access_type', 'group', 'user')
+    list_filter = ('access_type',)
+    search_fields = ('motif_name', 'group__name', 'user__username')
+
+
 class AnalysisHistoryAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'name', 'created_at')
     list_filter = ('user', 'created_at')
@@ -60,4 +67,6 @@ class AnalysisHistoryAdmin(admin.ModelAdmin):
 admin.site.register(UserColorPreference, UserColorPreferenceAdmin)
 admin.site.register(OrganismGroup, OrganismGroupAdmin)
 admin.site.register(OrganismAccess, OrganismAccessAdmin)
+admin.site.register(MotifAccess, MotifAccessAdmin)
 admin.site.register(AnalysisHistory, AnalysisHistoryAdmin)
+

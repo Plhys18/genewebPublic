@@ -38,17 +38,17 @@ class Motif:
                  name: str,
                  definitions: List[str],
                  is_custom: bool = False,
-                 is_public: bool = True):
+                 public: bool = True):
         """
         :param name: Motif name
         :param definitions: One or more motif definitions (e.g. 'ACGTG')
         :param is_custom: True if the motif was user-defined
-        :param is_public: True if the motif is a public/preset motif
+        :param public: True if the motif is a public/preset motif
         """
         self.name = name
         self.definitions = definitions
         self.is_custom = is_custom
-        self.is_public = is_public
+        self.is_public = public
 
     @property
     def id(self) -> str:
@@ -228,7 +228,7 @@ class Motif:
             name=data["name"],
             definitions=data["definitions"],
             is_custom=data.get("is_custom", False),
-            is_public=data.get("is_public", True)
+            public=data.get("is_public", True)
         )
 
     @staticmethod

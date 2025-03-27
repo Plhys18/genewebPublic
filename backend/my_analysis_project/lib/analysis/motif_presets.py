@@ -27,7 +27,7 @@ class MotifPresets:
             Motif(name='TATA-box', definitions=['TATAWA']),
             Motif(
                 name='Arabidopsis.telobox',
-                is_public=False,
+                public=False,
                 definitions=[
                     'CCCTAAAC', 'CCTAAACC', 'CTAAACCC', 'TAAACCCT',
                     'AAACCCTA', 'AACCCTAA', 'ACCCTAAA'
@@ -35,17 +35,17 @@ class MotifPresets:
             ),
             Motif(
                 name='Arabidopsis.telobox.generic',
-                is_public=False,
+                public=False,
                 definitions=['NGGNNTN', 'NGGNTN'],
             ),
             Motif(
                 name='Arabidopsis.siteII',
-                is_public=False,
+                public=False,
                 definitions=['TGGGCC', 'TGGGCT', 'GGNCCCAC', 'GTGGNCCC'],
             ),
             Motif(
                 name='Allium.Cepa.telobox',
-                is_public=False,
+                public=False,
                 definitions=[
                     'CTCGGTTATGGGC', 'TCGGTTATGGGCT', 'CGGTTATGGGCTC',
                     'GGTTATGGGCTCG', 'GTTATGGGCTCGG', 'TTATGGGCTCGGT',
@@ -55,7 +55,7 @@ class MotifPresets:
             ),
             Motif(
                 name='Allium.Cepa.7Nt',
-                is_public=False,
+                public=False,
                 definitions=[
                     'TATGGGC', 'ATGGGCT', 'TGGGCTC', 'GGGCTCG',
                     'GGCTCGG', 'GCTCGGT', 'CTCGGTT', 'TCGGTTA',
