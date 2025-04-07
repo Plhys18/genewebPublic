@@ -207,12 +207,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             icon: Icon(_isSavingPreference ? Icons.hourglass_empty : Icons.edit),
             onPressed: _isSavingPreference ? null : () => _showColorPicker(pref),
             tooltip: 'Edit color',
-          ),
-          IconButton(
-            icon: Icon(_isSavingPreference ? Icons.hourglass_empty : Icons.refresh),
-            onPressed: _isSavingPreference ? null : () => _resetPreference(pref),
-            tooltip: 'Reset to default',
-          ),
+          )
         ],
       ),
     );

@@ -122,9 +122,18 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              ElevatedButton(
-                onPressed: _loading ? null : _handleAnalyze,
-                child: const Text('Run Analysis'),
+              Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: _loading ? null : _handleAnalyze,
+                    child: const Text('Run Analysis'),
+                  ),
+                  if (_loading)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 8),
+                      child: Text('Analysis is running, please wait...', style: TextStyle(fontStyle: FontStyle.italic)),
+                    ),
+                ],
               ),
               Row(
                 children: [

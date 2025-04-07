@@ -354,33 +354,16 @@ class _StageCard extends StatelessWidget {
     );
   }
 
-  Future<void> _handleSetColor(BuildContext context) async {
-    if (onColorChange == null) return;
-    final newColor = await showColorPickerDialog(context: context, selected: color ?? Colors.grey);
-    onColorChange!(newColor!);
-  }
-
   void _showColorPicker(BuildContext context) {
     if (onColorChange == null) return;
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Choose color for $name'),
-        content: SingleChildScrollView(
-          child: ListTile(
-            title: const Text('Color'),
-            trailing: FaabulColorSample(color: color ?? Colors.grey),
-            onTap: () => _handleSetColor(context),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
+    showColorPickerDialog(
+        context: context,
+        selected: color ?? Colors.grey
+    ).then((newColor) {
+      if (newColor != null) {
+        onColorChange!(newColor);
+      }
+    });
   }
 }
