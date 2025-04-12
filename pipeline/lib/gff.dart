@@ -19,6 +19,7 @@ class Gff {
     List<String> ignoredFeatures = const ['chromosome', 'gene', 'transcript'],
     List<String> triggerFeatures = const ['mRNA'],
     List<String> Function(List<String> lines)? linesPreprocessor,
+    String transcriptSeparator = '.',
   }) async {
     final file = File(entity.path);
     final rawLines = await file.readAsLines();
@@ -31,6 +32,7 @@ class Gff {
         transcriptParser: transcriptParser,
         fallbackTranscriptParser: fallbackTranscriptParser,
         seqIdTransformer: seqIdTransformer,
+        transcriptSeparator: transcriptSeparator,
       );
       if (ignoredFeatures.contains(feature.type)) continue;
       if (triggerFeatures.contains(feature.type)) {
@@ -63,6 +65,8 @@ class GffFeature {
   final Strand? strand;
   final int? phase;
 
+  final String transcriptSeparator;
+
   /// Transcript Id - usually Name, ID or transcript_id
   ///
   /// See also [geneId]
@@ -79,33 +83,35 @@ class GffFeature {
   ///
   /// See also [transcriptId], [transcriptNumber]
   String? get geneId {
-    if (transcriptId?.contains('.') != true) return transcriptId;
-    final parts = transcriptId?.split('.');
-    return '${parts?.take(parts.length - 1).join('.')}';
+    if (transcriptId?.contains(transcriptSeparator) != true) return transcriptId;
+    final parts = transcriptId!.split(transcriptSeparator);
+    return parts.take(parts.length - 1).join(transcriptSeparator);
   }
 
   /// Transcript number - i.e. the number after the last dot in transcriptId
   ///
   /// See also [transcriptId]
   int? get transcriptNumber {
-    if (transcriptId?.contains('.') != true) return null;
-    final parts = transcriptId!.split('.');
+    if (transcriptId?.contains(transcriptSeparator) != true) return null;
+    final parts = transcriptId!.split(transcriptSeparator);
     return int.tryParse(parts.last);
   }
 
-  GffFeature._(
-      {required this.seqId,
-      required this.source,
-      required this.type,
-      required this.start,
-      required this.end,
-      this.score,
-      this.strand,
-      this.phase,
-      this.transcriptId,
-      this.fallbackTranscriptId,
-      this.attributes,
-      required this.features});
+  GffFeature._({
+    required this.seqId,
+    required this.source,
+    required this.type,
+    required this.start,
+    required this.end,
+    this.score,
+    this.strand,
+    this.phase,
+    this.transcriptId,
+    this.fallbackTranscriptId,
+    this.attributes,
+    required this.features,
+    this.transcriptSeparator = '.',
+  });
 
   /// Creates the object from GFF line
   factory GffFeature.fromLine(
@@ -113,6 +119,7 @@ class GffFeature {
     required String? Function(Map<String, String> attributes) transcriptParser,
     String? Function(Map<String, String> attributes)? fallbackTranscriptParser,
     required String Function(String seqId) seqIdTransformer,
+    String transcriptSeparator = '.',
   }) {
     final parts = line.split('\t');
     final attributes = _parseAttributes(parts[8]);
@@ -133,6 +140,7 @@ class GffFeature {
       transcriptId: transcriptParser(attributes),
       fallbackTranscriptId: fallbackTranscriptParser?.call(attributes),
       features: [],
+      transcriptSeparator: transcriptSeparator,
     );
   }
 

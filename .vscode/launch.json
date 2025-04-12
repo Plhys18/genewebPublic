@@ -5,6 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "pipeline Chara",
+            "cwd": "pipeline",
+            "request": "launch",
+            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
+            "args": ["Chara_braunii"],
+            "type": "dart"
+        },
+        {
             "name": "pipeline Azolla",
             "cwd": "pipeline",
             "request": "launch",
@@ -29,15 +37,23 @@
             "type": "dart"
         },
         {
-            "name": "pipeline Silene",
+            "name": "pipeline Physcomitrium_patens",
             "cwd": "pipeline",
             "request": "launch",
             "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
-            "args": ["Silene_vulgaris"],
+            "args": ["Physcomitrium_patens", "--with-tss"],
             "type": "dart"
         },
         {
             "name": "pipeline Silene (TSS)",
+            "cwd": "pipeline",
+            "request": "launch",
+            "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",
+            "args": ["Silene_vulgaris", "--with-tss"],
+            "type": "dart"
+        },
+        {
+            "name": "pipeline Physco (TSS)",
             "cwd": "pipeline",
             "request": "launch",
             "program": "${workspaceFolder}/pipeline/bin/pipeline.dart",

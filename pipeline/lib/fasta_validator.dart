@@ -58,11 +58,14 @@ class FastaValidator {
         final startCodons = gene.validStartCodons(sequence, gene.strand!);
         if (!allowMissingStartCodon) {
           if (startCodons.isEmpty) {
-            errors.add(
-                ValidationError.noStartCodonFound('Start codon is missing'));
+            final all = gene.startCodons();
+            final error = all.length == 1 ? '${all.first} is not valid' : 'of ${all.length} available';
+            errors.add(ValidationError.noStartCodonFound('No valid start_codon ($error)'));
           } else if (startCodons.length > 1) {
+            final all = gene.startCodons();
+            final error = all.length == 1 ? '${all.first} is not valid' : 'of ${all.length} available';
             errors.add(ValidationError.multipleStartCodonsFound(
-                'Multiple start codons found (${startCodons.length}).'));
+                'Multiple valid start_codons found (${startCodons.length} $error)'));
           }
         }
       }

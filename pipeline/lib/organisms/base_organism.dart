@@ -29,6 +29,9 @@ abstract class BaseOrganism {
   /// Number of bp to take from ATG/TSS when producing the resulting file.
   final int deltaBases;
 
+  /// Separator used in transcript IDs
+  final String transcriptSeparator;
+
   BaseOrganism({
     required this.name,
     this.ignoredFeatures = const ['chromosome', 'gene', 'transcript'],
@@ -38,6 +41,7 @@ abstract class BaseOrganism {
     this.useAtg = true,
     this.oneTranscriptPerGene = true,
     this.deltaBases = kDefaultDeltaBases,
+    this.transcriptSeparator = '.',
   }) : assert(triggerFeatures.isNotEmpty);
 
   /// Converts the file name of the TPM file to the stage name.

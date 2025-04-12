@@ -60,7 +60,7 @@ class ArabidopsisThaliana extends Arabidopsis {
   @override
   String stageNameFromTpmFilePath(String path) {
     final filename = path.split('/').last;
-    final key = RegExp(r'^Arabidopsis_([^.]*)').firstMatch(filename)!.group(1)!;
+    final key = RegExp(r'^Arabidopsis_([^.]*)').firstMatch(filename)?.group(1) ?? filename.replaceAll('.csv', '');
     return key;
   }
 }

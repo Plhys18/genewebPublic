@@ -4,6 +4,7 @@ import 'package:pipeline/organisms/arabidopsis.dart';
 import 'package:pipeline/organisms/azolla.dart';
 import 'package:pipeline/organisms/base_organism.dart';
 import 'package:pipeline/organisms/ceratopteris.dart';
+import 'package:pipeline/organisms/chara.dart';
 import 'package:pipeline/organisms/ginkgo.dart';
 import 'package:pipeline/organisms/hordeum.dart';
 import 'package:pipeline/organisms/marchantia.dart';
@@ -16,6 +17,8 @@ import 'package:pipeline/organisms/zea.dart';
 class OrganismFactory {
   static BaseOrganism getOrganism(String organism) {
     switch (organism) {
+      case 'Chara_braunii':
+        return Chara();
       case 'Allium_cepa':
         return Allium();
       case 'Amborella_trichopoda':

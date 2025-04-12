@@ -6,6 +6,7 @@ import 'package:geneweb/analysis/organism.dart';
 import 'package:geneweb/genes/stage_selection.dart';
 import 'package:geneweb/genes/gene.dart';
 import 'package:geneweb/utilities/series.dart';
+import 'dart:math';
 
 /// Holds a list of genes
 class GeneList extends Equatable {
@@ -311,14 +312,6 @@ class GeneList extends Equatable {
       'colors': colors.map((key, value) => MapEntry(key, value.value)),
     };
   }
-  Color _randomColor(String stage) {
-    final seed = stage.hashCode;
-    final random = Random(seed);
-    final hue = random.nextDouble() * 360;
-    final saturation = 0.35 + (random.nextDouble() * 0.2);
-    final lightness = 0.55 + (random.nextDouble() * 0.2);
-    return HSLColor.fromAHSL(1.0, hue, saturation, lightness).toColor();
-  }
 
   static GeneList fromJson(Map<String, dynamic> json) {
     final genesJson = json['genes'] as List<dynamic>;
@@ -327,5 +320,28 @@ class GeneList extends Equatable {
       errors: json['errors'] as List<dynamic>? ?? []
     );
     return geneList;
+  }
+
+  /// Generates a stable, bland color based on the stage name
+  ///
+  /// The color is deterministic for a given stage name and will always
+  /// return the same color for the same input
+  Color _randomColor(String stage) {
+    // Use the string hash as a seed for stability
+    final seed = stage.hashCode;
+
+    // Create a seeded random generator
+    final random = Random(seed);
+
+    // Generate HSL values for a pleasant, bland color
+    // Hue: 0-360 (full color wheel)
+    // Saturation: 35-55% (not too vibrant, not too gray)
+    // Lightness: 55-75% (medium-light, visible but not too bright)
+    final hue = random.nextDouble() * 360;
+    final saturation = 0.35 + (random.nextDouble() * 0.2); // 35-55%
+    final lightness = 0.55 + (random.nextDouble() * 0.2); // 55-75%
+
+    // Convert HSL to RGB
+    return HSLColor.fromAHSL(1.0, hue, saturation, lightness).toColor();
   }
 }
