@@ -2,51 +2,30 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-default-key')
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'golem-dev.biodata.ceitec.cz', 'backend']
-DATA_DIR = BASE_DIR / "data"
-if DEBUG:
-    # Development settings
-    SECURE_SSL_REDIRECT = False
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
-    SECURE_HSTS_SECONDS = 0
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
-    SECURE_HSTS_PRELOAD = False
-else:
-    # Production settings
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-
-SESSION_ENGINE = "django.contrib.sessions.backends.db"
-SESSION_COOKIE_AGE = 86400  # 1-day
-SESSION_COOKIE_SAMESITE = "Lax"
 # Hosts settings
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'golem-dev.biodata.ceitec.cz,127.0.0.1,147.251.245.200,localhost,0.0.0.0,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '147.251.245.200,localhost,0.0.0.0,127.0.0.1').split(',')
+
 DATA_DIR = BASE_DIR / "data"
 
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_COOKIE_AGE = 86400  # 1-day
-# AUTH_USER_MODEL = "auth_app.AppUser"
+AUTH_USER_MODEL = "auth_app.AppUser"
 # SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 # SECURITY SETTINGS: Enforce HTTPS
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-SECURE_SSL_REDIRECT = False
-SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'True') == 'True'
-CSRF_COOKIE_SECURE = os.environ.get('CSRF_COOKIE_SECURE', 'True') == 'True'
-SECURE_HSTS_SECONDS = 31536000
+SECURE_SSL_REDIRECT = True  # Redirect HTTP to HTTPS
+SESSION_COOKIE_SECURE = True  # Ensure session cookies are sent over HTTPS
+CSRF_COOKIE_SECURE = True  # Ensure CSRF cookies are sent over HTTPS
+SECURE_HSTS_SECONDS = 31536000  # Enable HTTP Strict Transport Security (1 year)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
 
 INSTALLED_APPS = [
     # Django core apps
@@ -64,8 +43,10 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'drf_yasg',
-    'analysis',
-    'auth_app',
+    # Local apps
+    'my_analysis_project.analysis',
+    'my_analysis_project.auth_app',
+
 ]
 
 
@@ -115,7 +96,7 @@ ROOT_URLCONF = 'urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [BASE_DIR / 'templates'],  # If you have templates, you can place them here
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -135,7 +116,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
-}
+}\
 
 CORS_ALLOW_ALL_ORIGINS = True
 
@@ -147,11 +128,14 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',},
 ]
 
+# Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
+# Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
 
+# Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

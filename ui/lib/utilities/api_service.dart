@@ -17,8 +17,7 @@ class ApiService {
   ApiService._internal();
 
   static SharedPreferences? _prefs;
-  static const String _baseUrl = "http://0.0.0.0:8001/api";
-
+  static const String _baseUrl = "https://golem-dev.biodata.ceitec.cz/api";
   static const String _tokenKey = "jwt_access";
   static const String _refreshTokenKey = "jwt_refresh";
   static const String _tokenExpiryKey = "jwt_expiry";

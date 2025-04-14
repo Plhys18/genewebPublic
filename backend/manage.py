@@ -4,9 +4,14 @@ import os
 import sys
 from pathlib import Path
 
+# Add the current directory to the path
 BASE_DIR = Path(__file__).resolve().parent
 LIB_DIR = BASE_DIR
 sys.path.insert(0, str(LIB_DIR))
+sys.path.insert(0, str(BASE_DIR))
+PARENT_DIR = BASE_DIR.parent
+sys.path.insert(0, str(PARENT_DIR))
+
 def main():
     """Run administrative tasks."""
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")

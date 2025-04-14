@@ -1,7 +1,6 @@
-# Stage 1: Build the Flutter web app
 FROM ubuntu:22.04 AS build-stage
 
-# Install required packages
+# Install Flutter dependencies
 RUN apt-get update && apt-get install -y \
     curl \
     git \
@@ -13,28 +12,24 @@ RUN apt-get update && apt-get install -y \
 # Install Flutter
 RUN git clone https://github.com/flutter/flutter.git /flutter
 ENV PATH="/flutter/bin:${PATH}"
-
-# Set Flutter to use web
-RUN flutter channel stable
-RUN flutter upgrade
-RUN flutter config --enable-web
+RUN flutter doctor
 
 # Copy Flutter project
 WORKDIR /app
 COPY . /app/
 
-# Build for web
+# Build Flutter web app
 RUN flutter pub get
 RUN flutter build web --release
 
-# Stage 2: Serve the app using Nginx
+# Second stage - serve using Nginx
 FROM nginx:1.25-alpine
 
-# Copy the built web app to nginx directory
+# Copy the pre-built web files to the nginx directory
 COPY --from=build-stage /app/build/web /usr/share/nginx/html
 
-# Expose port
-EXPOSE 80
+# Expose ports
+EXPOSE 80 443
 
 # Start Nginx
 CMD ["nginx", "-g", "daemon off;"]
