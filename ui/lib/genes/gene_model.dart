@@ -14,6 +14,7 @@ class GeneModel extends ChangeNotifier {
   static const kAllStages = '__ALL__';
 
   String? name = "";
+  bool _isLoading = false;
 
   List<Motif> _allMotifs = [];
   List<String> _selectedMotifsNames = [];
@@ -34,6 +35,7 @@ class GeneModel extends ChangeNotifier {
   List<String> get getSelectedStages => getStageSelectionClass.selectedStages;
   List<AnalysisHistoryEntry> get getAnalysesHistory => _analysesHistory;
   StageSelection get getStageSelectionClass => _stageSelection;
+  bool get isLoading => _isLoading;
 
   AnalysisOptions analysisOptions = AnalysisOptions();
 
@@ -84,6 +86,18 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setSelectedStages(List<String> list) {
+    print("Updating selected stages in GeneModel: $list");
+    _stageSelection.selectedStages.clear();
+    _stageSelection.selectedStages.addAll(list);
+    notifyListeners();
+  }
+
+  void setStageSelection(StageSelection selection) {
+    _stageSelection = selection;
+    notifyListeners();
+  }
+
   void toggleStageSelection(String stage, bool value) {
     if (value && !getSelectedStages.contains(stage)) {
       _stageSelection.selectedStages.add(stage);
@@ -109,9 +123,12 @@ class GeneModel extends ChangeNotifier {
   }
 
   Future<void> fetchOrganismDetails(String organismName) async {
+    _isLoading = true;
+    notifyListeners();
+    _sourceGenesLength = null;
+    notifyListeners();
     try {
       removeAnalyses();
-      name = organismName;
       final data = await ApiService().getOrganismDetails(organismName);
 
       if (!data.containsKey("genes_length")) {
@@ -125,9 +142,12 @@ class GeneModel extends ChangeNotifier {
       for (var stageName in defaultSelectedStageKeys) {
         toggleStageSelection(stageName, true);
       }
-
     } catch (error) {
-      throw Exception("Error fetching organism details: $error");
+      throw Exception("Error fetching organism details: $error $organismName");
+    } finally {
+      name = organismName;
+      _isLoading = false;
+      notifyListeners();
     }
   }
   
@@ -153,29 +173,6 @@ class GeneModel extends ChangeNotifier {
     cleanSelectedStages();
     notifyListeners();
   }
-
-  //
-  // void _processSourceGenesInformations(Map<String, dynamic> data) {
-  //   _sourceGenesLength = data["genes_length"] as int?;
-  //   _sourceGenesKeysLength = data["genes_keys_length"] as int?;
-  //   _organismAndStagesFromBe = data["organism_and_stages"] as String;
-  //   _markers = List<String>.from(data["markers"] ?? []);
-  //   _errorCount = data["error_count"] as int? ?? 0;
-  //   _defaultSelectedStageKeys = List<String>.from(data["default_selected_stage_keys"] ?? []);
-  //   notifyListeners();
-  // }
-
-
-  // Future<void> fetchSourceGenesInformations() async {
-  //   try {
-  //     final data = await _ApiService().getActiveOrganismSourceGenesInformations();
-  //     _processSourceGenesInformations(data);
-  //
-  //     assert (_sourceGenesLength != null, "Source genes not set");
-  //   } catch (error) {
-  //     print("❌ Error fetching active organism source genes: $error");
-  //   }
-  // }
 
   Future<bool> analyze() async {
     assert(getStageSelectionClass.selectedStages.isNotEmpty, "No stages selected");
@@ -203,7 +200,6 @@ class GeneModel extends ChangeNotifier {
       "params": params,
     };
 
-    print("🔹 Sending analysis request to backend with payload: $payload");
     final response = await ApiService().postRequest("analysis/analyze/", payload);
 
     if (response.containsKey("results")) {
@@ -223,17 +219,6 @@ class GeneModel extends ChangeNotifier {
 
     return false;
 
-  }
-  /// Fetches the user's analysis history from the backend
-  Future<List<AnalysisHistoryEntry>> fetchUserAnalysesHistory() async {
-    try {
-      _analysesHistory = await ApiService().fetchAnalysesHistory();
-      notifyListeners();
-      return _analysesHistory;
-    } catch (e) {
-      debugPrint('Error fetching analysis history: $e');
-      rethrow;
-    }
   }
 
   /// Loads the settings from a previous analysis without the results
@@ -286,17 +271,16 @@ class GeneModel extends ChangeNotifier {
       return false;
     }
   }
-
-  void setSelectedStages(List<String> list) {
-    print("Updating selected stages in GeneModel: $list");
-    _stageSelection.selectedStages.clear();
-    _stageSelection.selectedStages.addAll(list);
-    notifyListeners();
-  }
-
-  void setStageSelection(StageSelection selection) {
-    _stageSelection = selection;
-    notifyListeners();
+  /// Fetches the user's analysis history from the backend
+  Future<List<AnalysisHistoryEntry>> fetchUserAnalysesHistory() async {
+    try {
+      _analysesHistory = await ApiService().fetchAnalysesHistory();
+      notifyListeners();
+      return _analysesHistory;
+    } catch (e) {
+      debugPrint('Error fetching analysis history: $e');
+      rethrow;
+    }
   }
 
   Future<void> fetchPublicOrganisms() async {

@@ -4,7 +4,6 @@ import 'package:geneweb/genes/gene_model.dart';
 import 'package:geneweb/utilities/api_service.dart';
 import 'package:provider/provider.dart';
 
-import '../genes/gene_list.dart';
 /// Widget shown just below the panel headline
 class SourceSubtitle extends StatelessWidget {
   const SourceSubtitle({super.key});
@@ -104,6 +103,7 @@ class _SourcePanelState extends State<SourcePanel> {
           children: _organisms.map((organism) => _OrganismCard(
             organism: organism,
             onSelected: () => _handleSelectOrganism(organism),
+
           )).toList(),
         ),
       ],
@@ -116,7 +116,6 @@ class _SourcePanelState extends State<SourcePanel> {
       setState(() => _loadingMessage = "Setting active organism: ${organism.name}…");
       model.fetchOrganismDetails(organism.name);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Now working with ${organism.name}.")));
-      widget.onShouldClose();
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error selecting organism: $error"), backgroundColor: Colors.red));
     } finally {

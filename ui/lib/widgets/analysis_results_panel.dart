@@ -137,6 +137,7 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
               ),
               Row(
                 children: [
+                  // IF USER IS LOGGED IN WE NEED TO ENABLE THAT< ELSE NOT
                   OutlinedButton.icon(
                     onPressed: _navigateToAnalysisHistory,
                     icon: const Icon(Icons.history),

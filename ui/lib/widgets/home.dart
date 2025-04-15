@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/analysis_options.dart';
 import 'package:geneweb/analysis/motif.dart';
-import 'package:geneweb/genes/gene_list.dart';
 import 'package:geneweb/genes/stage_selection.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:geneweb/screens/analysis_screen.dart';
@@ -28,14 +27,6 @@ class _HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
-    /*
-    for (final motif in Presets.analyzedMotifs) {
-      debugPrint(motif.name);
-      debugPrint(motif.definitions.join(','));
-      debugPrint(motif.reverseDefinitions.join(','));
-      debugPrint('\n');
-    }
-    */
   }
 
   @override
@@ -63,7 +54,9 @@ class _HomeState extends State<Home> {
                 title: const Text('Species'),
                 subtitle: const SourceSubtitle(),
                 content: SourcePanel(onShouldClose: () => _handleStepTapped(1)),
-                state: sourceGenesLength == null
+                state: _model.isLoading
+                    ? StepState.indexed
+                    : sourceGenesLength == null
                     ? StepState.indexed
                     : sourceGenesLength == 0
                     ? StepState.error
@@ -114,7 +107,7 @@ class _HomeState extends State<Home> {
     final model = GeneModel.of(context);
     switch (nextStep) {
       case 0: // source data
-        return true;
+        return !model.isLoading;
       case 1: // analysis options
         return model.getAnalyses.isNotEmpty || model.sourceGenesLength != null;
       case 2: // motif
