@@ -340,7 +340,7 @@ class _StageCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: backgroundColor,
                             border: Border.all(color: Colors.white),
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(7),
                           ),
                         ),
                       ),

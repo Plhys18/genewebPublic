@@ -137,12 +137,12 @@ class _AnalysisResultsPanelState extends State<AnalysisResultsPanel> {
               ),
               Row(
                 children: [
-                  // IF USER IS LOGGED IN WE NEED TO ENABLE THAT< ELSE NOT
-                  OutlinedButton.icon(
-                    onPressed: _navigateToAnalysisHistory,
-                    icon: const Icon(Icons.history),
-                    label: const Text('View History'),
-                  ),
+                  if ( ApiService().isAuthenticated )
+                    OutlinedButton.icon(
+                      onPressed: _navigateToAnalysisHistory,
+                      icon: const Icon(Icons.history),
+                      label: const Text('View History'),
+                    ),
                   const SizedBox(width: 8),
                   if (analyses.isNotEmpty)
                     ElevatedButton(

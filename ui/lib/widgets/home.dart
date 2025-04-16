@@ -115,7 +115,7 @@ class _HomeState extends State<Home> {
       case 3: // stage
         return model.getAnalyses.isNotEmpty || model.sourceGenesLength != null;
       case 4: // analysis
-        return model.getAnalyses.isNotEmpty || model.sourceGenesLength != null && model.expectedSeriesCount > 0 && model.expectedSeriesCount <= 60;
+        return model.getAnalyses.isNotEmpty || model.sourceGenesLength != null && model.expectedSeriesCount > 0 && model.expectedSeriesCount <= 60 && model.getSelectedMotifsNames.isNotEmpty;
       default:
         return false;
     }
@@ -129,11 +129,14 @@ class _HomeState extends State<Home> {
 
   Future<void> _handleStepContinue() async {
     final nextStep = _index + 1;
+
+    if (!_isStepAllowed(nextStep)) return;
+
     if (nextStep == 4) {
-      await Navigator.of(context).push(MaterialPageRoute(builder: (context) => const AnalysisScreen()));
-      return;
-    }
-    if (_isStepAllowed(nextStep)) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => const AnalysisScreen()),
+      );
+    } else {
       setState(() => _index = nextStep);
     }
   }
