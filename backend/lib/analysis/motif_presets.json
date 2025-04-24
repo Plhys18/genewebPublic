@@ -1,0 +1,111 @@
+{
+  "motifs": [
+    {
+      "name": "ABRE",
+      "definitions": ["ACGTG"],
+      "public": true
+    },
+    {
+      "name": "ARR10_core",
+      "definitions": ["GATY"],
+      "public": true
+    },
+    {
+      "name": "BR_response element",
+      "definitions": ["CGTGYG"],
+      "public": true
+    },
+    {
+      "name": "CAAT-box",
+      "definitions": ["CCAATT"],
+      "public": true
+    },
+    {
+      "name": "DOF_core motif",
+      "definitions": ["AAAG"],
+      "public": true
+    },
+    {
+      "name": "DRE/CRT element",
+      "definitions": ["CCGAC"],
+      "public": true
+    },
+    {
+      "name": "E-box",
+      "definitions": ["CANNTG"],
+      "public": true
+    },
+    {
+      "name": "G-box",
+      "definitions": ["CACGTG"],
+      "public": true
+    },
+    {
+      "name": "GCC-box",
+      "definitions": ["GCCGCC"],
+      "public": true
+    },
+    {
+      "name": "GTGA motif",
+      "definitions": ["GTGA"],
+      "public": true
+    },
+    {
+      "name": "I-box",
+      "definitions": ["GATAAG"],
+      "public": true
+    },
+    {
+      "name": "pollen Q-element",
+      "definitions": ["AGGTCA"],
+      "public": true
+    },
+    {
+      "name": "POLLEN1_LeLAT52",
+      "definitions": ["AGAAA"],
+      "public": true
+    },
+    {
+      "name": "TATA-box",
+      "definitions": ["TATAWA"],
+      "public": true
+    },
+    {
+      "name": "Arabidopsis.telobox",
+      "definitions": [
+        "CCCTAAAC", "CCTAAACC", "CTAAACCC", "TAAACCCT",
+        "AAACCCTA", "AACCCTAA", "ACCCTAAA"
+      ],
+      "public": false
+    },
+    {
+      "name": "Arabidopsis.telobox.generic",
+      "definitions": ["NGGNNTN", "NGGNTN"],
+      "public": false
+    },
+    {
+      "name": "Arabidopsis.siteII",
+      "definitions": ["TGGGCC", "TGGGCT", "GGNCCCAC", "GTGGNCCC"],
+      "public": false
+    },
+    {
+      "name": "Allium.Cepa.telobox",
+      "definitions": [
+        "CTCGGTTATGGGC", "TCGGTTATGGGCT", "CGGTTATGGGCTC",
+        "GGTTATGGGCTCG", "GTTATGGGCTCGG", "TTATGGGCTCGGT",
+        "TATGGGCTCGGTT", "ATGGGCTCGGTTA", "TGGGCTCGGTTAT",
+        "GGGCTCGGTTATG", "GGCTCGGTTATGG", "GCTCGGTTATGGG"
+      ],
+      "public": false
+    },
+    {
+      "name": "Allium.Cepa.7Nt",
+      "definitions": [
+        "TATGGGC", "ATGGGCT", "TGGGCTC", "GGGCTCG",
+        "GGCTCGG", "GCTCGGT", "CTCGGTT", "TCGGTTA",
+        "CGGTTAT", "GGTTATG", "GTTATGG", "TTATGGG"
+      ],
+      "public": false
+    }
+  ]
+}

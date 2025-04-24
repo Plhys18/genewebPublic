@@ -1,368 +1,131 @@
+import json
 import re
+import os
+import logging
 
 from lib.analysis.organism import Organism
 from lib.analysis.stage_and_color import StageAndColor
 
+logger = logging.getLogger(__name__)
+
 
 class OrganismPresets:
-    """
-    Presets for organisms.
+    _data = None
+    _arabidopsis_stages = None
+    _organisms = None
+    _loaded_from_file = False
 
-    See Organism
-    """
+    k_organisms = []
 
-    _arabidopsis_stages = [
-        StageAndColor("C_Tapetum", "#993300"),
-        StageAndColor("C_EarlyPollen", "#B71C1C"),
-        StageAndColor("C_UNM", "#FF6D6D"),
-        StageAndColor("C_BCP", "#C80002"),
-        StageAndColor("C_LatePollen", "#0D47A1"),
-        StageAndColor("C_TCP", "#21C5FF"),
-        StageAndColor("C_MPG", "#305496"),
-        StageAndColor("C_SIV_PT", "#FF6600"),
-        StageAndColor("C_Sperm_cell", "#FFC002"),
-        StageAndColor("C_Leaves_35d", "#92D050"),
-        StageAndColor("C_Seedlings_10d", "#C6E0B4"),
-        StageAndColor("C_Egg_cell", "#607D8B"),
+    @classmethod
+    def _load_data(cls, force_reload=False):
+        if cls._data is None or force_reload:
+            dir_path = os.path.dirname(os.path.abspath(__file__))
+            json_path = os.path.join(dir_path, 'organism_presets.json')
 
-        StageAndColor("L_EarlyPollen", "#B71C1C", is_checked_by_default=False),
-        StageAndColor("L_UNM", "#FF6D6D", is_checked_by_default=False),
-        StageAndColor("L_BCP", "#C80002", is_checked_by_default=False),
-        StageAndColor("L_LatePollen", "#0D47A1", is_checked_by_default=False),
-        StageAndColor("L_TCP", "#21C5FF", is_checked_by_default=False),
-        StageAndColor("L_MPG", "#305496", is_checked_by_default=False),
+            logger.info(f"Attempting to load organism_presets.json from: {json_path}")
+            print(f"Attempting to load organism_presets.json from: {json_path}")
 
-        StageAndColor("Egg cell_Julca", "orange", is_checked_by_default=False),
-        StageAndColor("Embryo", "orchid", is_checked_by_default=False),
-        StageAndColor("Endosperm", "purple", is_checked_by_default=False),
+            try:
+                with open(json_path, 'r') as f:
+                    cls._data = json.load(f)
+                cls._loaded_from_file = True
+                cls._arabidopsis_stages = None
+                cls._organisms = None
+                logger.info(f"Successfully loaded organism presets from {json_path}")
+                print(f"Successfully loaded organism presets from {json_path}")
+            except FileNotFoundError:
+                error_msg = f"Could not find organism_presets.json at {json_path}"
+                logger.error(error_msg)
+                print(error_msg)
+            except json.JSONDecodeError as e:
+                error_msg = f"Invalid JSON in organism_presets.json: {str(e)}"
+                logger.error(error_msg)
+                print(error_msg)
 
-        StageAndColor("Tapetum", "#993300"),
-        StageAndColor("EarlyPollen", "#B71C1C"),
-        StageAndColor("UNM", "#FF6D6D"),
-        StageAndColor("lerUNM", "#FF6D6D"),
-        StageAndColor("BCP", "#C80002"),
-        StageAndColor("lerBCP", "#C80002"),
-        StageAndColor("LatePollen", "#0D47A1"),
-        StageAndColor("TCP", "#21C5FF"),
-        StageAndColor("lerTCP", "#21C5FF"),
-        StageAndColor("MPG", "#305496"),
-        StageAndColor("lerMPG", "#305496"),
-        StageAndColor("SIV_PT", "#FF6600"),
-        StageAndColor("Sperm", "#FFC002"),
-        StageAndColor("Leaves", "#92D050"),
-        StageAndColor("Seedlings", "#C6E0B4"),
-        StageAndColor("Egg", "#607D8B"),
-    ]
+    @classmethod
+    def reload_data(cls):
+        cls._load_data(force_reload=True)
+        cls.k_organisms = cls._get_organisms()
+        return cls._loaded_from_file
 
-    k_organisms = [
-        Organism(
-            public=True,
-            name='Chara braunii',
-            filename='Chara_braunii.fasta.zip',
-            description='ATG',
-            stages=[
-                StageAndColor('Antheridia', "#4B0082"),  # Indigo
-                StageAndColor('Oogonia', "#FFA500"),  # Orange
-                StageAndColor('Zygotes', "#A52A2A"),  # Brown
-                StageAndColor('Vegetative_tissue', "#008000"),  # Green
-            ],
-            take_first_transcript_only=False,
-        ),
-        Organism(
-            public=True,
-            name="Marchantia polymorpha",
-            filename="Marchantia_polymorpha-with-tss.fasta.zip",
-            description="ATG, TSS",
-            stages=[
-                StageAndColor("Antheridium", "#0085B4"),
-                StageAndColor("Sperm_cell", "#FFC002"),
-                StageAndColor("Thallus", "#548236"),
-            ],
-        ),
-        Organism(
-            name="Marchantia polymorpha",
-            filename="Marchantia_polymorpha.fasta.zip",
-            description="ATG",
-            stages=[
-                StageAndColor("Antheridium", "#0085B4"),
-                StageAndColor("Sperm_cell", "#FFC002"),
-                StageAndColor("Thallus", "#548236"),
-            ],
-        ),
-        Organism(
-            name="Physcomitrium patens",
-            filename="Physcomitrium_patens.fasta.zip",
-            description="ATG",
-            stages=[
-                StageAndColor("Antheridia_9DAI", "#21C5FF"),
-                StageAndColor("Antheridia_11DAI", "#009ED6"),
-                StageAndColor("Antheridia_14-15DAI_(mature)", "#009AD0"),
-                StageAndColor("Sperm_cell_packages", "#FFDB69"),
-                StageAndColor("Leaflets", "#548236"),
-                StageAndColor("Archegonia (mature)", "orange"),
-                StageAndColor("Sporophyte (9 DAF)", "teal"),
-            ],
-        ),
-        Organism(
-            public=True,
-            name="Physcomitrium patens",
-            filename="Physcomitrium_patens-with-tss.fasta.zip",
-            description="ATG, TSS",
-            stages=[
-                StageAndColor("Antheridia_9DAI", "#21C5FF"),
-                StageAndColor("Antheridia_11DAI", "#009ED6"),
-                StageAndColor("Antheridia_14-15DAI_(mature)", "#0085B4"),
-                StageAndColor("Sperm_cell_packages", "#FFDB69"),
-                StageAndColor("Leaflets", "#548236"),
-                StageAndColor("Archegonia (mature)", "orange"),
-                StageAndColor("Sporophyte (9 DAF)", "teal"),
-            ],
-        ),
-        Organism(
-            public=True,
-            name="Azolla filiculoides",
-            filename="Azolla_filiculoides.fasta.zip",
-            description="ATG",
-            stages=[
-                StageAndColor("Leaves", "#92D050"),
-                StageAndColor("Spores", "#FFC002"),
-            ],
-            take_first_transcript_only=False,
-        ),
-        Organism(
-            name="Azolla filiculoides",
-            filename="Azolla_filiculoides-with-tss.fasta.zip",
-            description="ATG, TSS",
-            stages=[
-                StageAndColor("Leaves", "#92D050"),
-                StageAndColor("Spores", "#FFC002"),
-            ],
-            take_first_transcript_only=False,
-        ),
-        Organism(
-            name="Ceratopteris richardii",
-            filename="Ceratopteris_richardii.fasta.zip",
-            description="ATG",
-            stages=[
-                StageAndColor("Gametophyte", "#2980B9"),
-                StageAndColor("Male_gametophyte", "#5DADE2"),
-                StageAndColor("Hermaphrodite_gametophyte", "#8E44AD"),
-                StageAndColor("Sporophyte", "#229954"),
-            ],
-        ),
-        Organism(
-            public=True,
-            name="Ceratopteris richardii",
-            filename="Ceratopteris_richardii-with-tss.fasta.zip",
-            description="ATG, TSS",
-            stages=[
-                StageAndColor("Gametophyte", "#2980B9"),
-                StageAndColor("Male_gametophyte", "#5DADE2"),
-                StageAndColor("Hermaphrodite_gametophyte", "#8E44AD"),
-                StageAndColor("Sporophyte", "#229954"),
-            ],
-        ),
-        Organism(
-            public=True,
-            name="Amborella trichopoda",
-            filename="Amborella_trichopoda.fasta.zip",
-            description="ATG",
-            take_first_transcript_only=False,
-            stages=[
-                StageAndColor("UNM", "#FF6D6D"),
-                StageAndColor("Pollen", "#0085B4"),
-                StageAndColor("PT_bicellular", "#E9A5D2"),
-                StageAndColor("PT_tricellular", "#77175C"),
-                StageAndColor("Generative_cell", "#B48502"),
-                StageAndColor("Sperm_cell", "#FFC002"),
-                StageAndColor("Leaves", "#92D050"),
-            ],
-        ),
-        Organism(
-            public=True,
-            name="Oryza sativa",
-            filename="Oryza_sativa.fasta.zip",
-            description="ATG",
-            stages=[
-                StageAndColor("TCP", "#21C5FF"),
-                StageAndColor("Pollen", "#0085B4"),
-                StageAndColor("Sperm_cell", "#FFC002"),
-                StageAndColor("Leaves", "#92D050"),
-            ],
-        ),
-        Organism(
-            name="Zea mays",
-            filename="Zea_mays.fasta.zip",
-            description="ATG",
-            stages=[
-                StageAndColor("Microspore", "#FF6D6D"),
-                # BCP missing
-                StageAndColor("Pollen", "#0085B4"),
-                StageAndColor("PT", "#E9A5D2"),
-                StageAndColor("Sperm_cell", "#FFC002"),
-                StageAndColor("Leaves", "#92D050"),
-            ],
-        ),
-        Organism(
-            public=True,
-            name="Zea mays",
-            filename="Zea_mays-with-tss.fasta.zip",
-            description="ATG, TSS",
-            stages=[
-                StageAndColor("Microspore", "#FF6D6D"),
-                # BCP missing
-                StageAndColor("Pollen", "#0085B4"),
-                StageAndColor("PT", "#E9A5D2"),
-                StageAndColor("Sperm_cell", "#FFC002"),
-                StageAndColor("Leaves", "#92D050"),
-            ],
-        ),
-        Organism(
-            name="Solanum lycopersicum",
-            filename="Solanum_lycopersicum.fasta.zip",
-            description="ATG",
-            stages=[
-                StageAndColor("Microspore", "#FF6D6D"),
-                StageAndColor("Pollen", "#0085B4"),
-                StageAndColor("Pollen_grain", "#305496"),
-                StageAndColor("PT", "#E9A5D2"),
-                StageAndColor("PT_1,5h", "#D75BAE"),
-                StageAndColor("PT_3h", "#AC2A81"),
-                StageAndColor("PT_9h", "#471234"),
-                StageAndColor("Generative_cell", "#B48502"),
-                StageAndColor("Sperm_cell", "#FFC002"),
-                StageAndColor("Leaves", "#92D050"),
-            ],
-        ),
-        Organism(
-            public=True,
-            name="Solanum lycopersicum",
-            filename="Solanum_lycopersicum-with-tss.fasta.zip",
-            description="ATG, TSS",
-            stages=[
-                StageAndColor("Microspore", "#FF6D6D"),
-                StageAndColor("Pollen", "#0085B4"),
-                StageAndColor("Pollen_grain", "#305496"),
-                StageAndColor("PT", "#E9A5D2"),
-                StageAndColor("PT_1,5h", "#D75BAE"),
-                StageAndColor("PT_3h", "#AC2A81"),
-                StageAndColor("PT_9h", "#471234"),
-                StageAndColor("Generative_cell", "#B48502"),
-                StageAndColor("Sperm_cell", "#FFC002"),
-                StageAndColor("Leaves", "#92D050"),
-            ],
-        ),
-        Organism(
-            name="Hordeum vulgare",
-            filename="Hordeum_vulgare.fasta.zip",
-            description="ATG",
-            stages=[
-                StageAndColor("Embryo_8_DAP", "#6E2C00"),
-                StageAndColor("Embryo_16_DAP", "#A04000"),
-                StageAndColor("Embryo_24_DAP", "#D35400"),
-                StageAndColor("Embryo_32_DAP", "#E59866"),
-                StageAndColor("Endosperm_4_DAP", "#7D6608"),
-                StageAndColor("Endosperm_8_DAP", "#9A7D0A"),
-                StageAndColor("Endosperm_16_DAP", "#B7950B"),
-                StageAndColor("Endosperm_24_DAP", "#F1C40F"),
-                StageAndColor("Endosperm_32_DAP", "#F7DC6F"),
-                StageAndColor("Seed_maternal_tissues_4_DAP", "#1B4F72"),
-                StageAndColor("Seed_maternal_tissues_8_DAP", "#2874A6"),
-                StageAndColor("Seed_maternal_tissues_16_DAP", "#3498DB"),
-                StageAndColor("Seed_maternal_tissues_24_DAP", "#85C1E9"),
-                StageAndColor("Leaf_non-infested_30_DAP", "#82E0AA"),
-            ],
-        ),
-        Organism(
-            public=True,
-            name="Hordeum vulgare",
-            filename="Hordeum_vulgare-with-tss.fasta.zip",
-            description="ATG, TSS",
-            stages=[
-                StageAndColor("Embryo_8_DAP", "#6E2C00"),
-                StageAndColor("Embryo_16_DAP", "#A04000"),
-                StageAndColor("Embryo_24_DAP", "#D35400"),
-                StageAndColor("Embryo_32_DAP", "#E59866"),
-                StageAndColor("Endosperm_4_DAP", "#7D6608"),
-                StageAndColor("Endosperm_8_DAP", "#9A7D0A"),
-                StageAndColor("Endosperm_16_DAP", "#B7950B"),
-                StageAndColor("Endosperm_24_DAP", "#F1C40F"),
-                StageAndColor("Endosperm_32_DAP", "#F7DC6F"),
-                StageAndColor("Seed_maternal_tissues_4_DAP", "#1B4F72"),
-                StageAndColor("Seed_maternal_tissues_8_DAP", "#2874A6"),
-                StageAndColor("Seed_maternal_tissues_16_DAP", "#3498DB"),
-                StageAndColor("Seed_maternal_tissues_24_DAP", "#85C1E9"),
-                StageAndColor("Leaf_non-infested_30_DAP", "#82E0AA"),
-            ],
-        ),
-        Organism(
-            name="Arabidopsis thaliana",
-            filename="Arabidopsis_thaliana.fasta.zip",
-            description="ATG only",
-            stages=_arabidopsis_stages,
-        ),
-        Organism(
-            public=True,
-            name="Arabidopsis thaliana",
-            filename="Arabidopsis_thaliana-with-tss.fasta.zip",
-            description="ATG, TSS",
-            stages=_arabidopsis_stages,
-        ),
-        Organism(
-            name="Arabidopsis thaliana",
-            filename="Arabidopsis-variants.fasta.zip",
-            description="TSS, ATG, all splicing variants",
-            stages=_arabidopsis_stages,
-        ),
-        Organism(
-            name="Arabidopsis thaliana",
-            filename="Arabidopsis_thaliana_mitochondrion.fasta.zip",
-            description="Mitochondrion dataset",
-            stages=_arabidopsis_stages,
-        ),
-        Organism(
-            name="Arabidopsis thaliana",
-            filename="Arabidopsis_thaliana_chloroplast.fasta.zip",
-            description="Chloroplast dataset",
-            stages=_arabidopsis_stages,
-        ),
-        Organism(
-            name="Arabidopsis thaliana",
-            filename="Arabidopsis_thaliana_small_rna.fasta.zip",
-            description="Small RNA dataset",
-            stages=[],
-        ),
-        Organism(
-            name="Allium cepa",
-            filename="Allium_cepa.fasta.zip",
-            description="ATG",
-            stages=[],
-        ),
-        Organism(
-            name="Silene vulgaris",
-            filename="Silene_vulgaris.fasta.zip",
-            description="ATG",
-            stages=[],
-        ),
-        Organism(
-            name="Silene vulgaris",
-            filename="Silene_vulgaris-with-tss.fasta.zip",
-            description="ATG, TSS",
-            stages=[],
-        ),
-    ]
+    @classmethod
+    def _get_arabidopsis_stages(cls):
+        if cls._arabidopsis_stages is None:
+            cls._load_data()
+            cls._arabidopsis_stages = []
+
+            if not cls._data or "arabidopsis_stages" not in cls._data:
+                logger.warning("No arabidopsis_stages data available")
+                print("No arabidopsis_stages data available")
+                return []
+
+            for stage_data in cls._data["arabidopsis_stages"]:
+                cls._arabidopsis_stages.append(StageAndColor(
+                    stage_data["name"],
+                    stage_data["color"],
+                    is_checked_by_default=stage_data.get("is_checked_by_default", True)
+                ))
+
+        return cls._arabidopsis_stages
+
+    @classmethod
+    def _get_organisms(cls):
+        if cls._organisms is None:
+            cls._load_data()
+            cls._organisms = []
+
+            if not cls._data or "organisms" not in cls._data:
+                logger.warning("No organisms data available")
+                print("No organisms data available")
+                return []
+
+            for org_data in cls._data["organisms"]:
+                if org_data.get("stages") == "arabidopsis_stages":
+                    stages = cls._get_arabidopsis_stages()
+                else:
+                    stages = []
+                    for stage_data in org_data.get("stages", []):
+                        stages.append(StageAndColor(
+                            stage_data["name"],
+                            stage_data["color"],
+                            is_checked_by_default=stage_data.get("is_checked_by_default", True)
+                        ))
+
+                cls._organisms.append(Organism(
+                    public=org_data.get("public", False),
+                    name=org_data["name"],
+                    filename=org_data["filename"],
+                    description=org_data.get("description", ""),
+                    stages=stages,
+                    take_first_transcript_only=org_data.get("take_first_transcript_only", True)
+                ))
+
+            logger.info(f"Loaded {len(cls._organisms)} organisms")
+            print(f"Loaded {len(cls._organisms)} organisms")
+
+        return cls._organisms
+
+    @classmethod
+    def get_organisms(cls):
+        return cls._get_organisms()
+
+    @classmethod
+    def get_organism_by_name(cls, name):
+        organisms = cls._get_organisms()
+        return next((org for org in organisms if org.name == name), None)
+
+    @classmethod
+    def get_public_organisms(cls):
+        organisms = cls._get_organisms()
+        return [org for org in organisms if org.public]
 
     @staticmethod
     def organism_by_filename(filename: str) -> "Organism":
-        """
-        Attempts to find an Organism in k_organisms whose filename starts with `filename`.
-        If none is found, returns a new Organism with name based on the filename.
-        """
-        for org in OrganismPresets.k_organisms:
+        for org in OrganismPresets._get_organisms():
             if org.filename and org.filename.startswith(filename):
                 return org
 
-        # If not found, create a fallback organism
         match = re.match(r"([A-Za-z0-9_]+).*", filename)
         if match:
             fallback_name = match.group(1).replace("_", " ")
@@ -373,3 +136,11 @@ class OrganismPresets:
             name=fallback_name,
             filename=filename,
         )
+
+
+try:
+    OrganismPresets._get_organisms()
+    OrganismPresets.k_organisms = OrganismPresets._organisms
+except Exception as e:
+    logger.error(f"Error initializing OrganismPresets: {str(e)}")
+    print(f"Error initializing OrganismPresets: {str(e)}")
