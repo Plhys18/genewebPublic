@@ -8,7 +8,8 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-default-key')
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'golem-dev.biodata.ceitec.cz', 'backend']
-DATA_DIR = BASE_DIR / "data"
+DATA_DIR = Path(os.environ.get('DATA_DIR', '/app/data'))
+
 if DEBUG:
     # Development settings
     SECURE_SSL_REDIRECT = False
@@ -127,13 +128,14 @@ TEMPLATES = [
         },
     },
 ]
-
-
-# Database configuration using SQLite for development
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'genewebdb',
+        'USER': 'admin',
+        'PASSWORD': 'admin',
+        'HOST': 'postgres',
+        'PORT': '5432',
     }
 }
 
@@ -152,6 +154,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = 'static/'
-
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

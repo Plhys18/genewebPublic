@@ -36,31 +36,6 @@
     },
     {
       "public": true,
-      "name": "Kuba Test",
-      "filename": "KubaTEst",
-      "description": "KUbaTests",
-      "stages": [
-        {"name": "Antheridia", "color": "#4B0082", "is_checked_by_default": true},
-        {"name": "Oogonia", "color": "#FFA500", "is_checked_by_default": true},
-        {"name": "Zygotes", "color": "#A52A2A", "is_checked_by_default": true},
-        {"name": "Vegetative_tissue", "color": "#008000", "is_checked_by_default": true}
-      ],
-      "take_first_transcript_only": false
-    },{
-      "public": true,
-      "name": "Kuba Test2",
-      "filename": "KubaTEst2",
-      "description": "KUbaTests2",
-      "stages": [
-        {"name": "Antheridia", "color": "#4B0082", "is_checked_by_default": true},
-        {"name": "Oogonia", "color": "#FFA500", "is_checked_by_default": true},
-        {"name": "Zygotes", "color": "#A52A2A", "is_checked_by_default": true},
-        {"name": "Vegetative_tissue", "color": "#008000", "is_checked_by_default": true}
-      ],
-      "take_first_transcript_only": false
-    },
-    {
-      "public": true,
       "name": "Marchantia polymorpha",
       "filename": "Marchantia_polymorpha-with-tss.fasta.zip",
       "description": "ATG, TSS",
