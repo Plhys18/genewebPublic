@@ -4,13 +4,22 @@ from functools import partial
 from typing import List, Dict, Optional, Any
 import re
 from collections import defaultdict
-
-
 from lib.analysis.analysis_result import AnalysisResult
 from lib.analysis.distribution import Distribution
 from lib.analysis.motif import Motif
 from lib.genes.gene_list import GeneList
 
+_process_pool = None
+
+def get_process_pool(max_workers=None):
+    global _process_pool
+    if _process_pool is None:
+        import multiprocessing
+        if max_workers is None:
+            cpu_count = multiprocessing.cpu_count()
+            max_workers = max(1, min(cpu_count - 1, 4))
+        _process_pool = ProcessPoolExecutor(max_workers=max_workers)
+    return _process_pool
 
 class AnalysisSeries:
     """Represents one series in the analysis"""
@@ -54,6 +63,64 @@ class AnalysisSeries:
         )
 
     @classmethod
+    async def run_async(cls, gene_list: GeneList, motif: Motif, name: str, color: str,
+                        minimal: int, maximal: int, bucket_size: int,
+                        align_marker: Optional[str] = None, no_overlaps: bool = True,
+                        stroke: int = 4, visible: bool = True):
+        if len(gene_list.genes) < 10:
+            results = []
+            for gene in gene_list.genes:
+                results.extend(cls._find_matches(gene, motif, no_overlaps))
+        else:
+            executor = get_process_pool()
+
+            batch_size = 1000
+            results = []
+
+            find_matches_fn = partial(cls._find_matches, motif=motif, no_overlaps=no_overlaps)
+
+            import asyncio
+            for i in range(0, len(gene_list.genes), batch_size):
+                batch = gene_list.genes[i:i + batch_size]
+
+                loop = asyncio.get_event_loop()
+                batch_results = await loop.run_in_executor(
+                    executor,
+                    cls._process_gene_batch,
+                    batch,
+                    find_matches_fn
+                )
+                results.extend(batch_results)
+
+        distribution = Distribution(
+            min=minimal,
+            max=maximal,
+            bucket_size=bucket_size,
+            align_marker=align_marker,
+            name=name,
+            color=color
+        )
+        distribution.run(results, len(gene_list.genes))
+
+        return cls(
+            gene_list=gene_list,
+            motif=motif,
+            name=name,
+            color=color,
+            stroke=stroke,
+            visible=visible,
+            no_overlaps=no_overlaps,
+            result=results,
+            distribution=distribution
+        )
+    @staticmethod
+    def _process_gene_batch(gene_batch, find_matches_fn):
+        all_results = []
+        for gene in gene_batch:
+            gene_results = find_matches_fn(gene)
+            all_results.extend(gene_results)
+        return all_results
+    @classmethod
     def run(cls, gene_list: GeneList, motif: Motif, name: str, color: str, minimal: int, maximal: int,
             bucket_size: int, align_marker: Optional[str] = None, no_overlaps: bool = True,
             stroke: int = 4, visible: bool = True):
@@ -62,24 +129,35 @@ class AnalysisSeries:
             for gene in gene_list.genes:
                 results.extend(cls._find_matches(gene, motif, no_overlaps))
         else:
-            import multiprocessing
-            optimal_workers = min(max(1, multiprocessing.cpu_count() - 1), len(gene_list.genes))
-
-            chunk_size = max(1, len(gene_list.genes) // (optimal_workers * 4))
+            executor = get_process_pool()
 
             results = []
-            with ProcessPoolExecutor(max_workers=optimal_workers) as executor:
-                find_matches_fn = partial(cls._find_matches, motif=motif, no_overlaps=no_overlaps)
+            find_matches_fn = partial(cls._find_matches, motif=motif, no_overlaps=no_overlaps)
 
-                for batch_results in executor.map(find_matches_fn, gene_list.genes, chunksize=chunk_size):
-                    results.extend(batch_results)
+            for batch_results in executor.map(find_matches_fn, gene_list.genes, chunksize=100):
+                results.extend(batch_results)
 
-        distribution = Distribution(min=minimal, max=maximal, bucket_size=bucket_size, align_marker=align_marker,
-                                    name=name, color=color)
+        distribution = Distribution(
+            min=minimal,
+            max=maximal,
+            bucket_size=bucket_size,
+            align_marker=align_marker,
+            name=name,
+            color=color
+        )
         distribution.run(results, len(gene_list.genes))
 
-        return cls(gene_list, motif, name, color, stroke, visible, no_overlaps, results, distribution)
-
+        return cls(
+            gene_list=gene_list,
+            motif=motif,
+            name=name,
+            color=color,
+            stroke=stroke,
+            visible=visible,
+            no_overlaps=no_overlaps,
+            result=results,
+            distribution=distribution
+        )
     @property
     def results_map(self) -> Dict[str, List[AnalysisResult]]:
         """Returns the results as a dictionary mapping gene ID to a list of AnalysisResult"""

@@ -2,8 +2,10 @@ import json
 import os
 import logging
 from pathlib import Path
+from typing import List
 
 import settings
+from analysis.models import OrganismAccess
 from lib.analysis.organism import Organism
 from lib.analysis.stage_and_color import StageAndColor
 
@@ -11,9 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 class OrganismPresets:
-    _organisms = []
+    _organisms:List[Organism] = []
     _arabidopsis_stages = []
-    k_organisms = []
 
     @classmethod
     def reload_data(cls):
@@ -44,7 +45,6 @@ class OrganismPresets:
                     ]
 
                 cls._organisms.append(Organism(
-                    Id=organism_index,
                     public=org_data.get("public", False),
                     name=org_data["name"],
                     filename=org_data["filename"],
@@ -85,6 +85,19 @@ class OrganismPresets:
     def get_organisms(cls):
         if not cls._organisms:
             cls.reload_data()
+
+        for organism in cls._organisms:
+            any_access_records = OrganismAccess.objects.filter(
+                organism_name=organism.filename
+            ).exists()
+
+            if any_access_records:
+                public_access = OrganismAccess.objects.filter(
+                    organism_name=organism.filename,
+                    access_type='public'
+                ).exists()
+                organism.public = public_access
+
         return cls._organisms
 
     @classmethod

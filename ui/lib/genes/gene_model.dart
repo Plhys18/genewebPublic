@@ -124,14 +124,14 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> fetchOrganismDetails(String organismName) async {
+  Future<void> fetchOrganismDetails(String organismFile) async {
     _isLoading = true;
     notifyListeners();
     _sourceGenesLength = null;
     notifyListeners();
     try {
       removeAnalyses();
-      final data = await ApiService().getOrganismDetails(organismName);
+      final data = await ApiService().getOrganismDetails(organismFile);
 
       if (!data.containsKey("genes_length")) {
         throw Exception("Invalid API response: Missing 'genes_length' key.");
@@ -139,17 +139,17 @@ class GeneModel extends ChangeNotifier {
 
       _processMotifsAndStages(data);
 
-      filename = data["filename"] as String?;
-
+      filename = organismFile;
+      name = data["organism"] ?? "Undefined";
       assert(_sourceGenesLength != null, "Source genes not set");
 
       for (var stageName in defaultSelectedStageKeys) {
         toggleStageSelection(stageName, true);
       }
+
     } catch (error) {
-      throw Exception("Error fetching organism details: $error $organismName");
+      throw Exception("Error fetching organism details: $error $organismFile");
     } finally {
-      name = organismName;
       _isLoading = false;
       notifyListeners();
     }

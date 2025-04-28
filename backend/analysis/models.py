@@ -11,6 +11,7 @@ class AnalysisHistory(models.Model):
     )
     name = models.CharField(max_length=255, db_index=True)
     organism = models.CharField(max_length=255, db_index=True)
+    organism_filename = models.CharField(max_length=255, db_index=True),
     motifs = models.JSONField(default=list)
     stages = models.JSONField(default=list)
     settings = models.JSONField(default=dict)

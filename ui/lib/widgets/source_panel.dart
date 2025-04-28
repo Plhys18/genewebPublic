@@ -114,7 +114,7 @@ class _SourcePanelState extends State<SourcePanel> {
     try {
       var model = GeneModel.of(context);
       setState(() => _loadingMessage = "Setting active organism: ${organism.name}…");
-      model.fetchOrganismDetails(organism.filename?? organism.name);
+      model.fetchOrganismDetails(organism.filename?? "");
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Now working with ${organism.name}.")));
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error selecting organism: $error"), backgroundColor: Colors.red));

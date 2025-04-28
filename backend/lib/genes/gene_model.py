@@ -90,7 +90,6 @@ class GeneModel:
         self.sourceGenes = GeneList.from_list(genes=genes, errors=errors, organism=organism)
 
     async def analyze(self) -> bool:
-        tasks = []
         try:
             if not self._stageSelection or not self._stageSelection.selectedStages:
                 logger.error("No stages selected for analysis")
@@ -113,10 +112,16 @@ class GeneModel:
 
             total_tasks = len(self._stageSelection.selectedStages) * len(self._motifs)
             completed_tasks = 0
-
             color_preferences = {}
 
-            analysis_tasks = []
+            import multiprocessing
+            cpu_count = multiprocessing.cpu_count()
+            optimal_workers = max(1, min(cpu_count - 1, 4))
+
+            logger.info(f"Creating process pool with {optimal_workers} workers")
+
+            analysis_params = []
+
             for motif in self._motifs:
                 for stage_key in self._stageSelection.selectedStages:
                     filteredGenes = (
@@ -133,65 +138,58 @@ class GeneModel:
                     name = f"{'all' if stage_key == '__ALL__' else stage_key} - {motif.name}"
                     color = color_preferences.get(f"{stage_key}_{motif.name}") or self.randomColorOf(name)
 
-                    task = self._create_analysis_task(
-                        genes=filteredGenes,
-                        motif=motif,
-                        name=name,
-                        color=color
-                    )
-                    analysis_tasks.append(task)
-
-            sem = asyncio.Semaphore(min(8, len(analysis_tasks)))
-
-            async def run_with_semaphore(task_fn):
-                async with sem:
-                    return await task_fn
-
-            # Create tasks with proper task tracking for cancellation
-            tasks = [asyncio.create_task(run_with_semaphore(t)) for t in analysis_tasks]
+                    analysis_params.append({
+                        'genes': filteredGenes,
+                        'motif': motif,
+                        'name': name,
+                        'color': color,
+                        'min': self.analysisOptions.min,
+                        'max': self.analysisOptions.max,
+                        'interval': self.analysisOptions.bucketSize,
+                        'alignMarker': self.analysisOptions.alignMarker,
+                        'no_overlaps': True,
+                    })
 
             results = []
-            for i, task in enumerate(asyncio.as_completed(tasks)):
-                try:
-                    result = await task
-                    results.append(result)
 
-                    completed_tasks += 1
-                    self.analysisProgress = completed_tasks / total_tasks
-                    logger.debug(f"Analysis progress: {self.analysisProgress:.1%}")
-                except asyncio.CancelledError:
-                    logger.warning("Analysis task was cancelled")
-                    raise
-                except Exception as e:
-                    logger.exception(f"Error in analysis task: {e}")
-                    raise
+            batch_size = min(len(analysis_params), 2)
+
+            for i in range(0, len(analysis_params), batch_size):
+                batch = analysis_params[i:i + batch_size]
+
+                batch_tasks = []
+                for params in batch:
+                    task = self._run_single_analysis(params)
+                    batch_tasks.append(task)
+
+                batch_results = await asyncio.gather(*batch_tasks)
+                results.extend(batch_results)
+
+                completed_tasks += len(batch)
+                self.analysisProgress = completed_tasks / total_tasks
+                logger.debug(f"Analysis progress: {self.analysisProgress:.1%}")
 
             self.analyses.extend(results)
             self.analysisProgress = 1.0
-
             return True
 
         except Exception as e:
             logger.exception(f"Error during analysis: {e}")
             self.analysisProgress = None
             return False
-        finally:
-            # Cancel any outstanding tasks
-            for task in tasks:
-                if not task.done():
-                    task.cancel()
 
-    async def _create_analysis_task(self, genes, motif, name, color):
-        return await runAnalysis({
-            'genes': genes,
-            'motif': motif,
-            'name': name,
-            'color': color,
-            'min': self.analysisOptions.min,
-            'max': self.analysisOptions.max,
-            'interval': self.analysisOptions.bucketSize,
-            'alignMarker': self.analysisOptions.alignMarker,
-        })
+    async def _run_single_analysis(self, params):
+        return await AnalysisSeries.run_async(
+            gene_list=params['genes'],
+            motif=params['motif'],
+            name=params['name'],
+            color=params['color'],
+            minimal=params['min'],
+            maximal=params['max'],
+            bucket_size=params['interval'],
+            align_marker=params['alignMarker'],
+            no_overlaps=params.get('no_overlaps', True)
+        )
     @staticmethod
     def randomColorOf(text: str):
         hash_val = 0

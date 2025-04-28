@@ -1,3 +1,5 @@
+from typing import Optional
+
 from django.http import JsonResponse
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -232,11 +234,11 @@ def get_organism_details(request, file_name):
         user = request.user if request.user.is_authenticated else None
         if not file_name:
             return JsonResponse({"error": "Missing organism name"}, status=400)
-        candidates = [o for o in OrganismPresets.k_organisms if o.filename == file_name]
+        candidates = [o for o in OrganismPresets.get_organisms() if o.filename == file_name]
         if not candidates:
             return JsonResponse({"error": "Organism not found"}, status=404)
         candidates.sort(key=lambda o: not o.public)
-        accessible_organism = None
+        accessible_organism: Optional[Organism] = None
         for org in candidates:
             if check_organism_access(user, org):
                 accessible_organism = org
@@ -287,12 +289,9 @@ def get_organism_details(request, file_name):
             return JsonResponse({"error": "Organism file not found"}, status=404)
 
         gene_list = GeneList.load_from_file(str(file_path))
-
         stages_list = prepare_stage_data(organism, gene_list, user)
-        organism_and_stages = f"{organism_name} {'+'.join(gene_list.stageKeys)}"
-
+        organism_and_stages = f"{organism.name} {'+'.join(gene_list.stageKeys)}"
         return JsonResponse({
-            "Id": organism.Id,
             "organism": organism.name,
             "motifs": motifs_data,
             "genes_length": len(gene_list.genes),
