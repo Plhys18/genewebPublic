@@ -17,31 +17,35 @@ from analysis.utils.file_utils import find_fasta_file
 
 
 def check_organism_access(user, organism):
+    
     if organism.public:
+        print("Organism is public, access granted")
         return True
 
     if not user or not user.is_authenticated:
+        print("User not authenticated, access denied")
         return False
 
+    # Debug user's groups
+    user_groups = list(user.groups.all())
+    print(f"User {user} is in these groups: {[g for g in user_groups]}")
+    
+    # Debug direct access
     user_access = OrganismAccess.objects.filter(
         organism_name=organism.filename,
         access_type='user',
         user=user
-    ).exists()
-
-    if user_access:
-        return True
-
-    if user.groups.exists():
-        user_groups = user.groups.all()
+    )
+    print(f"Direct user access entries: {list(user_access.values())}")
+    
+    # Debug group access
+    if user_groups:
         group_access = OrganismAccess.objects.filter(
             organism_name=organism.filename,
             access_type='group',
             group__in=user_groups
-        ).exists()
-        return group_access
-
-    return False
+        )
+        print(f"Group access entries: {list(group_access.values())}")
 
 def check_motif_access(user, motif):
     """
@@ -293,6 +297,7 @@ def get_organism_details(request, file_name):
         organism_and_stages = f"{organism.name} {'+'.join(gene_list.stageKeys)}"
         return JsonResponse({
             "organism": organism.name,
+            "filename": organism.filename,
             "motifs": motifs_data,
             "genes_length": len(gene_list.genes),
             "genes_keys_length": len(gene_list.stageKeys),

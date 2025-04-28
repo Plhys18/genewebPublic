@@ -43,18 +43,24 @@ async def process_analysis_results(gene_model, user=None):
     if user:
         preferences = await get_user_preferences(user)
         for pref in preferences:
-            logger.debug(f"User {user.username} has preference for {pref['name']} with color {pref['color']}")
+            logger.debug(
+                f"User {
+                    user.username} has preference for {
+                    pref['name']} with color {
+                    pref['color']}")
             stage_color_preferences[pref['name']] = pref['color']
 
     filtered_results = []
     for analysis in gene_model.analyses:
         logger.debug(f"Processing analysis {analysis.name}")
 
-        stage_name = analysis.name.split(' - ')[0] if ' - ' in analysis.name else analysis.name
+        stage_name = analysis.name.split(
+            ' - ')[0] if ' - ' in analysis.name else analysis.name
 
         if user and stage_name in stage_color_preferences:
             color = stage_color_preferences[stage_name]
-            logger.debug(f"Found color preference for stage '{stage_name}': {color}")
+            logger.debug(
+                f"Found color preference for stage '{stage_name}': {color}")
             analysis.color = color
             analysis.distribution.color = color
         else:
@@ -79,28 +85,38 @@ async def get_user_preferences(user):
     return await _get_preferences()
 
 
-async def save_analysis_history(user, organism_name, organism_filename, filtered_results, motifs, stages, options):
+async def save_analysis_history(
+        user,
+        organism_name,
+        organism_filename,
+        filtered_results,
+        motifs,
+        stages,
+        options):
     """
     Saves the analysis history to the database in a safe async manner.
     """
 
     @sync_to_async
     def _save_history():
-        try:
-            history = AnalysisHistory.objects.create(
-                user=user,
-                name=f"Analysis for {organism_name}",
-                organism=organism_name,
-                organism_filename=organism_filename,
-                motifs=motifs,
-                stages=stages,
-                settings=options,
-                filtered_results=filtered_results
-            )
-            logger.debug(f"Successfully saved analysis history for {user.username}")
-            return history
-        except Exception as e:
-            logger.error(f"Error saving analysis history: {str(e)}")
-            return None
+        if user:
+            try:
+                history = AnalysisHistory.objects.create(
+                    user=user,
+                    name=f"Analysis for {organism_name}",
+                    organism=organism_name,
+                    organism_filename=organism_filename,
+                    motifs=motifs,
+                    stages=stages,
+                    settings=options,
+                    filtered_results=filtered_results
+                )
+                logger.debug(
+                    f"Successfully saved analysis history for {
+                        user.username}")
+                return history
+            except Exception as e:
+                logger.error(f"Error saving analysis history: {str(e)}")
+                return None
 
     return await _save_history()

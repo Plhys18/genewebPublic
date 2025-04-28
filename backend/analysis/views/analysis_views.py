@@ -212,6 +212,7 @@ def get_analysis_history_list(request):
                 "id": entry.id,
                 "name": entry.name,
                 "organism": entry.organism,
+                "file_name": entry.organism_filename,
                 "created_at": entry.created_at.strftime("%Y-%m-%d %H:%M:%S"),
                 "motifs": entry.motifs,
                 "stages": entry.stages
@@ -234,21 +235,24 @@ def get_analysis_history_list(request):
 def get_analysis_details(request, analysis_id):
     """Returns detailed results for a specific analysis if the user owns it."""
     user = request.user
-
+    
     try:
         analysis = AnalysisHistory.objects.get(id=analysis_id, user=user)
-
+        
         result = {
             "id": analysis.id,
             "name": analysis.name,
             "organism": analysis.organism,
+            "file_name": analysis.organism_filename,
             "created_at": analysis.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-            "filtered_results": analysis.filtered_results
+            "motifs": analysis.motifs,
+            "stages": analysis.stages,
+            "filtered_results": analysis.filtered_results,
+            "settings": analysis.settings
         }
         return JsonResponse(result)
     except AnalysisHistory.DoesNotExist:
         return JsonResponse({"error": "Analysis not found"}, status=404)
-
 
 @swagger_auto_schema(
     method='get',
