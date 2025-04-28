@@ -1,4 +1,3 @@
-# my_analysis_project/analysis/views/organism_views.py
 from django.http import JsonResponse
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -23,7 +22,7 @@ def check_organism_access(user, organism):
         return False
 
     user_access = OrganismAccess.objects.filter(
-        organism_name=organism.name,
+        organism_name=organism.filename,
         access_type='user',
         user=user
     ).exists()
@@ -34,14 +33,13 @@ def check_organism_access(user, organism):
     if user.groups.exists():
         user_groups = user.groups.all()
         group_access = OrganismAccess.objects.filter(
-            organism_name=organism.name,
+            organism_name=organism.filename,
             access_type='group',
             group__in=user_groups
         ).exists()
         return group_access
 
     return False
-
 
 def check_motif_access(user, motif):
     """
@@ -197,8 +195,8 @@ def prepare_stage_data(organism, gene_list, user=None):
 def list_organisms(request):
     user = request.user if request.user.is_authenticated else None
     best_organisms = {}
-
     for organism in OrganismPresets.k_organisms:
+        print(organism)
         if check_organism_access(user, organism):
             current_best = best_organisms.get(organism.name)
 
@@ -208,14 +206,15 @@ def list_organisms(request):
 
     organisms_data = [
         {
-            "name": organism.name,
-            "public": organism.public,
-            "description": organism.description,
-            "stages": [{"stage": stage.stage, "color": stage.color} for stage in organism.stages],
+            "id": org.Id,
+            "name": org.name,
+            "public": org.public,
+            "filename": org.filename,
+            "description": org.description,
+            "stages": [{"stage": s.stage, "color": s.color} for s in org.stages],
         }
-        for organism in best_organisms.values()
+        for org in best_organisms.values()
     ]
-
     return JsonResponse({"organisms": organisms_data})
 
 
@@ -233,20 +232,19 @@ def list_organisms(request):
 def get_organism_details(request, name):
     try:
         organism_name = name
-
+        user = request.user if request.user.is_authenticated else None
         if not organism_name:
             return JsonResponse({"error": "Missing organism name"}, status=400)
-
-        matching_organisms = [org for org in OrganismPresets.k_organisms if org.name == organism_name]
-        if not matching_organisms:
+        key = name
+        if key.isdigit():
+            candidates = [o for o in OrganismPresets.k_organisms if o.id == int(key)]
+        else:
+            candidates = [o for o in OrganismPresets.k_organisms if o.filename == key]
+        if not candidates:
             return JsonResponse({"error": "Organism not found"}, status=404)
-
-        user = request.user if request.user.is_authenticated else None
-
-        matching_organisms.sort(key=lambda o: not o.public)
-
+        candidates.sort(key=lambda o: not o.public)
         accessible_organism = None
-        for org in matching_organisms:
+        for org in candidates:
             if check_organism_access(user, org):
                 accessible_organism = org
                 break
@@ -301,6 +299,7 @@ def get_organism_details(request, name):
         organism_and_stages = f"{organism_name} {'+'.join(gene_list.stageKeys)}"
 
         return JsonResponse({
+            "Id": organism.Id,
             "organism": organism.name,
             "motifs": motifs_data,
             "genes_length": len(gene_list.genes),

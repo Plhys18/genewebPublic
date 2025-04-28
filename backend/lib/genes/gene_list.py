@@ -10,11 +10,6 @@ from lib.genes.stage_selection import StageSelection, FilterSelection, FilterStr
 
 
 class Series:
-    """
-    Minimal stand-in for the Series class (not shown here).
-    In Dart, it holds a list of numeric values and can compute sum, etc.
-    We replicate that logic.
-    """
     def __init__(self, values: List[float]):
         self.values = values
 
@@ -49,10 +44,6 @@ class GeneList:
         self.transcriptionRates = self._transcription_rates(self._genes)
 
     def __eq__(self, other: object) -> bool:
-        """
-        Equatable-like comparison:
-        List<Object?> get props => [genes, transcriptionRates];
-        """
         if not isinstance(other, GeneList):
             return False
         return (
@@ -61,9 +52,6 @@ class GeneList:
         )
 
     def __hash__(self) -> int:
-        """
-        Not strictly needed, but to mimic Equatable we can do a simple hash:
-        """
         return hash((tuple(self._genes), tuple(self.transcriptionRates.items())))
 
     @property

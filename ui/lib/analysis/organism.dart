@@ -33,6 +33,7 @@ class Organism {
   factory Organism.fromJson(Map<String, dynamic> json) {
     return Organism(
       name: json["name"] ?? "Unknown",
+      filename: json['filename'] ?? "not available",
       description: json["description"] ?? "No description available",
       public: json["public"] ?? false,
       stages: json["stages"] != null

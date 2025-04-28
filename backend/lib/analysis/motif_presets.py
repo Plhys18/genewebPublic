@@ -1,7 +1,8 @@
 import json
-import os
 import logging
+import settings
 from lib.analysis.motif import Motif
+
 
 logger = logging.getLogger(__name__)
 
@@ -14,8 +15,7 @@ class MotifPresets:
     @classmethod
     def _load_data(cls, force_reload=False):
         if cls._data is None or force_reload:
-            dir_path = os.path.dirname(os.path.abspath(__file__))
-            json_path = os.path.join(dir_path, 'organism_presets.json')
+            json_path = settings.DATA_DIR / 'motif_presets.json'
 
             logger.info(f"Attempting to load motif data from: {json_path}")
             print(f"Attempting to load motif data from: {json_path}")

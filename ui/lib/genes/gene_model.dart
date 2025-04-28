@@ -14,6 +14,7 @@ class GeneModel extends ChangeNotifier {
   static const kAllStages = '__ALL__';
 
   String? name = "";
+  String? filename = "";
   bool _isLoading = false;
 
   List<Motif> _allMotifs = [];
@@ -36,6 +37,7 @@ class GeneModel extends ChangeNotifier {
   List<AnalysisHistoryEntry> get getAnalysesHistory => _analysesHistory;
   StageSelection get getStageSelectionClass => _stageSelection;
   bool get isLoading => _isLoading;
+  String? get getFilename => filename;
 
   AnalysisOptions analysisOptions = AnalysisOptions();
 
@@ -137,6 +139,8 @@ class GeneModel extends ChangeNotifier {
 
       _processMotifsAndStages(data);
 
+      filename = data["filename"] as String?;
+
       assert(_sourceGenesLength != null, "Source genes not set");
 
       for (var stageName in defaultSelectedStageKeys) {
@@ -195,6 +199,7 @@ class GeneModel extends ChangeNotifier {
 
     final payload = {
       "organism": name,
+      "filename": filename,
       "motifs": getSelectedMotifsNames,
       "stages": getSelectedStages.toList(),
       "params": params,
@@ -313,6 +318,7 @@ class GeneModel extends ChangeNotifier {
 
   void removeEverythingAssociatedWithCurrentSession() {
     name = "";
+    filename = "";
     _allStages.clear();
     _analyses.clear();
     _allMotifs.clear();

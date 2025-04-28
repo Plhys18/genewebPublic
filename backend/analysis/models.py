@@ -29,7 +29,8 @@ class OrganismAccess(models.Model):
         (USER, 'User'),
     )
 
-    organism_name = models.CharField(max_length=255, db_index=True)
+    organism_name = models.CharField(max_length=255, db_index=True,
+                                     help_text="Enter the organism filename (e.g., 'Allium_cepa.fasta.zip')")
     access_type = models.CharField(
         max_length=10,
         choices=ACCESS_TYPE_CHOICES,

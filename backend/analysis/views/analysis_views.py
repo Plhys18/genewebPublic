@@ -11,6 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from analysis.models import AnalysisHistory
 from analysis.utils.file_utils import find_fasta_file
 from analysis.views.analysis_utils import save_analysis_history, process_analysis_results
+from analysis.views.organism_views import check_organism_access
 from lib.analysis.motif_presets import MotifPresets
 from lib.analysis.organism_presets import OrganismPresets
 from lib.genes.gene_model import GeneModel, AnalysisOptions
@@ -59,37 +60,37 @@ def run_analysis(request):
 
 
 async def _async_run_analysis(request):
-    """
-    Handles the async analysis workflow and stores results in the database.
-    """
     try:
         user = request.user if request.user.is_authenticated else None
         data = json.loads(request.body)
 
         organism_name = data.get("organism")
+        if not organism_name:
+            return JsonResponse({"error": "Missing organism name"}, status=400)
+
+        if str(organism_name).isdigit():
+            organism = next((o for o in OrganismPresets.k_organisms if o.Id == int(organism_name)), None)
+        else:
+            organism = next((o for o in OrganismPresets.k_organisms if o.filename == organism_name), None)
+
+        if not organism:
+            return JsonResponse({"error": "Organism not found"}, status=404)
+
         selected_motifs_names = data.get("motifs", [])
         selected_stage_names = data.get("stages", [])
         params = data.get("params", {})
 
-        if not organism_name:
-            return JsonResponse({"error": "Missing organism name"}, status=400)
         if not selected_motifs_names:
             return JsonResponse({"error": "No motifs provided"}, status=400)
         if not selected_stage_names:
             return JsonResponse({"error": "No stages provided"}, status=400)
-        #TODO sanitize users input or we can end up in jail
-        organism = next((org for org in OrganismPresets.k_organisms if org.name == organism_name), None)
-        if not organism:
-            return JsonResponse({"error": "Organism not found"}, status=404)
 
-        # ✅ Check Access Permissions
-        # if not organism.public and not user:
-        #     return JsonResponse({"error": "Access denied"}, status=403)
+        if not check_organism_access(user, organism):
+            return JsonResponse({"error": "Access denied"}, status=403)
 
         real_motifs = [m for m in MotifPresets.get_presets() if m.name in selected_motifs_names]
         if not real_motifs:
             return JsonResponse({"error": "No valid motifs found in presets"}, status=400)
-        # TODO here after the loading of organisms motifs etc, we need
 
         strategy_str = params.get("strategy", "top")
         selection_str = params.get("selection", "percentile")
@@ -113,7 +114,7 @@ async def _async_run_analysis(request):
         gene_model.setMotifs(real_motifs)
         gene_model.setStageSelection(stage_selection)
 
-        file_path = find_fasta_file(organism_name)
+        file_path = find_fasta_file(organism.filename)
         if not file_path:
             return JsonResponse({"error": "Organism file not found"}, status=404)
 
@@ -124,7 +125,8 @@ async def _async_run_analysis(request):
             return JsonResponse({"error": "Analysis was cancelled or failed"}, status=500)
 
         filtered_results = await process_analysis_results(gene_model, user)
-        await save_analysis_history(user, organism_name, filtered_results, selected_motifs_names, selected_stage_names, params)
+        await save_analysis_history(user, organism.name, filtered_results, selected_motifs_names, selected_stage_names,
+                                    params)
         return JsonResponse({"message": "Analysis complete", "results": filtered_results}, status=200)
 
     except Exception as e:

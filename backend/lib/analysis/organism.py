@@ -10,6 +10,7 @@ class Organism:
     def __init__(
             self,
             name: str,
+            Id: Optional[int] = None,
             filename: Optional[str] = None,
             description: Optional[str] = None,
             public: bool = False,
@@ -24,6 +25,7 @@ class Organism:
         :param take_first_transcript_only: Whether to take only the first transcript of each gene
         :param stages: Definition of how stages should be presented
         """
+        self.Id = id
         self.name = name
         self.filename = filename
         self.description = description
