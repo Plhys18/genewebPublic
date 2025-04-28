@@ -195,8 +195,7 @@ def prepare_stage_data(organism, gene_list, user=None):
 def list_organisms(request):
     user = request.user if request.user.is_authenticated else None
     best_organisms = {}
-    for organism in OrganismPresets.k_organisms:
-        print(organism)
+    for organism in OrganismPresets.get_organisms():
         if check_organism_access(user, organism):
             current_best = best_organisms.get(organism.name)
 
@@ -236,10 +235,7 @@ def get_organism_details(request, name):
         if not organism_name:
             return JsonResponse({"error": "Missing organism name"}, status=400)
         key = name
-        if key.isdigit():
-            candidates = [o for o in OrganismPresets.k_organisms if o.id == int(key)]
-        else:
-            candidates = [o for o in OrganismPresets.k_organisms if o.filename == key]
+        candidates = [o for o in OrganismPresets.get_organisms() if o.filename == key]
         if not candidates:
             return JsonResponse({"error": "Organism not found"}, status=404)
         candidates.sort(key=lambda o: not o.public)

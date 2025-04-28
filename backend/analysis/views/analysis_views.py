@@ -69,9 +69,9 @@ async def _async_run_analysis(request):
             return JsonResponse({"error": "Missing organism name"}, status=400)
 
         if str(organism_name).isdigit():
-            organism = next((o for o in OrganismPresets.k_organisms if o.Id == int(organism_name)), None)
+            organism = next((o for o in OrganismPresets.get_organisms() if o.Id == int(organism_name)), None)
         else:
-            organism = next((o for o in OrganismPresets.k_organisms if o.filename == organism_name), None)
+            organism = next((o for o in OrganismPresets.get_organisms() if o.filename == organism_name), None)
 
         if not organism:
             return JsonResponse({"error": "Organism not found"}, status=404)

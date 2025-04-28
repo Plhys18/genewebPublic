@@ -1,24 +1,35 @@
 import os
 import logging
-from pathlib import Path
 from typing import Optional
 
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-
-def find_fasta_file(organism_filename):
+def find_fasta_file(organism_filename: Optional[str]) -> Optional[str]:
     if not organism_filename:
         return None
 
-    fasta_dir = settings.DATA_DIR / 'fasta_files'
+    fasta_dir = settings.DATA_DIR
     if not fasta_dir.exists():
+        logger.warning("Fasta directory %s does not exist", fasta_dir)
         return None
 
-    file_path = fasta_dir / organism_filename
+    candidates = [organism_filename]
+    root, ext = os.path.splitext(organism_filename)
 
-    if file_path.exists():
-        return str(file_path)
+    if ext.lower() == '.zip':
+        candidates.append(root)
+    else:
+        candidates.append(f"{organism_filename}.zip")
 
+    for fname in candidates:
+        path = fasta_dir / fname
+        if path.exists():
+            return str(path)
+
+    logger.info(
+        "Could not find fasta file for %r (tried %s)",
+        organism_filename, candidates
+    )
     return None
