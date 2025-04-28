@@ -4,8 +4,9 @@ import 'auth_provider.dart';
 
 class AuthContextProvider extends StatefulWidget {
   final Widget child;
+
   const AuthContextProvider({Key? key, required this.child}) : super(key: key);
-  
+
   @override
   State<AuthContextProvider> createState() => _AuthContextProviderState();
 }
@@ -14,9 +15,17 @@ class _AuthContextProviderState extends State<AuthContextProvider> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    Provider.of<UserAuthProvider>(context, listen: false).setContext(context);
+
+    // Set the context in the auth provider so it can access other providers
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    authProvider.setContext(context);
+
+    // Check auth state when dependencies change
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      authProvider.checkAuthState();
+    });
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return widget.child;

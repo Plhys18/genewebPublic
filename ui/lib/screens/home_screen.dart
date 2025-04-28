@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:geneweb/utilities/api_service.dart';
 import 'package:provider/provider.dart';
+
 import '../auth_provider.dart';
 import '../genes/gene_model.dart';
 import '../widgets/home.dart';
@@ -16,7 +16,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool _loading = false;
+  @override
+  void initState() {
+    super.initState();
+    // Check auth state on startup
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<UserAuthProvider>().checkAuthState();
+    });
+  }
 
   void _handleLogin() async {
     final result = await Navigator.push<bool>(
@@ -32,17 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _handleLogout() async {
-    setState(() {
-      _loading = true;
-    });
-
-    await ApiService().logout();
-    context.read<UserAuthProvider>().logOut();
-    context.read<GeneModel>().removeEverythingAssociatedWithCurrentSession();
-
-    setState(() {
-      _loading = false;
-    });
+    await context.read<UserAuthProvider>().logout();
 
     ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Logged out successfully'))
@@ -65,7 +62,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoggedIn = context.watch<UserAuthProvider>().isLoggedIn;
+    final authProvider = context.watch<UserAuthProvider>();
+    final isLoggedIn = authProvider.isLoggedIn;
+    final isLoading = authProvider.isLoading;
 
     return Scaffold(
       appBar: AppBar(
@@ -97,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: Align(
                 alignment: Alignment.center,
-                child: _loading
+                child: isLoading
                     ? const CircularProgressIndicator()
                     : Text(
                   context.select<GeneModel, String?>((model) => model.name) ?? 'Unknown Organism',
@@ -113,7 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     if (isLoggedIn) ...[
                       Text(
-                        "Welcome ${context.watch<UserAuthProvider>().username}",
+                        "Welcome ${authProvider.username}",
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -131,7 +130,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(width: 8),
                     ],
-                    IconButton(
+                    isLoading
+                        ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                        : IconButton(
                       icon: Icon(
                         isLoggedIn ? Icons.logout : Icons.login,
                       ),

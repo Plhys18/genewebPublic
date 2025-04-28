@@ -3,6 +3,7 @@ from typing import List, Optional, Dict, Any
 
 import aiofiles
 
+from analysis.fasta_cache import FastaCache
 from lib.analysis.analysis_series import AnalysisSeries
 from lib.analysis.motif import Motif
 from lib.analysis.organism import Organism
@@ -60,14 +61,17 @@ class GeneModel:
         return self._stageSelection
     def getOptions(self) -> Optional["AnalysisOptions"]:
         return self.analysisOptions
-    async def loadFastaFromFile(
-            self,
-            path: str,
-            organism: Optional["Organism"]
-    ):
-        async with aiofiles.open(path, 'r') as f:
-            data = await f.read()
-        await self._loadFastaFromString(data, organism)
+
+    async def loadFastaFromFile(self, path: str, organism: Optional["Organism"]):
+        gene_list = await FastaCache.get_instance().get_gene_list(path)
+
+        if organism and organism.take_first_transcript_only:
+            genes, errors = await GeneList.take_single_transcript(gene_list.genes, gene_list.errors)
+            self.sourceGenes = GeneList.from_list(genes=genes, errors=errors, organism=organism)
+        else:
+            self.sourceGenes = gene_list.copy_with(organism=organism)
+
+        self.name = organism.name if organism else None
 
     async def _loadFastaFromString(
             self,

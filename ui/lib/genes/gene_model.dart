@@ -302,31 +302,23 @@ class GeneModel extends ChangeNotifier {
   }
 
   Future<void> fetchPublicOrganisms() async {
-  try {
-    _isLoading = true;
-    notifyListeners();
-    
-    // Clear existing data
-    name = "";
-    filename = "";
-    _allStages.clear();
-    _analyses.clear();
-    _allMotifs.clear();
-    _selectedMotifsNames.clear();
-    
-    final organisms = await ApiService().getOrganisms();
-    final isAuthenticated = ApiService().isAuthenticated;
+    try {
+      _isLoading = true;
+      notifyListeners();
 
-    debugPrint('Fetched ${organisms.length} organisms. Authenticated: $isAuthenticated');
-    
-    _isLoading = false;
-    notifyListeners();
-  } catch (error) {
-    _isLoading = false;
-    notifyListeners();
-    debugPrint("Error fetching public organisms: $error");
+      final organisms = await ApiService().getOrganisms();
+      final isAuthenticated = ApiService().isAuthenticated;
+
+      debugPrint('Fetched ${organisms.length} organisms. Authenticated: $isAuthenticated');
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (error) {
+      _isLoading = false;
+      notifyListeners();
+      debugPrint("Error fetching public organisms: $error");
+    }
   }
-	}
 
   Future<void> initializeData() async {
     try {
@@ -336,7 +328,42 @@ class GeneModel extends ChangeNotifier {
       debugPrint("Error initializing data: $error");
     }
   }
+  Future<void> refreshOrganismsBasedOnAuth() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
 
+      // Clear existing data
+      name = "";
+      filename = "";
+      _allStages.clear();
+      _analyses.clear();
+      _allMotifs.clear();
+      _selectedMotifsNames.clear();
+
+      // Fetch organisms
+      final organisms = await ApiService().getOrganisms();
+      final isAuthenticated = ApiService().isAuthenticated;
+
+      debugPrint('Refreshed ${organisms.length} organisms. Authenticated: $isAuthenticated');
+
+      // If authenticated, fetch user-specific analysis history
+      if (isAuthenticated) {
+        try {
+          _analysesHistory = await ApiService().fetchAnalysesHistory();
+        } catch (e) {
+          debugPrint('Error fetching analysis history: $e');
+        }
+      }
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (error) {
+      _isLoading = false;
+      notifyListeners();
+      debugPrint("Error refreshing organisms: $error");
+    }
+  }
   void removeEverythingAssociatedWithCurrentSession() {
     name = "";
     filename = "";

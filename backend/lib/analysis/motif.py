@@ -1,4 +1,4 @@
-import re
+import re2
 from typing import List, Optional, Dict, Set
 
 class Motif:
@@ -66,12 +66,12 @@ class Motif:
 
         # Check invalid characters
         for definition in definitions:
-            if not re.match(r"^[AGCTURYNWSMKBHDV]+$", definition):
+            if not re2.match(r"^[AGCTURYNWSMKBHDV]+$", definition):
                 return "Motif definition contains invalid characters"
         return None
 
     @property
-    def reg_exp(self) -> Dict[str, re.Pattern]:
+    def reg_exp(self) -> Dict[str, re2.Pattern]:
         """
         :return: A dict of { 'ACTG': compiled_regex, ... } for all forward definitions
         """
@@ -81,7 +81,7 @@ class Motif:
         }
 
     @property
-    def reverse_complement_reg_exp(self) -> Dict[str, re.Pattern]:
+    def reverse_complement_reg_exp(self) -> Dict[str, re2.Pattern]:
         """
         :return: A dict of { 'GCAT': compiled_regex, ... } for all reverse-complement definitions
         """
@@ -108,7 +108,7 @@ class Motif:
         return complements
 
     @staticmethod
-    def to_reg_exp(definition: str, strict: bool = False) -> re.Pattern:
+    def to_reg_exp(definition: str, strict: bool = False) -> re2.Pattern:
         """
         Convert an IUPAC-like definition into a Python regex.
         :param definition: e.g. 'ACGT'
@@ -124,7 +124,7 @@ class Motif:
         if strict:
             pattern_parts.append('$')
 
-        return re.compile("".join(pattern_parts))
+        return re2.compile("".join(pattern_parts))
 
     @staticmethod
     def _nucleotide_code_to_reg_exp_part(code: str) -> str:

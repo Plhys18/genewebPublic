@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../auth_provider.dart';
-import '../utilities/api_service.dart';
 
 class LockScreen extends StatefulWidget {
   final bool allowCancel;
@@ -72,7 +71,6 @@ class _Lock extends StatefulWidget {
 class __LockState extends State<_Lock> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _loading = false;
 
   @override
   void dispose() {
@@ -83,6 +81,8 @@ class __LockState extends State<_Lock> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<UserAuthProvider>(context);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -100,6 +100,7 @@ class __LockState extends State<_Lock> {
                   border: OutlineInputBorder(),
                 ),
                 onSubmitted: (_) => _handleSubmit(),
+                enabled: !authProvider.isLoading,
               ),
             ),
             const SizedBox(height: 20),
@@ -113,10 +114,19 @@ class __LockState extends State<_Lock> {
                 ),
                 obscureText: true,
                 onSubmitted: (_) => _handleSubmit(),
+                enabled: !authProvider.isLoading,
               ),
             ),
+            if (authProvider.error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Text(
+                  authProvider.error!,
+                  style: TextStyle(color: Colors.red[700], fontSize: 14),
+                ),
+              ),
             const SizedBox(height: 20),
-            _loading
+            authProvider.isLoading
                 ? const CircularProgressIndicator()
                 : IconButton.filled(
               onPressed: _handleSubmit,
@@ -124,9 +134,9 @@ class __LockState extends State<_Lock> {
             ),
             const SizedBox(height: 10),
             TextButton(
-              onPressed: () {
-                Navigator.pop(context, false);
-              },
+              onPressed: authProvider.isLoading
+                  ? null
+                  : () => Navigator.pop(context, false),
               child: const Text("Cancel"),
             ),
           ],
@@ -136,34 +146,21 @@ class __LockState extends State<_Lock> {
   }
 
   void _handleSubmit() async {
-    setState(() {
-      _loading = true;
-    });
-
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
     if (username.isEmpty || password.isEmpty) {
-      _showSnackBar("Username and password must not be empty");
-      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Username and password must not be empty"))
+      );
       return;
     }
 
-    final success = await ApiService().login(username, password);
+    final success = await authProvider.login(username, password);
 
     if (success) {
-      context.read<UserAuthProvider>().logIn(username);
-      Navigator.pop(context, true);
-    } else {
-      _showSnackBar('Incorrect username or password');
+      widget.onLoginSuccess();
     }
-
-    setState(() {
-      _loading = false;
-    });
-  }
-
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 }

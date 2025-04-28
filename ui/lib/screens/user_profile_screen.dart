@@ -149,7 +149,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       leading: const Icon(Icons.logout),
                       title: const Text('Sign Out'),
                       onTap: () {
-                        context.read<UserAuthProvider>().logOut();
+                        context.read<UserAuthProvider>().logout();
                         Navigator.of(context).pop();
                       },
                     ),

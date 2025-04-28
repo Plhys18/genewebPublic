@@ -1,9 +1,4 @@
-import asyncio
-import time
 from typing import List, Dict, Set, Any, Optional, Tuple
-
-import aiofiles
-
 from lib.analysis.organism import Organism
 from lib.genes.genes import Gene
 from lib.genes.stage_selection import StageSelection, FilterSelection, FilterStrategy
@@ -363,24 +358,24 @@ class GeneList:
 
     @classmethod
     def load_from_file(cls, file_path: str) -> "GeneList":
-        print(f"[DEBUG] Starting load_from_file with file_path: {file_path}")
+        try:
+            with open(file_path, 'r') as f:
+                data = f.read()
 
-        async def _load():
-            print(f"[DEBUG] Opening file: {file_path}")
-            async with aiofiles.open(file_path, 'r') as f:
-                data = await f.read()
-                print(f"[DEBUG] File read complete. Data size: {len(data)} bytes")
+            genes, errors = [], []
+            chunks = data.split('>')
+            for i, chunk in enumerate(chunks):
+                if not chunk.strip():
+                    continue
 
-            print("[DEBUG] Starting FASTA parsing...")
-            genes, errors = await cls.parse_fasta(data)
-            print(f"[DEBUG] FASTA parsing complete. Parsed {len(genes)} genes, {len(errors)} errors.")
+                lines = ('>' + chunk).split('\n')
+                try:
+                    gene = Gene.from_fasta(lines)
+                    genes.append(gene)
+                except Exception as e:
+                    errors.append(e)
 
-            print("[DEBUG] Creating GeneList instance...")
-            return cls.from_list(genes=genes, errors=errors)
-
-        print("[DEBUG] Running _load() in asyncio event loop...")
-        result = asyncio.run(_load())
-        print("[DEBUG] load_from_file completed successfully.")
-        return result
-
-
+            result = cls.from_list(genes=genes, errors=errors)
+            return result
+        except Exception as e:
+            raise

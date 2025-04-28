@@ -1,3 +1,5 @@
+import json
+import os
 from typing import Optional
 
 from django.http import JsonResponse
@@ -17,28 +19,28 @@ from analysis.utils.file_utils import find_fasta_file
 
 
 def check_organism_access(user, organism):
-    
     if organism.public:
-        print("Organism is public, access granted")
+        print(f"Organism {organism.filename} is public, access granted")
         return True
 
     if not user or not user.is_authenticated:
-        print("User not authenticated, access denied")
+        print(f"Anonymous user denied access to {organism.filename}")
         return False
 
-    # Debug user's groups
     user_groups = list(user.groups.all())
-    print(f"User {user} is in these groups: {[g for g in user_groups]}")
-    
-    # Debug direct access
+    print(f"User {user.username} is in these groups: {[g.name for g in user_groups]}")
+
     user_access = OrganismAccess.objects.filter(
         organism_name=organism.filename,
         access_type='user',
         user=user
     )
     print(f"Direct user access entries: {list(user_access.values())}")
-    
-    # Debug group access
+
+    if user_access.exists():
+        print(f"User {user.username} has direct access to {organism.filename}")
+        return True
+
     if user_groups:
         group_access = OrganismAccess.objects.filter(
             organism_name=organism.filename,
@@ -47,40 +49,48 @@ def check_organism_access(user, organism):
         )
         print(f"Group access entries: {list(group_access.values())}")
 
+        if group_access.exists():
+            print(f"User {user.username} has group access to {organism.filename} via groups")
+            return True
+
+    print(f"Access denied to {organism.filename} for user {user.username}")
+    return False
+
 def check_motif_access(user, motif):
-    """
-    Check if a user has access to a specific motif.
-
-    Args:
-        user: The user to check access for (can be None for anonymous users)
-        motif: The motif object to check access for
-
-    Returns:
-        bool: True if user has access, False otherwise
-    """
     if not hasattr(motif, 'public') or motif.public:
         return True
 
-    if not user:
+    if not user or not user.is_authenticated:
         return False
 
-    user_access = MotifAccess.objects.filter(
-        motif_name=motif.name,
-        access_type='user',
-        user=user
-    ).exists()
+    from analysis.models import MotifAccess
 
-    if user_access:
-        return True
+    try:
+        user_access = MotifAccess.objects.filter(
+            motif_name=motif.name,
+            access_type='user',
+            user=user
+        ).exists()
 
-    user_groups = user.groups.all()
-    group_access = MotifAccess.objects.filter(
-        motif_name=motif.name,
-        access_type='group',
-        group__in=[g.id for g in user_groups]
-    ).exists()
+        if user_access:
+            return True
 
-    return group_access
+        user_groups = user.groups.all()
+        group_ids = [g.id for g in user_groups]
+
+        if not group_ids:
+            return False
+
+        group_access = MotifAccess.objects.filter(
+            motif_name=motif.name,
+            access_type='group',
+            group__in=group_ids
+        ).exists()
+
+        return group_access
+    except Exception as e:
+        print(f"ERROR in check_motif_access: {str(e)}")
+        return False
 
 
 def apply_user_preferences(user, organism):
@@ -199,15 +209,17 @@ def prepare_stage_data(organism, gene_list, user=None):
 )
 @api_view(["GET"])
 def list_organisms(request):
-    user = request.user if request.user.is_authenticated else None
-    best_organisms = {}
-    for organism in OrganismPresets.get_organisms():
-        if check_organism_access(user, organism):
-            current_best = best_organisms.get(organism.name)
+    current_user = request.user
 
-            if current_best is None or (organism.public and not current_best.public):
-                modified_organism = apply_user_preferences(user, organism)
-                best_organisms[organism.name] = modified_organism
+    all_organisms = OrganismPresets.get_organisms()
+    accessible_organisms = []
+
+    for organism in all_organisms:
+        if organism.public or (current_user.is_authenticated and check_organism_access(current_user, organism)):
+            if current_user.is_authenticated:
+                organism = apply_user_preferences(current_user, organism)
+
+            accessible_organisms.append(organism)
 
     organisms_data = [
         {
@@ -217,32 +229,100 @@ def list_organisms(request):
             "description": org.description,
             "stages": [{"stage": s.stage, "color": s.color} for s in org.stages],
         }
-        for org in best_organisms.values()
+        for org in accessible_organisms
     ]
+
     return JsonResponse({"organisms": organisms_data})
 
 
+def get_cached_organism_data(file_name):
+    cache_file = os.path.join('data', 'cache', f"{file_name}.json")
+    if os.path.exists(cache_file):
+        with open(cache_file, 'r') as f:
+            return json.load(f)
+    return None
 
-@swagger_auto_schema(
-    method='get',
-    operation_description="Fetches stages and motifs for a given organism with access control.",
-    responses={
-        200: "Organism details",
-        403: "Access denied",
-        404: "Organism not found"
-    }
-)
-@api_view(["GET"])
+
+def get_motifs_data(user, accessible_motifs):
+    motifs_data = []
+    for motif in accessible_motifs:
+        motif_data = {
+            "name": motif.name,
+            "definitions": motif.definitions,
+            "public": motif.public if hasattr(motif, 'public') else True
+        }
+
+        if user:
+            try:
+                pref = UserColorPreference.objects.get(
+                    user=user,
+                    preference_type='motif',
+                    name=motif.name
+                )
+                motif_data["color"] = pref.color
+                motif_data["stroke_width"] = pref.stroke_width
+            except UserColorPreference.DoesNotExist:
+                pass
+
+        motifs_data.append(motif_data)
+    return motifs_data
+
+
+def apply_user_stage_preferences(user, stages):
+    if not user:
+        return stages
+
+    updated_stages = stages.copy()
+    for stage in updated_stages:
+        try:
+            pref = UserColorPreference.objects.get(
+                user=user,
+                preference_type='stage',
+                name=stage["stage"]
+            )
+            stage["color"] = pref.color
+            stage["stroke"] = pref.stroke_width
+        except UserColorPreference.DoesNotExist:
+            pass
+    return updated_stages
+
+
 def get_organism_details(request, file_name):
     try:
-        user = request.user if request.user.is_authenticated else None
+        user = request.user if hasattr(request, 'user') and request.user and hasattr(request.user,
+                                                                                     'is_authenticated') and request.user.is_authenticated else None
+
         if not file_name:
             return JsonResponse({"error": "Missing organism name"}, status=400)
+
+        organism_data = get_cached_organism_data(file_name)
+
+        organism = OrganismPresets.get_organism_by_filename(file_name)
+        if not organism:
+            return JsonResponse({"error": "Organism not found"}, status=404)
+
+        if not check_organism_access(user, organism):
+            return JsonResponse({"error": "No access to this organism"}, status=403)
+
+        if organism_data:
+            all_motifs = MotifPresets.get_presets()
+            accessible_motifs = [motif for motif in all_motifs if check_motif_access(user, motif)]
+
+            organism_data["motifs"] = get_motifs_data(user, accessible_motifs)
+
+            organism_data["stages"] = apply_user_stage_preferences(user, organism_data["stages"])
+
+            print(
+                f"DEBUG: Returning {len(organism_data['motifs'])} motifs for organism {organism_data['organism']} (from cache)")
+            return JsonResponse(organism_data)
+
         candidates = [o for o in OrganismPresets.get_organisms() if o.filename == file_name]
         if not candidates:
             return JsonResponse({"error": "Organism not found"}, status=404)
+
         candidates.sort(key=lambda o: not o.public)
-        accessible_organism: Optional[Organism] = None
+        accessible_organism = None
+
         for org in candidates:
             if check_organism_access(user, org):
                 accessible_organism = org
@@ -252,41 +332,10 @@ def get_organism_details(request, file_name):
             return JsonResponse({"error": "No access to this organism"}, status=403)
 
         organism = accessible_organism
-
         all_motifs = MotifPresets.get_presets()
         accessible_motifs = [motif for motif in all_motifs if check_motif_access(user, motif)]
 
-        motifs_data = []
-        if user:
-            motif_preferences = {
-                pref.name: pref for pref in UserColorPreference.objects.filter(
-                    user=user,
-                    preference_type='motif'
-                )
-            }
-
-            for motif in accessible_motifs:
-                motif_data = {
-                    "name": motif.name,
-                    "definitions": motif.definitions,
-                    "public": not hasattr(motif, 'public') or motif.public
-                }
-
-                if motif.name in motif_preferences:
-                    pref = motif_preferences[motif.name]
-                    motif_data["color"] = pref.color
-                    motif_data["stroke_width"] = pref.stroke_width
-
-                motifs_data.append(motif_data)
-        else:
-            motifs_data = [
-                {
-                    "name": motif.name,
-                    "definitions": motif.definitions,
-                    "public": not hasattr(motif, 'public') or motif.public
-                }
-                for motif in accessible_motifs
-            ]
+        motifs_data = get_motifs_data(user, accessible_motifs)
 
         file_path = find_fasta_file(organism.filename)
         if not file_path:
@@ -295,7 +344,8 @@ def get_organism_details(request, file_name):
         gene_list = GeneList.load_from_file(str(file_path))
         stages_list = prepare_stage_data(organism, gene_list, user)
         organism_and_stages = f"{organism.name} {'+'.join(gene_list.stageKeys)}"
-        return JsonResponse({
+
+        response_data = {
             "organism": organism.name,
             "filename": organism.filename,
             "motifs": motifs_data,
@@ -308,7 +358,14 @@ def get_organism_details(request, file_name):
             "error_count": len(gene_list.errors),
             "stages": stages_list,
             "markers": sorted(set(marker for gene in gene_list.genes for marker in gene.markers.keys())),
-        })
+        }
+
+        print(f"DEBUG: Returning {len(motifs_data)} motifs for organism {organism.name}")
+
+        return JsonResponse(response_data)
 
     except Exception as e:
+        import traceback
+        print(f"ERROR in get_organism_details: {str(e)}")
+        print(traceback.format_exc())
         return JsonResponse({"error": str(e)}, status=500)

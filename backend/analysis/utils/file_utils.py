@@ -1,5 +1,4 @@
 import os
-import logging
 from typing import Optional
 
 from django.conf import settings
@@ -9,7 +8,7 @@ def find_fasta_file(organism_filename: Optional[str]) -> Optional[str]:
     if not organism_filename:
         return None
 
-    fasta_dir = settings.DATA_DIR
+    fasta_dir = settings.DATA_DIR/'fasta_files'
     if not fasta_dir.exists():
         return None
 
