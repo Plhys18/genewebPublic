@@ -231,8 +231,8 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> getOrganismDetails(String organismName) async {
-    return await getRequest("analysis/organism_details/$organismName");
+  Future<Map<String, dynamic>> getOrganismDetails(String organismFileName) async {
+    return await getRequest("analysis/organism_details/$organismFileName");
   }
 
   Future<List<AnalysisHistoryEntry>> fetchAnalysesHistory() async {

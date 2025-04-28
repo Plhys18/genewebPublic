@@ -5,6 +5,7 @@ class AnalysisHistoryEntry {
   final int id;
   final String name;
   final String organismName;
+  final String fileName;
   final String createdAt;
   final List<String> motifs;
   final List<String> stages;
@@ -14,6 +15,7 @@ class AnalysisHistoryEntry {
     required this.id,
     required this.name,
     required this.organismName,
+    required this.fileName,
     required this.createdAt,
     required this.motifs,
     required this.stages,
@@ -26,6 +28,7 @@ class AnalysisHistoryEntry {
       id: json['id'],
       name: json['name'] ?? 'Unnamed Analysis',
       organismName: json['organism'] ?? '',
+      fileName: json['file_name'] ?? '',
       createdAt: json['created_at'] ?? '',
       motifs: List<String>.from(json['motifs'] ?? []),
       stages: List<String>.from(json['stages'] ?? []),
@@ -38,6 +41,7 @@ class AnalysisHistoryEntry {
     return {
       'id': id,
       'name': name,
+      'file_name': fileName,
       'organism': organismName,
       'created_at': createdAt,
       'motifs': motifs,

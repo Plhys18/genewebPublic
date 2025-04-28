@@ -113,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     if (isLoggedIn) ...[
                       Text(
-                        "Welcome ${context.watch<UserAuthProvider>().getUsername}",
+                        "Welcome ${context.watch<UserAuthProvider>().username}",
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,

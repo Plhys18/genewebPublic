@@ -8,9 +8,26 @@ import 'package:provider/provider.dart';
 import '../analysis/analysis_series.dart';
 import '../analysis/stage_and_color.dart';
 import '../utilities/api_service.dart';
+
+class GeneModelRegistry {
+  static final List<BuildContext?> instances = [];
+
+  static void register(BuildContext context) {
+    instances.add(context);
+  }
+
+  static void unregister(BuildContext context) {
+    instances.remove(context);
+  }
+}
+
 class GeneModel extends ChangeNotifier {
-  static GeneModel of(BuildContext context) =>
-      Provider.of<GeneModel>(context, listen: false);
+  static GeneModel of(BuildContext context) {
+    final model = Provider.of<GeneModel>(context, listen: false);
+    GeneModelRegistry.register(context);
+    return model;
+  }
+  
   static const kAllStages = '__ALL__';
 
   String? name = "";
@@ -155,7 +172,6 @@ class GeneModel extends ChangeNotifier {
     }
   }
   
-
   void _processMotifsAndStages(Map<String, dynamic> data) {
     cleanSelectedStages();
     cleanMotifsSelected();
@@ -223,10 +239,8 @@ class GeneModel extends ChangeNotifier {
     }
 
     return false;
-
   }
 
-  /// Loads the settings from a previous analysis without the results
   Future<bool> loadAnalysisSettings(int analysisId) async {
     try {
       final response = await ApiService().fetchAnalysisSettings(analysisId);
@@ -253,13 +267,12 @@ class GeneModel extends ChangeNotifier {
     }
   }
 
-
   Future<bool> loadAnalysis(AnalysisHistoryEntry analysis) async {
     try {
       await loadAnalysisSettings(analysis.id);
 
-      final response = await ApiService().getRequest('analysis/details/${analysis.id}');
-      //TODO code duplicity with ApiService
+      final response = await ApiService().getRequest('analysis/history/${analysis.id}');
+      
       if (response != null && response['filtered_results'] != null) {
         final resultsList = response['filtered_results'] as List;
         final analysisSeries = resultsList.map((result) =>
@@ -276,7 +289,7 @@ class GeneModel extends ChangeNotifier {
       return false;
     }
   }
-  /// Fetches the user's analysis history from the backend
+
   Future<List<AnalysisHistoryEntry>> fetchUserAnalysesHistory() async {
     try {
       _analysesHistory = await ApiService().fetchAnalysesHistory();
@@ -289,23 +302,31 @@ class GeneModel extends ChangeNotifier {
   }
 
   Future<void> fetchPublicOrganisms() async {
-    try {
-      name = "";
-      _allStages.clear();
-      _analyses.clear();
-      _allMotifs.clear();
-      _selectedMotifsNames.clear();
+  try {
+    _isLoading = true;
+    notifyListeners();
+    
+    // Clear existing data
+    name = "";
+    filename = "";
+    _allStages.clear();
+    _analyses.clear();
+    _allMotifs.clear();
+    _selectedMotifsNames.clear();
+    
+    final organisms = await ApiService().getOrganisms();
+    final isAuthenticated = ApiService().isAuthenticated;
 
-      final organisms = await ApiService().getOrganisms();
-      final isAuthenticated = ApiService().isAuthenticated;
-
-      debugPrint('Fetched ${organisms.length} organisms. Authenticated: $isAuthenticated');
-
-      notifyListeners();
-    } catch (error) {
-      debugPrint("Error fetching public organisms: $error");
-    }
+    debugPrint('Fetched ${organisms.length} organisms. Authenticated: $isAuthenticated');
+    
+    _isLoading = false;
+    notifyListeners();
+  } catch (error) {
+    _isLoading = false;
+    notifyListeners();
+    debugPrint("Error fetching public organisms: $error");
   }
+	}
 
   Future<void> initializeData() async {
     try {
@@ -336,4 +357,20 @@ class GeneModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  @override
+  void dispose() {
+    for (final context in List.from(GeneModelRegistry.instances)) {
+      if (context != null) {
+        try {
+          final currentModel = Provider.of<GeneModel>(context, listen: false);
+          if (currentModel == this) {
+            GeneModelRegistry.unregister(context);
+          }
+        } catch (e) {
+          GeneModelRegistry.unregister(context);
+        }
+      }
+    }
+    super.dispose();
+  }
 }
