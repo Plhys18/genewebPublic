@@ -15,26 +15,18 @@ class MotifPresets:
     @classmethod
     def _load_data(cls, force_reload=False):
         if cls._data is None or force_reload:
-            json_path = settings.DATA_DIR / 'motif_presets.json'
-
-            logger.info(f"Attempting to load motif data from: {json_path}")
-            print(f"Attempting to load motif data from: {json_path}")
+            json_path = settings.DATA_DIR / 'preset_handlers' / 'motif_presets.json'
 
             try:
                 with open(json_path, 'r') as f:
                     cls._data = json.load(f)
                 cls._loaded_from_file = True
                 cls._motifs = None
-                logger.info(f"Successfully loaded motif data from {json_path}")
-                print(f"Successfully loaded motif data from {json_path}")
             except FileNotFoundError:
                 error_msg = f"Could not find organism_presets.json at {json_path}"
-                logger.error(error_msg)
-                print(error_msg)
+
             except json.JSONDecodeError as e:
                 error_msg = f"Invalid JSON in organism_presets.json: {str(e)}"
-                logger.error(error_msg)
-                print(error_msg)
 
     @classmethod
     def reload_data(cls):
@@ -48,8 +40,6 @@ class MotifPresets:
             cls._motifs = []
 
             if not cls._data or "motifs" not in cls._data:
-                logger.warning("No motifs data available")
-                print("No motifs data available")
                 return []
 
             for motif_data in cls._data["motifs"]:
@@ -60,9 +50,6 @@ class MotifPresets:
                 ))
 
             cls._motifs.sort(key=lambda m: m.name)
-
-            logger.info(f"Loaded {len(cls._motifs)} motifs")
-            print(f"Loaded {len(cls._motifs)} motifs")
 
         return cls._motifs
 
@@ -86,8 +73,5 @@ class MotifPresets:
         return [m for m in all_motifs if m.public]
 
 
-try:
-    MotifPresets._get_motifs()
-except Exception as e:
-    logger.error(f"Error initializing MotifPresets: {str(e)}")
-    print(f"Error initializing MotifPresets: {str(e)}")
+
+MotifPresets._get_motifs()

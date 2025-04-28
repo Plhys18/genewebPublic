@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from asgiref.sync import sync_to_async
 
 from analysis.models import AnalysisHistory
-from analysis.utils.file_utils import find_fasta_file, logger
+from analysis.utils.file_utils import find_fasta_file
 from analysis.views.analysis_utils import process_analysis_results, save_analysis_history
 from analysis.views.organism_views import check_organism_access
 from lib.genes.gene_model import GeneModel, AnalysisOptions
@@ -187,8 +187,7 @@ async def run_analysis(request):
         return JsonResponse({"message": "Analysis complete", "results": filtered_results}, status=200)
 
     except Exception as e:
-        logger.exception(f"Error during analysis: {e}")
-        return JsonResponse({"error": str(e)}, status=500)
+         return JsonResponse({"error": str(e)}, status=500)
 
 
 @swagger_auto_schema(

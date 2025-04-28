@@ -4,7 +4,6 @@ from typing import Optional
 
 from django.conf import settings
 
-logger = logging.getLogger(__name__)
 
 def find_fasta_file(organism_filename: Optional[str]) -> Optional[str]:
     if not organism_filename:
@@ -12,7 +11,6 @@ def find_fasta_file(organism_filename: Optional[str]) -> Optional[str]:
 
     fasta_dir = settings.DATA_DIR
     if not fasta_dir.exists():
-        logger.warning("Fasta directory %s does not exist", fasta_dir)
         return None
 
     candidates = [organism_filename]
@@ -28,8 +26,4 @@ def find_fasta_file(organism_filename: Optional[str]) -> Optional[str]:
         if path.exists():
             return str(path)
 
-    logger.info(
-        "Could not find fasta file for %r (tried %s)",
-        organism_filename, candidates
-    )
     return None

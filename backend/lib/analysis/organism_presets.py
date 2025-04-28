@@ -9,8 +9,6 @@ from analysis.models import OrganismAccess
 from lib.analysis.organism import Organism
 from lib.analysis.stage_and_color import StageAndColor
 
-logger = logging.getLogger(__name__)
-
 
 class OrganismPresets:
     _organisms:List[Organism] = []
@@ -22,7 +20,6 @@ class OrganismPresets:
         cls._organisms = []
 
         if not os.path.exists(organisms_dir):
-            logger.error("Organisms directory not found")
             return False
 
         organism_index = 1
@@ -53,9 +50,8 @@ class OrganismPresets:
                     take_first_transcript_only=org_data.get("take_first_transcript_only", True)
                 ))
                 organism_index += 1
-            except Exception as e:
-                logger.error(f"Error loading organism file {file_path}")
-
+            except:
+                return False
         cls.k_organisms = cls._organisms
         return len(cls._organisms) > 0
 
@@ -119,4 +115,6 @@ class OrganismPresets:
 try:
     OrganismPresets.reload_data()
 except Exception as e:
-    logger.error(f"Error initializing OrganismPresets")
+    logging.error(f"Error loading organism presets: {e}")
+    OrganismPresets._organisms = []
+    OrganismPresets.k_organisms = []

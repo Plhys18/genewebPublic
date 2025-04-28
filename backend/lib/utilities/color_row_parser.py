@@ -4,9 +4,6 @@ class ColorRowParser:
     """
     Checks the list of strings for a color value in #RRGGBB format
     and returns the list of color integers (ARGB) or None in place of invalid.
-    This mimics the Dart code's behavior:
-      If e.isEmpty => null
-      else parse substring(1) as hex => color + 0xFF000000
     """
 
     @staticmethod

@@ -3,7 +3,6 @@ from typing import List, Optional, Dict, Any
 
 import aiofiles
 
-from analysis.utils.file_utils import logger
 from lib.analysis.analysis_series import AnalysisSeries
 from lib.analysis.motif import Motif
 from lib.analysis.organism import Organism
@@ -89,26 +88,43 @@ class GeneModel:
 
         self.sourceGenes = GeneList.from_list(genes=genes, errors=errors, organism=organism)
 
+    @staticmethod
+    def randomColorOf(text: str):
+        hash_val = 0
+        for ch in text:
+            hash_val = ord(ch) + ((hash_val << 5) - hash_val)
+        final_hash = abs(hash_val) % (256 * 256 * 256)
+        red = (final_hash & 0xFF0000) >> 16
+        green = (final_hash & 0xFF00) >> 8
+        blue = (final_hash & 0xFF)
+        return f"#{red:02X}{green:02X}{blue:02X}"
+
+    async def _run_single_analysis(self, params):
+        return await AnalysisSeries.run_async(
+            gene_list=params['genes'],
+            motif=params['motif'],
+            name=params['name'],
+            color=params['color'],
+            minimal=params['min'],
+            maximal=params['max'],
+            bucket_size=params['interval'],
+            align_marker=params['alignMarker'],
+            no_overlaps=params.get('no_overlaps', True)
+        )
+
     async def analyze(self) -> bool:
         try:
             if not self._stageSelection or not self._stageSelection.selectedStages:
-                logger.error("No stages selected for analysis")
                 raise ValueError("No selected stages")
 
             if not self._motifs:
-                logger.error("No motifs selected for analysis")
                 raise ValueError("No motifs to analyze")
 
             if not self.sourceGenes:
-                logger.error("No gene data loaded")
                 raise ValueError("No gene data available")
 
             if not self.analysisOptions:
-                logger.error("No analysis options set")
                 raise ValueError("Analysis options not configured")
-
-            logger.info(
-                f"Starting analysis with {len(self._motifs)} motifs and {len(self._stageSelection.selectedStages)} stages")
 
             total_tasks = len(self._stageSelection.selectedStages) * len(self._motifs)
             completed_tasks = 0
@@ -116,10 +132,6 @@ class GeneModel:
 
             import multiprocessing
             cpu_count = multiprocessing.cpu_count()
-            optimal_workers = max(1, min(cpu_count - 1, 4))
-
-            logger.info(f"Creating process pool with {optimal_workers} workers")
-
             analysis_params = []
 
             for motif in self._motifs:
@@ -130,7 +142,6 @@ class GeneModel:
                     )
 
                     if not filteredGenes or not filteredGenes.genes:
-                        logger.warning(f"No genes found for stage '{stage_key}'")
                         completed_tasks += 1
                         self.analysisProgress = completed_tasks / total_tasks
                         continue
@@ -167,39 +178,13 @@ class GeneModel:
 
                 completed_tasks += len(batch)
                 self.analysisProgress = completed_tasks / total_tasks
-                logger.debug(f"Analysis progress: {self.analysisProgress:.1%}")
 
             self.analyses.extend(results)
             self.analysisProgress = 1.0
             return True
-
-        except Exception as e:
-            logger.exception(f"Error during analysis: {e}")
-            self.analysisProgress = None
+        except:
             return False
 
-    async def _run_single_analysis(self, params):
-        return await AnalysisSeries.run_async(
-            gene_list=params['genes'],
-            motif=params['motif'],
-            name=params['name'],
-            color=params['color'],
-            minimal=params['min'],
-            maximal=params['max'],
-            bucket_size=params['interval'],
-            align_marker=params['alignMarker'],
-            no_overlaps=params.get('no_overlaps', True)
-        )
-    @staticmethod
-    def randomColorOf(text: str):
-        hash_val = 0
-        for ch in text:
-            hash_val = ord(ch) + ((hash_val << 5) - hash_val)
-        final_hash = abs(hash_val) % (256 * 256 * 256)
-        red = (final_hash & 0xFF0000) >> 16
-        green = (final_hash & 0xFF00) >> 8
-        blue = (final_hash & 0xFF)
-        return f"#{red:02X}{green:02X}{blue:02X}"
 
     def addAnalysisToHistory(self):
         self.analysesHistory.extend(self.analyses)

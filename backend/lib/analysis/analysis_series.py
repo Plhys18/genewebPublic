@@ -195,8 +195,7 @@ class AnalysisSeries:
                 return AnalysisSeries.filter_overlapping_matches(results)
             return results
         except Exception as e:
-            logger.error(f"Error finding matches in gene {gene.geneId}: {e}")
-            return []
+             return []
 
     @staticmethod
     def filter_overlapping_matches(results: List[AnalysisResult]) -> List[AnalysisResult]:
