@@ -205,7 +205,6 @@ def list_organisms(request):
 
     organisms_data = [
         {
-            "id": org.Id,
             "name": org.name,
             "public": org.public,
             "filename": org.filename,
@@ -228,14 +227,12 @@ def list_organisms(request):
     }
 )
 @api_view(["GET"])
-def get_organism_details(request, name):
+def get_organism_details(request, file_name):
     try:
-        organism_name = name
         user = request.user if request.user.is_authenticated else None
-        if not organism_name:
+        if not file_name:
             return JsonResponse({"error": "Missing organism name"}, status=400)
-        key = name
-        candidates = [o for o in OrganismPresets.get_organisms() if o.filename == key]
+        candidates = [o for o in OrganismPresets.k_organisms if o.filename == file_name]
         if not candidates:
             return JsonResponse({"error": "Organism not found"}, status=404)
         candidates.sort(key=lambda o: not o.public)
@@ -285,7 +282,7 @@ def get_organism_details(request, name):
                 for motif in accessible_motifs
             ]
 
-        file_path = find_fasta_file(organism.filename.split('.')[0])
+        file_path = find_fasta_file(organism.filename)
         if not file_path:
             return JsonResponse({"error": "Organism file not found"}, status=404)
 

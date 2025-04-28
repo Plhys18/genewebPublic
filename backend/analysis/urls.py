@@ -14,7 +14,7 @@ urlpatterns = [
     path('organisms/', list_organisms, name="list_organisms"), #TODO keep, but change to what organism this user is allowed to see
                                                                  # either he site is public and he gets all or this user is logged in and he can see public + extra
     path('pipeline/', run_pipeline_api, name='run_pipeline_api'),
-    path('organism_details/<str:name>/', get_organism_details, name="get_organism_details"),
+    path('organism_details/<str:file_name>/', get_organism_details, name="get_organism_details"),
 ]
 
     # path('motifs/', get_motifs, name="motifs"),
