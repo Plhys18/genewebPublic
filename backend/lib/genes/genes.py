@@ -1,5 +1,5 @@
 import json
-import re2
+import re
 from typing import List, Dict, Optional
 
 class Gene:
@@ -7,9 +7,9 @@ class Gene:
     Holds a single gene data
     """
 
-    gene_id_reg_exp = re2.compile(r"(?P<gene>[A-Za-z0-9+_.-]+)")
-    markers_reg_exp = re2.compile(r";MARKERS (?P<json>\{.*})$")
-    transcription_rates_reg_exp = re2.compile(r";TRANSCRIPTION_RATES (?P<json>\{.*})$")
+    gene_id_reg_exp = re.compile(r"(?P<gene>[A-Za-z0-9+_.-]+)")
+    markers_reg_exp = re.compile(r";MARKERS (?P<json>\{.*})$")
+    transcription_rates_reg_exp = re.compile(r";TRANSCRIPTION_RATES (?P<json>\{.*})$")
 
     def __init__(
             self,

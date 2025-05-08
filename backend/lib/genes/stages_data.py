@@ -1,5 +1,5 @@
 import csv
-import re2
+import re
 from io import StringIO
 from typing import Dict, Set, Optional, List
 
@@ -81,7 +81,7 @@ class StagesData:
 # ---- ColorRowParser simulation ----
 
 class ColorRowParser:
-    COLOR_REGEX = re2.compile(r"^#[0-9A-Fa-f]{6}$")
+    COLOR_REGEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
     @staticmethod
     def try_parse(row: List[str]) -> Optional[List[Optional[str]]]:

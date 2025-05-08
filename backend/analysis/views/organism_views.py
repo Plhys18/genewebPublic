@@ -29,7 +29,6 @@ def check_organism_access(user, organism):
 
     user_groups = list(user.groups.all())
     print(f"User {user.username} is in these groups: {[g.name for g in user_groups]}")
-
     user_access = OrganismAccess.objects.filter(
         organism_name=organism.filename,
         access_type='user',

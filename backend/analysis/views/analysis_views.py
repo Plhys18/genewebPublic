@@ -15,7 +15,8 @@ from analysis.views.organism_views import check_organism_access
 from lib.analysis.organism_presets import OrganismPresets
 from lib.genes.gene_model import GeneModel, AnalysisOptions
 from lib.genes.stage_selection import StageSelection, FilterStrategy, FilterSelection
-
+import nest_asyncio
+import asyncio
 
 def async_view(func):
     @wraps(func)
@@ -28,7 +29,6 @@ def async_view(func):
         request._user = user
 
         return async_to_sync(func)(request, *args, **kwargs)
-
     return wrapper
 
 async def get_motifs_by_names(motif_names):

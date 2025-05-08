@@ -26,3 +26,4 @@ def find_fasta_file(organism_filename: Optional[str]) -> Optional[str]:
             return str(path)
 
     return None
+
