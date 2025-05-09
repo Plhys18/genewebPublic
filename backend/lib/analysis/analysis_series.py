@@ -2,7 +2,7 @@ import json
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 from typing import List, Dict, Optional, Any
-import re
+import re2
 from collections import defaultdict
 from lib.analysis.analysis_result import AnalysisResult
 from lib.analysis.distribution import Distribution
@@ -174,7 +174,7 @@ class AnalysisSeries:
 
             for definition, regex in definitions.items():
                 if isinstance(regex, str):
-                    compiled_regex = re.compile(regex)
+                    compiled_regex = re2.compile(regex)
                 else:
                     compiled_regex = regex
 
