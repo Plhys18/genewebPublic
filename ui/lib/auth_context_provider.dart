@@ -13,15 +13,11 @@ class AuthContextProvider extends StatefulWidget {
 
 class _AuthContextProviderState extends State<AuthContextProvider> {
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void initState() {
+    super.initState();
 
-    // Set the context in the auth provider so it can access other providers
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    authProvider.setContext(context);
-
-    // Check auth state when dependencies change
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
       authProvider.checkAuthState();
     });
   }

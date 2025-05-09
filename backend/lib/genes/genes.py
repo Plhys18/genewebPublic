@@ -88,9 +88,7 @@ class Gene:
 
         if markers and "atg" in markers:
             atg_pos = markers["atg"]
-            # codon = sequence[atg_pos - 1 : (atg_pos - 1) + 3]
             codon = sequence[atg_pos - 1: atg_pos - 1 + 3]
-            # print(f"✅ DEBUG: Extracted codon `{codon}` at ATG position {atg_pos} in sequence.")
             if codon not in ("ATG", "CAT"):
                 print(f"❌ ERROR: Unexpected codon `{codon}` found at position {atg_pos}")
 

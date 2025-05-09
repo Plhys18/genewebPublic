@@ -96,7 +96,6 @@ class GeneList:
             except Exception as e:
                 errors.append(e)
 
-        print(f".fasta parsing completed with {len(genes)} genes and {len(errors)} errors")
         return genes, errors
 
     @classmethod
@@ -120,7 +119,6 @@ class GeneList:
             first_gene_id = min(gene_ids)
             merged.append(gene_lookup[first_gene_id])
 
-        print(f".fasta transcript filtering completed with {len(merged)} genes and {len(errors)} errors")
         return merged, errors
     @classmethod
     def from_list(
@@ -138,10 +136,6 @@ class GeneList:
             stages=None,
             colors=None,
             errors=errors
-        )
-        print(
-            f".fasta analysis completed with {len(result.genes)} genes "
-            f"and {len(result.errors)} errors"
         )
         return result
 
@@ -200,7 +194,6 @@ class GeneList:
 
         result = []
         if self.organism and len(self.organism.stages) > 0:
-            # Use organism's stage order
             for stg in self.organism.stages:
                 if stg.stage in detected:
                     result.append(stg.stage)

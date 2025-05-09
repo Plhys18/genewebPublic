@@ -140,7 +140,14 @@ class GeneModel extends ChangeNotifier {
     analysisOptions = options;
     notifyListeners();
   }
-
+  Future<void> refreshOrganisms() async {
+    try {
+      final organisms = await ApiService().getOrganisms();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error refreshing organisms: $e');
+    }
+  }
   Future<void> fetchOrganismDetails(String organismFile) async {
     _isLoading = true;
     notifyListeners();
@@ -333,7 +340,6 @@ class GeneModel extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      // Clear existing data
       name = "";
       filename = "";
       _allStages.clear();

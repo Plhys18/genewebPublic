@@ -39,7 +39,6 @@ class TPMData:
         if len(table) < 2:
             raise ValueError("CSV must have at least 2 rows")
 
-        # The first row are columns: [geneId, stage1, stage2, stage3, ...]
         stage_names = [x.strip() for x in table[0]]
         if len(stage_names) <= 1:
             raise ValueError("CSV must have at least 2 columns (geneId + at least 1 stage)")

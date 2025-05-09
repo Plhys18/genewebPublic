@@ -53,7 +53,7 @@ class _HomeState extends State<Home> {
               Step(
                 title: const Text('Species'),
                 subtitle: const SourceSubtitle(),
-                content: SourcePanel(onShouldClose: () => _handleStepTapped(1)),
+                content: SourcePanel(key: SourcePanel.sourcePanelKey, onShouldClose: () => _handleStepTapped(1)),
                 state: _model.isLoading
                     ? StepState.indexed
                     : sourceGenesLength == null

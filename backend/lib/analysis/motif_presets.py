@@ -71,7 +71,3 @@ class MotifPresets:
     def get_public_motifs(cls):
         all_motifs = cls._get_motifs()
         return [m for m in all_motifs if m.public]
-
-
-
-MotifPresets._get_motifs()

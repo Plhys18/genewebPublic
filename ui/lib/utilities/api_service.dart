@@ -21,12 +21,13 @@ class ApiService {
   static const String _tokenKey = "jwt_access";
   static const String _refreshTokenKey = "jwt_refresh";
   static const String _tokenExpiryKey = "jwt_expiry";
-
+  static const String _usernameKey = "username";
   String? _jwtToken;
   String? _refreshToken;
   DateTime? _tokenExpiry;
 
   bool get isAuthenticated => _jwtToken != null;
+  String? get username => _prefs?.getString(_usernameKey);
 
   static Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
@@ -46,6 +47,7 @@ class ApiService {
       await _clearJwtToken();
     }
   }
+
 
   Future<void> _saveJwtToken(String accessToken, String refreshToken, {Duration expiresIn = const Duration(hours: 1)}) async {
     if (_prefs == null) return;
@@ -73,6 +75,19 @@ class ApiService {
     _tokenExpiry = null;
   }
 
+  Future<bool> validateToken() async {
+    await _loadJwtToken();
+
+    if (_jwtToken == null) return false;
+
+    if (_tokenExpiry == null ||
+        _tokenExpiry!.difference(DateTime.now()).inMinutes < 10) {
+      return await _refreshAccessToken();
+    }
+
+    return true;
+  }
+
   String _fixUrl(String endpoint) {
     if (!endpoint.endsWith('/')) {
       endpoint += '/';
@@ -80,13 +95,13 @@ class ApiService {
     return "$_baseUrl/$endpoint";
   }
 
-  Future<bool> login(String username, String password) async {
+  Future<bool> login(String usernameInput, String password) async {
     try {
       final response = await http.post(
         Uri.parse(_fixUrl("auth/login/")),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          'username': username,
+          'username': usernameInput,
           'password': password,
         }),
       );
@@ -96,6 +111,9 @@ class ApiService {
         if (data.containsKey("access") && data.containsKey("refresh")) {
           final expiresIn = Duration(seconds: data["expires_in"] ?? 3600);
           await _saveJwtToken(data["access"], data["refresh"], expiresIn: expiresIn);
+
+          await _prefs?.setString(_usernameKey, usernameInput);
+
           return true;
         }
       }
@@ -214,7 +232,10 @@ class ApiService {
         } else {
           throw Exception("Authentication failed. Please log in again.");
         }
-      } else {
+      } else if (response.statusCode == 403) {
+      throw Exception("Forbidden: You do not have permission to access this resource.");
+      }
+      else {
         throw Exception("POST request failed: ${response.statusCode}");
       }
     } catch (error) {
@@ -249,13 +270,6 @@ class ApiService {
     }
   }
 
-  // Future<AnalysisSeries> fetchAnalysisDetails(int analysisId) async {
-  //   final data = await getRequest("analysis/history/$analysisId/");
-  //   if (!data.containsKey("id") || !data.containsKey("name")) {
-  //     throw Exception("Unexpected API response format: Missing 'id' or 'name'");
-  //   }
-  //   return AnalysisSeries.fromJson(data);
-  // }
   Future<Map<String, dynamic>> fetchAnalysisSettings(int analysisId) async {
     final response = await getRequest('analysis/settings/$analysisId');
     return response;

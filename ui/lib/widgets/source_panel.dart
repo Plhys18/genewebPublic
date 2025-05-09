@@ -29,6 +29,7 @@ class SourcePanel extends StatefulWidget {
   const SourcePanel({super.key, required this.onShouldClose});
 
   final VoidCallback onShouldClose;
+  static final sourcePanelKey = GlobalKey<_SourcePanelState>();
 
   @override
   State<SourcePanel> createState() => _SourcePanelState();

@@ -56,14 +56,15 @@ class GeneModel:
         self._stageSelection = selection
 
     def getMotifs(self) -> List["Motif"]:
-        return [name for name in self._motifs.name]
+        return [name for name in self._motifs]
     def getSelectedStages(self) -> Optional["StageSelection"]:
         return self._stageSelection
     def getOptions(self) -> Optional["AnalysisOptions"]:
         return self.analysisOptions
 
     async def loadFastaFromFile(self, path: str, organism: Optional["Organism"]):
-        gene_list = await FastaCache.get_instance().get_gene_list(path)
+        cache = FastaCache.get_instance()
+        gene_list = await cache.get_gene_list(path)
 
         if organism and organism.take_first_transcript_only:
             genes, errors = await GeneList.take_single_transcript(gene_list.genes, gene_list.errors)

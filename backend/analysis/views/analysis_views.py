@@ -22,7 +22,7 @@ def async_view(func):
     @wraps(func)
     def wrapper(request, *args, **kwargs):
         user = None
-        if hasattr(request, 'user') and request.user is not None and hasattr(request.user, 'is_authenticated'):
+        if request.user:
             if request.user.is_authenticated:
                 user = request.user
 
@@ -69,14 +69,14 @@ async def run_analysis(request):
     try:
         data = request.data
         organism_name = data.get("organism")
+        filename = data.get("filename", "")
         motifs = data.get("motifs", [])
         stages = data.get("stages", [])
         params = data.get("params", {})
         user = getattr(request, "_user", None)
-
         @sync_to_async(thread_sensitive=True)
         def _fetch_org():
-            org = OrganismPresets.get_organism_by_name(organism_name)
+            org = OrganismPresets.get_organism_by_filename(filename)
             if not org:
                 return None, "Organism not found"
             if not check_organism_access(user, org):

@@ -27,11 +27,7 @@ class _LockScreenState extends State<LockScreen> {
           const SizedBox(height: 40),
           _Lock(
             onLoginSuccess: () {
-              if (widget.isDialog) {
-                Navigator.pop(context, true);
-              } else {
-                Navigator.pop(context, true);
-              }
+              Navigator.pop(context, true);
             },
           ),
         ],

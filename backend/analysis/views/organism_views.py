@@ -1,6 +1,5 @@
 import json
 import os
-from typing import Optional
 
 from django.http import JsonResponse
 from drf_yasg import openapi
@@ -24,6 +23,7 @@ def check_organism_access(user, organism):
         return True
 
     if not user or not user.is_authenticated:
+        print(f"user:{user}")
         print(f"Anonymous user denied access to {organism.filename}")
         return False
 
@@ -56,6 +56,7 @@ def check_organism_access(user, organism):
     return False
 
 def check_motif_access(user, motif):
+    print(f"user{user}, motif: {motif}")
     if not hasattr(motif, 'public') or motif.public:
         return True
 
@@ -251,7 +252,7 @@ def get_motifs_data(user, accessible_motifs):
             "public": motif.public if hasattr(motif, 'public') else True
         }
 
-        if user:
+        if user and user.is_authenticated:
             try:
                 pref = UserColorPreference.objects.get(
                     user=user,
@@ -268,7 +269,7 @@ def get_motifs_data(user, accessible_motifs):
 
 
 def apply_user_stage_preferences(user, stages):
-    if not user:
+    if not user or not user.is_authenticated:
         return stages
 
     updated_stages = stages.copy()
@@ -285,12 +286,9 @@ def apply_user_stage_preferences(user, stages):
             pass
     return updated_stages
 
-
+@api_view(["GET"])
 def get_organism_details(request, file_name):
     try:
-        user = request.user if hasattr(request, 'user') and request.user and hasattr(request.user,
-                                                                                     'is_authenticated') and request.user.is_authenticated else None
-
         if not file_name:
             return JsonResponse({"error": "Missing organism name"}, status=400)
 
@@ -300,16 +298,24 @@ def get_organism_details(request, file_name):
         if not organism:
             return JsonResponse({"error": "Organism not found"}, status=404)
 
-        if not check_organism_access(user, organism):
+        if not check_organism_access(request.user, organism):
             return JsonResponse({"error": "No access to this organism"}, status=403)
 
         if organism_data:
             all_motifs = MotifPresets.get_presets()
-            accessible_motifs = [motif for motif in all_motifs if check_motif_access(user, motif)]
+            accessible_motifs = [motif for motif in all_motifs if check_motif_access(request.user, motif)]
 
-            organism_data["motifs"] = get_motifs_data(user, accessible_motifs)
-
-            organism_data["stages"] = apply_user_stage_preferences(user, organism_data["stages"])
+            if request.user and request.user.is_authenticated:
+                organism_data["motifs"] = get_motifs_data(request.user, accessible_motifs)
+                organism_data["stages"] = apply_user_stage_preferences(request.user, organism_data["stages"])
+            else:
+                organism_data["motifs"] = [
+                    {
+                        "name": motif.name,
+                        "definitions": motif.definitions,
+                        "public": motif.public if hasattr(motif, 'public') else True
+                    } for motif in accessible_motifs
+                ]
 
             print(
                 f"DEBUG: Returning {len(organism_data['motifs'])} motifs for organism {organism_data['organism']} (from cache)")
@@ -323,7 +329,7 @@ def get_organism_details(request, file_name):
         accessible_organism = None
 
         for org in candidates:
-            if check_organism_access(user, org):
+            if check_organism_access(request.user, org):
                 accessible_organism = org
                 break
 
@@ -332,16 +338,16 @@ def get_organism_details(request, file_name):
 
         organism = accessible_organism
         all_motifs = MotifPresets.get_presets()
-        accessible_motifs = [motif for motif in all_motifs if check_motif_access(user, motif)]
+        accessible_motifs = [motif for motif in all_motifs if check_motif_access(request.user, motif)]
 
-        motifs_data = get_motifs_data(user, accessible_motifs)
+        motifs_data = get_motifs_data(request.user, accessible_motifs)
 
         file_path = find_fasta_file(organism.filename)
         if not file_path:
             return JsonResponse({"error": "Organism file not found"}, status=404)
 
         gene_list = GeneList.load_from_file(str(file_path))
-        stages_list = prepare_stage_data(organism, gene_list, user)
+        stages_list = prepare_stage_data(organism, gene_list, request.user)
         organism_and_stages = f"{organism.name} {'+'.join(gene_list.stageKeys)}"
 
         response_data = {

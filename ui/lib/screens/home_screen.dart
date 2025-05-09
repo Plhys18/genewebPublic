@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../auth_provider.dart';
 import '../genes/gene_model.dart';
 import '../widgets/home.dart';
+import '../widgets/source_panel.dart';
 import 'lock_screen.dart';
 import 'user_profile_screen.dart';
 import 'analysis_list_screen.dart';
@@ -32,6 +33,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     if (result == true) {
+      if (SourcePanel.sourcePanelKey.currentState != null) {
+        SourcePanel.sourcePanelKey.currentState!.fetchOrganisms();
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Logged in successfully'))
       );
@@ -41,11 +46,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void _handleLogout() async {
     await context.read<UserAuthProvider>().logout();
 
+    if (SourcePanel.sourcePanelKey.currentState != null) {
+      SourcePanel.sourcePanelKey.currentState!.fetchOrganisms();
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Logged out successfully'))
     );
   }
-
   void _navigateToProfile() {
     Navigator.push(
       context,
