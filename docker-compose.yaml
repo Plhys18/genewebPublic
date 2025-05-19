@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 
 services:
   backend:
@@ -6,25 +6,28 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: golem-backend
-    restart: always
+    restart: unless-stopped
     networks:
       - golem-network
     volumes:
       - ./data:/app/data
     environment:
       - DJANGO_ALLOWED_HOSTS=localhost,golem-dev.biodata.ceitec.cz,127.0.0.1,backend,golem-backend
-      - DJANGO_SECRET_KEY=your-secure-key-here
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-your-secure-key-here}
       - SECURE_SSL_REDIRECT=False
       - SESSION_COOKIE_SECURE=False
       - CSRF_COOKIE_SECURE=False
+    depends_on:
+      - postgres
     command: >
        bash -c "python manage.py makemigrations &&
            python manage.py migrate &&
            gunicorn --worker-class=sync --workers=3 --bind=0.0.0.0:8000 --timeout=1800 --max-requests=1000 --max-requests-jitter=50 --graceful-timeout=300 --keep-alive=5 --worker-connections=1000 wsgi:application"
+
   nginx:
     image: nginx:1.25-alpine
     container_name: golem-nginx
-    restart: always
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
@@ -56,7 +59,7 @@ services:
   postgres:
     image: postgres:15
     container_name: golem-postgres
-    restart: always
+    restart: unless-stopped
     environment:
       POSTGRES_DB: genewebdb
       POSTGRES_USER: admin
@@ -71,5 +74,6 @@ services:
 networks:
   golem-network:
     driver: bridge
+
 volumes:
   postgres-data:
