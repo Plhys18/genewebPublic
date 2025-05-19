@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:geneweb/analysis/motif.dart';
-import 'package:geneweb/analysis/motif_presets.dart';
-import 'package:geneweb/genes/gene_list.dart';
 import 'package:geneweb/genes/gene_model.dart';
 import 'package:provider/provider.dart';
 import 'package:truncate/truncate.dart';
@@ -63,9 +61,6 @@ class _MotifPanelState extends State<MotifPanel> {
     if (motifs.isEmpty) return const Center(child: Text('Load source data first'));
     final selectedMotifs = _model.getSelectedMotifsNames;
     final customMotifs = motifs.where((m) => m.isCustom).toList();
-
-    final presets = List.of(MotifPresets.presets).where((e) => e.isPublic).toList();
-
     return Align(
       alignment: Alignment.topLeft,
       child: Form(
@@ -104,7 +99,7 @@ class _MotifPanelState extends State<MotifPanel> {
               runSpacing: 4,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                ...presets.map((m) => _MotifCard(
+                ...motifs.map((m) => _MotifCard(
                   motif: m,
                   onToggle: (bool value) => _handlePresetToggled(m.name, value),
                   isSelected: selectedMotifs.contains(m.name),
