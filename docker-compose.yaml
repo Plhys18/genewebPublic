@@ -11,6 +11,7 @@ services:
       - golem-network
     volumes:
       - ./data:/app/data
+      - static-files:/app/staticfiles
     environment:
       - DJANGO_ALLOWED_HOSTS=localhost,golem-dev.biodata.ceitec.cz,127.0.0.1,backend,golem-backend
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-your-secure-key-here}
@@ -21,7 +22,7 @@ services:
       - postgres
     command: >
        bash -c "python manage.py makemigrations &&
-           python manage.py migrate &&
+           python manage.py migrate && python manage.py collectstatic --noinput &&
            gunicorn --worker-class=sync --workers=3 --bind=0.0.0.0:8000 --timeout=1800 --max-requests=1000 --max-requests-jitter=50 --graceful-timeout=300 --keep-alive=5 --worker-connections=1000 wsgi:application"
 
   nginx:
@@ -36,7 +37,7 @@ services:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
       - ./ui/build/web:/usr/share/nginx/html
-      - ./backend/staticfiles:/app/staticfiles    
+      -  static-files:/app/staticfiles
     depends_on:
       - backend
     networks:
@@ -77,3 +78,4 @@ networks:
 
 volumes:
   postgres-data:
+  static-files:
