@@ -17,7 +17,7 @@ class ApiService {
   ApiService._internal();
 
   static SharedPreferences? _prefs;
-  static const String _baseUrl = "http://localhost:8000/api";
+  static const String _baseUrl = "https://localhost/api";
   static const String _tokenKey = "jwt_access";
   static const String _refreshTokenKey = "jwt_refresh";
   static const String _tokenExpiryKey = "jwt_expiry";
