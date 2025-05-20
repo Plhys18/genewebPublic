@@ -15,9 +15,10 @@ This repository is provided for **VIEW-ONLY** purposes. No part of this code may
 Follow these steps to run the application locally for development purposes:
 
 ### Prerequisites
+Only linux operating system is currently supported.
+If you are on windows, please use wsl2, however in case of problems i may not be able to help as i have not tested this setup on any non linux machine.
 
 Before you begin, ensure you have the following installed:
-
 - **Python 3.11** (required)
 - **Docker** and **Docker Compose**
 - **Google RE2 library** (precompiled with all dependencies)
