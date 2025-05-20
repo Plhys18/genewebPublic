@@ -45,8 +45,7 @@ Ensure all prerequisites are properly installed:
 
 #### 4. Build and Start Services
 ```bash
-cd genweb
-docker-compose up --build
+docker-compose up --build -d
 ```
 
 #### 5. Access the Application
