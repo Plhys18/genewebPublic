@@ -3,13 +3,6 @@
 > **Bachelor's Thesis Appendix**  
 > This is the public version of the GeneWeb codebase, created specifically for the appendix of a bachelor's thesis. All private data has been removed for security and privacy purposes.
 
-## ⚠️ Important Notice
-
-**REUSE IS FORBIDDEN**  
-This repository is provided for **VIEW-ONLY** purposes. No part of this code may be used, modified, or redistributed without explicit permission.
-
----
-
 ## Local Development Setup
 
 Follow these steps to run the application locally for development purposes:
@@ -29,7 +22,7 @@ Before you begin, ensure you have the following installed:
 ```bash
 git clone <repository-url>
 cd <repository-name>
-git checkout JakubBranch
+git checkout architectureRedesign
 ```
 
 #### 2. Setup SSL Certificate
