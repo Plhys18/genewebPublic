@@ -21,7 +21,7 @@ Before you begin, ensure you have the following installed:
 - **Python 3.11** (required)
 - **Docker** and **Docker Compose**
 - **Google RE2 library** (precompiled with all dependencies)
-
+- **flutter**
 ### Step-by-Step Installation
 
 #### 1. Clone and Switch Branch
@@ -37,20 +37,25 @@ git checkout JakubBranch
 ```
 *This script creates a self-signed certificate for local development.*
 
-#### 3. Verify Dependencies
-Ensure all prerequisites are properly installed:
-- Python 3.11
-- Google RE2 library
-- Docker & Docker Compose
+#### 3. Verify prerequisities once again
+ - check once again that in any python file u can import re2 library, u can use flutter, docker without problems
 
-#### 4. Build and Start Services
+#### 4. Generate JS files and build containers.
+- NOTE: you need to be in root folder of repository to run any docker-compose related commands
 ```bash
+cd ui
+flutter build web --release
+cd ..
 docker-compose up --build -d
 ```
+ - during the flutter build command errors with permisions can arise, in that case, simply just add r/w/e permisions on folder "build" to your user.
 
 #### 5. Access the Application
 - Open your browser and navigate to `localhost`
-- ⚠️ **Note**: Your browser will display a security warning due to the self-signed certificate. This is expected behavior in development.
+- ⚠️ **Note**: Your browser will display a security warning due to the self-signed certificate. This is expected behavior as we are using self signed certificate for this deploy.
+
+- If you see golem interface, with empty organisms UI section, you succesfully setted up environment to run your local version of golem, Congratulations.
+- In order to add data, refer please for the Data Managment section of this readme
 
 ### Initial Configuration
 
