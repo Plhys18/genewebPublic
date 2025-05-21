@@ -91,7 +91,6 @@ class TPMData:
 
         return cls(stages, colors)
 
-# ---- ColorRowParser (same as above) ----
 
 class ColorRowParser:
     COLOR_REGEX = re2.compile(r"^#[0-9A-Fa-f]{6}$")

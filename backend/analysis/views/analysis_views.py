@@ -1,6 +1,4 @@
-import json
 from functools import wraps
-
 from django.http import JsonResponse
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -15,8 +13,7 @@ from analysis.views.organism_views import check_organism_access
 from lib.analysis.organism_presets import OrganismPresets
 from lib.genes.gene_model import GeneModel, AnalysisOptions
 from lib.genes.stage_selection import StageSelection, FilterStrategy, FilterSelection
-import nest_asyncio
-import asyncio
+
 
 def async_view(func):
     @wraps(func)
@@ -29,10 +26,11 @@ def async_view(func):
         request._user = user
 
         return async_to_sync(func)(request, *args, **kwargs)
+
     return wrapper
 
+
 async def get_motifs_by_names(motif_names):
-    """Get motifs by names in a database-safe way."""
 
     @sync_to_async
     def _get_motifs():
@@ -74,6 +72,7 @@ async def run_analysis(request):
         stages = data.get("stages", [])
         params = data.get("params", {})
         user = getattr(request, "_user", None)
+
         @sync_to_async(thread_sensitive=True)
         def _fetch_org():
             org = OrganismPresets.get_organism_by_filename(filename)
@@ -132,9 +131,9 @@ async def run_analysis(request):
 
     except Exception as e:
         import traceback
-        print(f"ERROR in run_analysis: {e}")
         traceback.print_exc()
         return JsonResponse({"error": str(e)}, status=500)
+
 
 @swagger_auto_schema(
     method='get',
@@ -180,10 +179,10 @@ def get_analysis_history_list(request):
 def get_analysis_details(request, analysis_id):
     """Returns detailed results for a specific analysis if the user owns it."""
     user = request.user
-    
+
     try:
         analysis = AnalysisHistory.objects.get(id=analysis_id, user=user)
-        
+
         result = {
             "id": analysis.id,
             "name": analysis.name,
@@ -198,6 +197,7 @@ def get_analysis_details(request, analysis_id):
         return JsonResponse(result)
     except AnalysisHistory.DoesNotExist:
         return JsonResponse({"error": "Analysis not found"}, status=404)
+
 
 @swagger_auto_schema(
     method='get',

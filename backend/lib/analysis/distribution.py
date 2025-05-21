@@ -50,7 +50,6 @@ class Distribution:
             dp_max = self.min + (i + 1) * self.bucket_size
             count_value = self._counts.get(i, 0)
             genes_set = self._genes.get(i, set())
-            # print(f"✅ DEBUG: Data point {dp_min}-{dp_max}: count={count_value} genes set count {len(genes_set)}")
             data_points.append(
                 DistributionDataPoint(
                     min=dp_min,

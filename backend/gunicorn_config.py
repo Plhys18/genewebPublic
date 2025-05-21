@@ -1,9 +1,0 @@
-bind = "0.0.0.0:8000"
-workers = 3
-worker_class = "sync"
-timeout = 1800
-max_requests = 1000
-max_requests_jitter = 50
-graceful_timeout = 300
-keepalive = 5
-worker_connections = 1000

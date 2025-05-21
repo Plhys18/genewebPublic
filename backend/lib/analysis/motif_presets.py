@@ -4,9 +4,6 @@ import settings
 from lib.analysis.motif import Motif
 
 
-logger = logging.getLogger(__name__)
-
-
 class MotifPresets:
     _data = None
     _motifs = None

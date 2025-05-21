@@ -17,12 +17,12 @@ class Series:
 
     @property
     def min(self):
-        """Returns the smallest value in the data (like Dart's data.first after sort)."""
+        """Returns the smallest value in the data."""
         return self.data[0]
 
     @property
     def max(self):
-        """Returns the largest value in the data (like Dart's data.last after sort)."""
+        """Returns the largest value in the data."""
         return self.data[-1]
 
     @property

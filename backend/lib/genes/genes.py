@@ -143,7 +143,7 @@ class Gene:
 
     def __str__(self) -> str:
         """
-        Replicates Dart's `toString()` => returns geneId
+        returns geneId
         """
         return self.geneId
 

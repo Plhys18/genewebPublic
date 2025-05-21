@@ -35,7 +35,7 @@ class AnalysisOptions:
 class GeneModel:
     """
     GeneModel is responsible for storing motifs, stages, and organism data
-    for analysis. It does NOT handle UI logic.
+    for analysis.
     """
 
     def __init__(self):
@@ -52,7 +52,6 @@ class GeneModel:
         self._motifs = newMotifs
 
     def setStageSelection(self, selection: Optional["StageSelection"]):
-        print(f"✅ DEBUG: Setting stage selection inside of gene_model: {selection}")
         self._stageSelection = selection
 
     def getMotifs(self) -> List["Motif"]:
@@ -84,8 +83,6 @@ class GeneModel:
         """
         self.name = organism.name if organism else None
         takeSingleTranscript = organism.take_first_transcript_only if organism else True
-        print(f"✅ DEBUG: Loading FASTA data for organism: {self.name}")
-        print(f"✅ DEBUG: takeSingleTranscript is set to: {takeSingleTranscript}")
         genes, errors = await GeneList.parse_fasta(data)
 
         if takeSingleTranscript:
@@ -134,9 +131,6 @@ class GeneModel:
             total_tasks = len(self._stageSelection.selectedStages) * len(self._motifs)
             completed_tasks = 0
             color_preferences = {}
-
-            import multiprocessing
-            cpu_count = multiprocessing.cpu_count()
             analysis_params = []
 
             for motif in self._motifs:
@@ -187,8 +181,10 @@ class GeneModel:
             self.analyses.extend(results)
             self.analysisProgress = 1.0
             return True
-        except:
-            return False
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            raise
 
 
     def addAnalysisToHistory(self):

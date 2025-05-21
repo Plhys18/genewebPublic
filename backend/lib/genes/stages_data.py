@@ -100,8 +100,6 @@ class ColorRowParser:
                 parsed.append(cell_str.upper())  # e.g. "#AABBCC"
                 found_any_color = True
             else:
-                # Could also check for empty => None
-                # or other formats if needed
                 parsed.append(None)
 
         if not found_any_color:
