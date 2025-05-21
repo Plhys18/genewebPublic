@@ -19,25 +19,19 @@ from analysis.utils.file_utils import find_fasta_file
 
 def check_organism_access(user, organism):
     if organism.public:
-        print(f"Organism {organism.filename} is public, access granted")
         return True
 
     if not user or not user.is_authenticated:
-        print(f"user:{user}")
-        print(f"Anonymous user denied access to {organism.filename}")
         return False
 
     user_groups = list(user.groups.all())
-    print(f"User {user.username} is in these groups: {[g.name for g in user_groups]}")
     user_access = OrganismAccess.objects.filter(
         organism_name=organism.filename,
         access_type='user',
         user=user
     )
-    print(f"Direct user access entries: {list(user_access.values())}")
 
     if user_access.exists():
-        print(f"User {user.username} has direct access to {organism.filename}")
         return True
 
     if user_groups:
@@ -46,17 +40,13 @@ def check_organism_access(user, organism):
             access_type='group',
             group__in=user_groups
         )
-        print(f"Group access entries: {list(group_access.values())}")
 
         if group_access.exists():
-            print(f"User {user.username} has group access to {organism.filename} via groups")
             return True
 
-    print(f"Access denied to {organism.filename} for user {user.username}")
     return False
 
 def check_motif_access(user, motif):
-    print(f"user{user}, motif: {motif}")
     if not hasattr(motif, 'public') or motif.public:
         return True
 
@@ -89,7 +79,6 @@ def check_motif_access(user, motif):
 
         return group_access
     except Exception as e:
-        print(f"ERROR in check_motif_access: {str(e)}")
         return False
 
 
@@ -155,7 +144,7 @@ def prepare_stage_data(organism, gene_list, user=None):
     for stage in organism.stages:
         stages_data[stage.stage] = {"stage": stage.stage, "color": stage.color}
 
-        if user:
+        if user and user.is_authenticated:
             try:
                 pref = UserColorPreference.objects.get(
                     user=user,
@@ -173,7 +162,7 @@ def prepare_stage_data(organism, gene_list, user=None):
             color = GeneModel.randomColorOf(stage)
             stages_data[stage] = {"stage": stage, "color": color}
 
-            if user:
+            if user and user.is_authenticated:
                 try:
                     pref = UserColorPreference.objects.get(
                         user=user,
@@ -317,8 +306,6 @@ def get_organism_details(request, file_name):
                     } for motif in accessible_motifs
                 ]
 
-            print(
-                f"DEBUG: Returning {len(organism_data['motifs'])} motifs for organism {organism_data['organism']} (from cache)")
             return JsonResponse(organism_data)
 
         candidates = [o for o in OrganismPresets.get_organisms() if o.filename == file_name]
@@ -365,12 +352,8 @@ def get_organism_details(request, file_name):
             "markers": sorted(set(marker for gene in gene_list.genes for marker in gene.markers.keys())),
         }
 
-        print(f"DEBUG: Returning {len(motifs_data)} motifs for organism {organism.name}")
 
         return JsonResponse(response_data)
 
     except Exception as e:
-        import traceback
-        print(f"ERROR in get_organism_details: {str(e)}")
-        print(traceback.format_exc())
         return JsonResponse({"error": str(e)}, status=500)

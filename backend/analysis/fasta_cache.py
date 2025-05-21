@@ -37,20 +37,13 @@ class FastaCache:
                 self._last_access[file_path] = now
                 return self._cache[file_path]
 
-            print(f"[DEBUG] Loading file from disk: {file_path}")
 
             async def _load():
-                print(f"[DEBUG] Opening file: {file_path}")
                 import aiofiles
                 async with aiofiles.open(file_path, 'r') as f:
                     data = await f.read()
-                    print(f"[DEBUG] File read complete. Data size: {len(data)} bytes")
 
-                print("[DEBUG] Starting FASTA parsing...")
                 genes, errors = await GeneList.parse_fasta(data)
-                print(f"[DEBUG] FASTA parsing complete. Parsed {len(genes)} genes, {len(errors)} errors.")
-
-                print("[DEBUG] Creating GeneList instance...")
                 return GeneList.from_list(genes=genes, errors=errors)
 
             gene_list = await _load()

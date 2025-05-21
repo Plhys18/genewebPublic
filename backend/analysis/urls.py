@@ -15,5 +15,3 @@ urlpatterns = [
     path('organism_details/<str:file_name>/', get_organism_details, name="get_organism_details"),
 ]
 
-    # path('motifs/', get_motifs, name="motifs"),
-    # path('stages/', get_active_stages, name="stages"),

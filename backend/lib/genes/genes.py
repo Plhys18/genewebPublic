@@ -56,9 +56,6 @@ class Gene:
                 match = cls.gene_id_reg_exp.search(line)
                 if match:
                     gene_id = match.group("gene")
-                    # print(f"✅ DEBUG: Extracted gene_id = {gene_id} from header: {line}")
-                else:
-                    print(f"⚠️ WARNING: No gene_id found in header: {line}")
 
             elif line[0] == ';':
                 t_rates_match = cls.transcription_rates_reg_exp.search(line)
@@ -89,9 +86,6 @@ class Gene:
         if markers and "atg" in markers:
             atg_pos = markers["atg"]
             codon = sequence[atg_pos - 1: atg_pos - 1 + 3]
-            if codon not in ("ATG", "CAT"):
-                print(f"❌ ERROR: Unexpected codon `{codon}` found at position {atg_pos}")
-
             if codon not in ("ATG", "CAT"):
                 raise ValueError(
                     f"{gene_id}: Expected `ATG`/`CAT` at ATG position of {atg_pos}, got `{codon}` instead."

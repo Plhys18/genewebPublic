@@ -2,7 +2,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.hashers import make_password
-
 from analysis.models import OrganismAccess, MotifAccess, AnalysisHistory
 from auth_app.models import UserColorPreference, OrganismGroup
 

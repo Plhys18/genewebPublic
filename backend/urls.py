@@ -30,7 +30,7 @@ This API follows a structured workflow where users interact with organisms, conf
 ---
 
 ### **2️⃣ Retrieve Organism Details**  
-📌 **Endpoint:** `POST /api/analysis/organism_details/`  
+📌 **Endpoint:** `POST /api/analysis/[organism_name]/`  
 - After selecting an organism, the user requests detailed information.  
 - This triggers the backend to load organism-related data, including available motifs, stages, and gene-related information.  
 
@@ -61,7 +61,13 @@ This API follows a structured workflow where users interact with organisms, conf
 ### **6️⃣ Retrieve Specific Analysis Results**  
 📌 **Endpoint:** `GET /api/analysis/history/{id}/`  
 - If authenticated, the user can request detailed results of a specific past analysis by providing its ID.  
-- This step is entirely optional and can be done separately from running a new analysis.  
+- This step is entirely optional and can be done separately from running a new analysis.
+
+---
+
+### **Special endpoints, not part of workflow**
+- for authenticated user theres function for custom colors of motives. 
+- theres also possibility to load the analysis from history, either its results or its setup (motifs, stages, options)
 """,
     ),
     public=True,

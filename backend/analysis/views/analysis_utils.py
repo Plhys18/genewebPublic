@@ -39,7 +39,7 @@ async def process_analysis_results(gene_model, user=None):
     """Process analysis results with proper async handling."""
     stage_color_preferences = {}
 
-    if user:
+    if user and user.is_authenticated:
         preferences = await get_user_preferences(user)
         for pref in preferences:
             stage_color_preferences[pref['name']] = pref['color']
@@ -86,7 +86,7 @@ async def save_analysis_history(
 
     @sync_to_async
     def _save_history():
-        if user:
+        if user and user.is_authenticated:
             try:
                 history = AnalysisHistory.objects.create(
                     user=user,
@@ -101,5 +101,6 @@ async def save_analysis_history(
                 return history
             except Exception as e:
                 return None
+        return None
 
     return await _save_history()

@@ -4,14 +4,17 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 
+"""NOTE:
+    this is test and debug settings.py only, and making it possible to run this UNSAFELY locally
+    in production the secret key has to be secret and the debug shall be defaulted to false
+"""
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-default-key')
-DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
+DEBUG = 'True'
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'golem-dev.biodata.ceitec.cz', 'backend']
 DATA_DIR = Path(os.environ.get('DATA_DIR', '/app/data'))
 
 if DEBUG:
-    # Development settings
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
@@ -19,7 +22,6 @@ if DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = False
     SECURE_HSTS_PRELOAD = False
 else:
-    # Production settings
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -28,26 +30,14 @@ else:
     SECURE_HSTS_PRELOAD = True
 
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
-SESSION_COOKIE_AGE = 86400  # 1-day
+SESSION_COOKIE_AGE = 86400
 SESSION_COOKIE_SAMESITE = "Lax"
-# Hosts settings
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'golem-dev.biodata.ceitec.cz,127.0.0.1,147.251.245.200,localhost,0.0.0.0,127.0.0.1').split(',')
 DATA_DIR = BASE_DIR / "data"
-
-SESSION_ENGINE = "django.contrib.sessions.backends.db"
-SESSION_COOKIE_AGE = 86400  # 1-day
-# AUTH_USER_MODEL = "auth_app.AppUser"
-# SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = "Lax"
-# SECURITY SETTINGS: Enforce HTTPS
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'True') == 'True'
 CSRF_COOKIE_SECURE = os.environ.get('CSRF_COOKIE_SECURE', 'True') == 'True'
 SECURE_HSTS_SECONDS = 31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
 
 INSTALLED_APPS = [
     # Django core apps
@@ -141,7 +131,6 @@ DATABASES = {
 
 CORS_ALLOW_ALL_ORIGINS = True
 
-# Password validation (default validators)
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',},
